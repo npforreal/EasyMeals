@@ -39,6 +39,7 @@ def test_android_manifest_no_cleartext_traffic():
     """AndroidManifest.xml must disallow cleartext traffic and disable adb auto-backup."""
     manifest_file = (
         Path(__file__).resolve().parents[1]
+        / "mobile"
         / "android"
         / "app"
         / "src"

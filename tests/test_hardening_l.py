@@ -57,7 +57,9 @@ def test_l3_underscore_wildcard_stripped():
 
 
 def test_l4_android_manifest_minimal_permissions():
-    manifest = (ROOT / "android/app/src/main/AndroidManifest.xml").read_text(encoding="utf-8")
+    manifest = (ROOT / "mobile/android/app/src/main/AndroidManifest.xml").read_text(
+        encoding="utf-8"
+    )
     perms = set(re.findall(r'uses-permission android:name="([^"]+)"', manifest))
     assert "android.permission.INTERNET" not in perms
     assert "android.permission.POST_NOTIFICATIONS" not in perms
