@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- EasyMeals logo: warm kitchen-notebook feel, green primary (#3F6B3A), paper bg (#F6F1E7).
+       Maskable-safe: logo kept inside the central safe zone (≈ 72% of canvas), not touching edges. -->
+  <defs>
+    <style>
+      .bg { fill: #F6F1E7; }
+      .leaf { fill: #3F6B3A; }
+      .bowl { fill: none; stroke: #3F6B3A; stroke-width: 18; stroke-linecap: round; stroke-linejoin: round; }
+      .steam { fill: #8FBF82; }
+    </style>
+  </defs>
+  <!-- Paper background (full bleed) -->
+  <rect width="512" height="512" rx="96" class="bg"/>
+  <!-- Safe-zone circle (≈ 72% of canvas) keeps the mark away from edges for maskable -->
+  <circle cx="256" cy="256" r="184" fill="none"/>
+  <!-- Bowl -->
+  <path class="bowl" d="M152 320 c0 48 88 48 88 0"/>
+  <!-- Leaf/sprout rising from bowl -->
+  <path class="leaf" d="M240 320 c-30 -40 -70 -10 -70 -60 c0 -20 30 -40 60 -20"/>
+  <path class="leaf" d="M272 300 c20 -30 60 -10 60 -50 c0 -15 -30 -25 -50 -5"/>
+  <!-- Steam -->
+  <circle cx="200" cy="190" r="22" class="steam"/>
+  <circle cx="220" cy="170" r="18" class="steam"/>
+  <circle cx="200" cy="150" r="14" class="steam"/>
+</svg>

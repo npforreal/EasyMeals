@@ -1,0 +1,295 @@
+{
+  "unit_conversions": [
+    {
+      "quantity": "500",
+      "from_unit": "g",
+      "to_unit": "kg",
+      "expected": "0.5"
+    },
+    {
+      "quantity": "1.25",
+      "from_unit": "kg",
+      "to_unit": "g",
+      "expected": "1250"
+    },
+    {
+      "quantity": "250",
+      "from_unit": "ml",
+      "to_unit": "l",
+      "expected": "0.25"
+    },
+    {
+      "quantity": "3.5",
+      "from_unit": "l",
+      "to_unit": "ml",
+      "expected": "3500"
+    },
+    {
+      "quantity": "4",
+      "from_unit": "piece",
+      "to_unit": "piece",
+      "expected": "4"
+    }
+  ],
+  "fifo_deduction": {
+    "recipe": {
+      "id": "22222222-0001-0000-0000-000000000001",
+      "name": "Thịt kho tàu",
+      "category": "man",
+      "servings": 4,
+      "ingredients": [
+        {
+          "ingredient_id": "11111111-0001-0000-0000-000000000001",
+          "ingredient_name": "Thịt ba chỉ",
+          "quantity": "500",
+          "unit": "g"
+        },
+        {
+          "ingredient_id": "11111111-0001-0000-0000-000000000009",
+          "ingredient_name": "Trứng vịt",
+          "quantity": "4",
+          "unit": "piece"
+        }
+      ]
+    },
+    "pantry": [
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000001",
+        "ingredient_id": "11111111-0001-0000-0000-000000000001",
+        "ingredient_name": "Thịt ba chỉ",
+        "purchased_quantity": "500",
+        "remaining_quantity": "300",
+        "unit": "g",
+        "purchased_at": "2026-10-20T10:00:00",
+        "expires_at": "2026-10-25"
+      },
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000002",
+        "ingredient_id": "11111111-0001-0000-0000-000000000001",
+        "ingredient_name": "Thịt ba chỉ",
+        "purchased_quantity": "500",
+        "remaining_quantity": "400",
+        "unit": "g",
+        "purchased_at": "2026-10-22T10:00:00",
+        "expires_at": "2026-10-28"
+      },
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000003",
+        "ingredient_id": "11111111-0001-0000-0000-000000000009",
+        "ingredient_name": "Trứng vịt",
+        "purchased_quantity": "10",
+        "remaining_quantity": "10",
+        "unit": "piece",
+        "purchased_at": "2026-10-21T10:00:00",
+        "expires_at": "2026-10-30"
+      }
+    ],
+    "check_stock_expected": {
+      "can_cook": true,
+      "deficits_count": 0
+    },
+    "deduction_expected": {
+      "updated_lots": [
+        {
+          "id": "aaaaaaaa-0001-0000-0000-000000000001",
+          "remaining_quantity": "0"
+        },
+        {
+          "id": "aaaaaaaa-0001-0000-0000-000000000002",
+          "remaining_quantity": "200"
+        },
+        {
+          "id": "aaaaaaaa-0001-0000-0000-000000000003",
+          "remaining_quantity": "6"
+        }
+      ],
+      "movements": [
+        {
+          "pantry_lot_id": "aaaaaaaa-0001-0000-0000-000000000001",
+          "quantity_delta": "-300",
+          "reason": "meal_consumption"
+        },
+        {
+          "pantry_lot_id": "aaaaaaaa-0001-0000-0000-000000000002",
+          "quantity_delta": "-200",
+          "reason": "meal_consumption"
+        },
+        {
+          "pantry_lot_id": "aaaaaaaa-0001-0000-0000-000000000003",
+          "quantity_delta": "-4",
+          "reason": "meal_consumption"
+        }
+      ]
+    }
+  },
+  "undo_consumption": {
+    "restored_lots": [
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000001",
+        "remaining_quantity": "300"
+      },
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000002",
+        "remaining_quantity": "400"
+      },
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000003",
+        "remaining_quantity": "10"
+      }
+    ],
+    "reversal_movements": [
+      {
+        "pantry_lot_id": "aaaaaaaa-0001-0000-0000-000000000001",
+        "quantity_delta": "300",
+        "reason": "correction"
+      },
+      {
+        "pantry_lot_id": "aaaaaaaa-0001-0000-0000-000000000002",
+        "quantity_delta": "200",
+        "reason": "correction"
+      },
+      {
+        "pantry_lot_id": "aaaaaaaa-0001-0000-0000-000000000003",
+        "quantity_delta": "4",
+        "reason": "correction"
+      }
+    ]
+  },
+  "planner_generation": {
+    "start_date": "2026-10-25",
+    "end_date": "2026-10-25",
+    "recipes": [
+      {
+        "id": "22222222-0001-0000-0000-000000000001",
+        "name": "Thịt kho tàu",
+        "category": "man",
+        "servings": 4,
+        "ingredients": [
+          {
+            "ingredient_id": "11111111-0001-0000-0000-000000000001",
+            "ingredient_name": "Thịt ba chỉ",
+            "quantity": "500",
+            "unit": "g"
+          },
+          {
+            "ingredient_id": "11111111-0001-0000-0000-000000000009",
+            "ingredient_name": "Trứng vịt",
+            "quantity": "4",
+            "unit": "piece"
+          }
+        ]
+      },
+      {
+        "id": "22222222-0002-0000-0000-000000000001",
+        "name": "Rau muống xào tỏi",
+        "category": "rau",
+        "servings": 4,
+        "ingredients": [
+          {
+            "ingredient_id": "11111111-0001-0000-0000-000000000011",
+            "ingredient_name": "Rau muống",
+            "quantity": "400",
+            "unit": "g"
+          }
+        ]
+      },
+      {
+        "id": "22222222-0003-0000-0000-000000000001",
+        "name": "Canh chua cá lóc",
+        "category": "canh",
+        "servings": 4,
+        "ingredients": [
+          {
+            "ingredient_id": "11111111-0001-0000-0000-000000000006",
+            "ingredient_name": "Cá lóc",
+            "quantity": "400",
+            "unit": "g"
+          }
+        ]
+      }
+    ],
+    "pantry": [
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000001",
+        "ingredient_id": "11111111-0001-0000-0000-000000000001",
+        "ingredient_name": "Thịt ba chỉ",
+        "purchased_quantity": "500",
+        "remaining_quantity": "300",
+        "unit": "g",
+        "purchased_at": "2026-10-20T10:00:00",
+        "expires_at": "2026-10-25"
+      },
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000002",
+        "ingredient_id": "11111111-0001-0000-0000-000000000001",
+        "ingredient_name": "Thịt ba chỉ",
+        "purchased_quantity": "500",
+        "remaining_quantity": "400",
+        "unit": "g",
+        "purchased_at": "2026-10-22T10:00:00",
+        "expires_at": "2026-10-28"
+      },
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000003",
+        "ingredient_id": "11111111-0001-0000-0000-000000000009",
+        "ingredient_name": "Trứng vịt",
+        "purchased_quantity": "10",
+        "remaining_quantity": "10",
+        "unit": "piece",
+        "purchased_at": "2026-10-21T10:00:00",
+        "expires_at": "2026-10-30"
+      }
+    ],
+    "expected_meals_count": 2,
+    "expected_dishes_per_meal": [
+      [
+        {
+          "recipe_name": "Thịt kho tàu",
+          "category": "man",
+          "is_leftover": false
+        },
+        {
+          "recipe_name": "Rau muống xào tỏi",
+          "category": "rau",
+          "is_leftover": false
+        },
+        {
+          "recipe_name": "Canh chua cá lóc",
+          "category": "canh",
+          "is_leftover": false
+        }
+      ],
+      [
+        {
+          "recipe_name": "Thịt kho tàu (Ăn lại)",
+          "category": "man",
+          "is_leftover": true
+        },
+        {
+          "recipe_name": "Rau muống xào tỏi (Ăn lại)",
+          "category": "rau",
+          "is_leftover": true
+        },
+        {
+          "recipe_name": "Canh chua cá lóc (Ăn lại)",
+          "category": "canh",
+          "is_leftover": true
+        }
+      ]
+    ],
+    "expected_shopping_items": [
+      {
+        "ingredient_id": "11111111-0001-0000-0000-000000000006",
+        "ingredient_name": "Cá lóc",
+        "needed_quantity": "400",
+        "unit": "g"
+      },
+      {
+        "ingredient_id": "11111111-0001-0000-0000-000000000011",
+        "ingredient_name": "Rau muống",
+        "needed_quantity": "400",
+        "unit": "g"
+      }
+    ]
+  }
+}

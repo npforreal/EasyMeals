@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="section-header">
+    <div>
+      <h1>Danh Sách Đi Chợ</h1>
+      <p class="subtitle">Tổng hợp các nguyên liệu cần mua bổ sung để hoàn thành thực đơn không lặp món.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); flex-wrap: wrap; gap: var(--space-2);">
+      <h2 style="margin: 0;">Nguyên liệu cần mua thêm</h2>
+      <div style="display: flex; gap: var(--space-2);">
+        <button class="btn btn-outline btn-sm" id="btn-clear-bought" type="button">Xóa các món đã chọn</button>
+        <button class="btn btn-primary btn-sm" id="btn-add-to-pantry" type="button">Chuyển món đã mua vào tủ lạnh</button>
+      </div>
+    </div>
+
+    <div id="shopping-list-container">
+      <div class="skeleton" style="padding: var(--space-4) 0;">
+        <div class="skeleton-title" style="width: 40%;"></div>
+        <div class="skeleton-text" style="width: 60%;"></div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

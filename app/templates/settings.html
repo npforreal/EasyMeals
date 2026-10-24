@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="section-header">
+    <div>
+      <h1>Dữ Liệu & Cài Đặt</h1>
+      <p class="subtitle">Quản lý kho dữ liệu cục bộ trên thiết bị, sao lưu và đồng bộ danh mục.</p>
+    </div>
+  </div>
+
+  <div class="grid" style="display: grid; gap: var(--space-4);">
+    <!-- Thông báo kiến trúc an toàn -->
+    <div class="card" style="border-left: 4px solid var(--primary); background: var(--surface);">
+      <h2 style="font-size: var(--text-base); margin-bottom: var(--space-1); display: flex; align-items: center; gap: var(--space-2);">
+        <svg class="ico" width="20" height="20" aria-hidden="true"><use href="/static/icons.svg#i-leaf"></use></svg>
+        Quyền riêng tư & Lưu trữ cục bộ
+      </h2>
+      <p style="font-size: var(--text-sm); color: var(--text-muted); margin: 0; line-height: 1.5;">
+        Dữ liệu tủ lạnh, thực đơn và lịch sử của bạn <strong>chỉ lưu trên máy này</strong> (trình duyệt IndexedDB). Server hoàn toàn không lưu trữ thông tin cá nhân. Hãy thường xuyên xuất file sao lưu để không bị mất dữ liệu khi xoá lịch sử duyệt web.
+      </p>
+    </div>
+
+    <!-- Trạng thái lưu trữ & Đồng bộ -->
+    <div class="card">
+      <h2 style="margin-bottom: var(--space-3); font-size: var(--text-lg);">Trạng thái hệ thống</h2>
+      <div style="display: grid; gap: var(--space-2); font-size: var(--text-sm);">
+        <div style="display: flex; justify-content: space-between; padding: var(--space-2) 0; border-bottom: 1px solid var(--border);">
+          <span style="color: var(--text-muted);">Kết nối mạng:</span>
+          <span id="network-status" class="badge" style="background: var(--surface-variant);">Đang kiểm tra...</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: var(--space-2) 0; border-bottom: 1px solid var(--border);">
+          <span style="color: var(--text-muted);">Bảo vệ bộ nhớ (Persistent Storage):</span>
+          <span id="storage-persist-status" class="badge" style="background: var(--surface-variant);">Đang kiểm tra...</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: var(--space-2) 0; border-bottom: 1px solid var(--border);">
+          <span style="color: var(--text-muted);">Phiên bản danh mục:</span>
+          <span id="catalogue-version-badge" class="badge" style="background: var(--surface-variant);">Chưa tải</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: var(--space-2) 0;">
+          <span style="color: var(--text-muted);">Lần sao lưu gần nhất:</span>
+          <span id="last-backup-badge" style="font-weight: 500;">Chưa sao lưu</span>
+        </div>
+      </div>
+      <div style="margin-top: var(--space-3);">
+        <button type="button" id="btn-sync-catalogue" class="btn btn-secondary" style="font-size: var(--text-sm);">
+          <svg class="ico" width="16" height="16" aria-hidden="true"><use href="/static/icons.svg#i-book"></use></svg>
+          Đồng bộ danh mục mới nhất
+        </button>
+      </div>
+    </div>
+
+    <!-- Sao lưu & Phục hồi (Export / Import JSON) -->
+    <div class="card">
+      <h2 style="margin-bottom: var(--space-2); font-size: var(--text-lg);">Sao lưu & Phục hồi dữ liệu</h2>
+      <p class="subtitle" style="margin-bottom: var(--space-3);">Xuất file JSON để chuyển sang máy khác hoặc phục hồi khi cần.</p>
+
+      <div style="display: flex; flex-wrap: wrap; gap: var(--space-2);">
+        <button type="button" id="btn-export-json" class="btn btn-primary">
+          <svg class="ico" width="16" height="16" aria-hidden="true"><use href="/static/icons.svg#i-cart"></use></svg>
+          Xuất dữ liệu ra file (.json)
+        </button>
+
+        <label for="import-file-input" class="btn btn-secondary" style="margin: 0; cursor: pointer; display: inline-flex; align-items: center; gap: var(--space-1);">
+          <svg class="ico" width="16" height="16" aria-hidden="true"><use href="/static/icons.svg#i-calendar"></use></svg>
+          <span>Nhập dữ liệu từ file...</span>
+          <input type="file" id="import-file-input" accept=".json,application/json" style="display: none;">
+        </label>
+      </div>
+    </div>
+
+    <!-- Xoá dữ liệu cục bộ -->
+    <div class="card" style="border-color: var(--danger-border, #fca5a5);">
+      <h2 style="color: var(--danger); margin-bottom: var(--space-1); font-size: var(--text-lg);">Vùng nguy hiểm</h2>
+      <p class="subtitle" style="margin-bottom: var(--space-3);">Xoá sạch toàn bộ tủ thực phẩm, thực đơn và lịch sử trên thiết bị này.</p>
+      <button type="button" id="btn-clear-all-data" class="btn btn-danger" style="background: var(--danger); color: white;">
+        Xoá toàn bộ dữ liệu trên máy
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal xác nhận nhập dữ liệu (Replace vs Merge) -->
+  <div id="import-modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
+      <h2 id="import-modal-title" style="margin-top: 0;">Nhập dữ liệu từ file sao lưu</h2>
+      <p id="import-summary" class="subtitle" style="margin-bottom: var(--space-3);"></p>
+      <p style="font-size: var(--text-sm); margin-bottom: var(--space-3);">Bạn muốn xử lý dữ liệu nhập như thế nào?</p>
+      <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4);">
+        <button type="button" id="btn-confirm-merge" class="btn btn-secondary" style="text-align: left; padding: var(--space-2) var(--space-3);">
+          <strong>Hợp nhất (Merge)</strong><br>
+          <span style="font-size: var(--text-xs); color: var(--text-muted);">Giữ nguyên dữ liệu hiện có và bổ sung các bản ghi mới từ file.</span>
+        </button>
+        <button type="button" id="btn-confirm-replace" class="btn btn-danger" style="text-align: left; padding: var(--space-2) var(--space-3); background: var(--danger); color: white;">
+          <strong>Ghi đè hoàn toàn (Replace)</strong><br>
+          <span style="font-size: var(--text-xs); opacity: 0.9;">Xoá sạch dữ liệu hiện tại trên máy và thay thế bằng file nhập.</span>
+        </button>
+      </div>
+      <div style="text-align: right;">
+        <button type="button" id="btn-cancel-import" class="btn btn-secondary">Huỷ bỏ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal xác nhận xoá toàn bộ dữ liệu (2-step confirmation) -->
+  <div id="clear-modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="clear-modal-title">
+      <h2 id="clear-modal-title" style="color: var(--danger); margin-top: 0;">Xác nhận xoá toàn bộ dữ liệu?</h2>
+      <p style="font-size: var(--text-sm); line-height: 1.5; margin-bottom: var(--space-3);">
+        Hành động này sẽ <strong>xoá vĩnh viễn</strong> toàn bộ nguyên liệu trong tủ, kế hoạch thực đơn và lịch sử trừ kho trên trình duyệt này. Không thể hoàn tác nếu bạn chưa xuất file sao lưu.
+      </p>
+      <div style="display: flex; justify-content: flex-end; gap: var(--space-2);">
+        <button type="button" id="btn-cancel-clear" class="btn btn-secondary">Huỷ</button>
+        <button type="button" id="btn-confirm-clear" class="btn btn-danger" style="background: var(--danger); color: white;">Tôi chắc chắn, hãy xoá sạch</button>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,1 @@
+"""EasyMeals application package."""
