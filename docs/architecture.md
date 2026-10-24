@@ -63,6 +63,14 @@ Hệ thống thiết lập 2 đường dữ liệu tối ưu theo nền tảng:
 |    với số học Decimal chính xác, trừ kho FIFO, hoàn tác, lập thực đơn không lặp|
 |  - Dữ liệu cá nhân: Lưu trữ trong IndexedDB của WebView trên thiết bị          |
 +---------------------------------------------------------------------------------+
+|                         ĐƯỜNG 3: MOBILE APP THUẦN NATIVE                        |
+|  - Ứng dụng Pure Native Android (Kotlin + Compose) & iOS (Swift + SwiftUI)      |
+|  - TUYỆT ĐỐI KHÔNG INTERNET: Bỏ hẳn quyền android.permission.INTERNET, không ATS|
+|  - Danh mục: Đóng gói bundled assets catalogue.json có checksum SHA256          |
+|  - Tính toán: EasyMealsEngine viết riêng bằng Kotlin & Swift sử dụng ExactDecimal|
+|    chính xác tuyệt đối, khớp 100% kết quả engine_test_cases.json                |
+|  - Lưu trữ: Tệp cục bộ JSON an toàn trong sandbox của ứng dụng                  |
++---------------------------------------------------------------------------------+
 ```
 
 ### Bảng phân bố dữ liệu: "Dữ liệu nằm ở đâu?"

@@ -1,127 +1,97 @@
-# EasyMeals — Ứng dụng Di động (Capacitor)
+# EasyMeals — Ứng dụng Di động Thuần Native (Android & iOS)
 
-Tài liệu này dành cho việc đóng gói, build và vận hành phiên bản **Native Mobile** của EasyMeals trên Android và iOS.
-
----
-
-## 1. Tổng quan
-
-EasyMeals phiên bản mobile là ứng dụng **hybrid native** xây dựng với [Capacitor](https://capacitorjs.com/):
-
-- **Hoàn toàn chạy offline**: Không gọi Supabase, không gọi backend FastAPI, không cần kết nối mạng sau khi cài đặt.
-- **Danh mục đóng gói sẵn**: Toàn bộ nguyên liệu, công thức và định lượng được xuất ra file `catalogue.json` và đóng gói vào `www/data/catalogue.json` bên trong gói ứng dụng.
-- **Tính toán trên thiết bị**: Thuật toán lập thực đơn, trừ kho FIFO, đổi đơn vị và hoàn tác bữa ăn chạy trực tiếp trên thiết bị bằng JavaScript Engine (`app/static/js/engine.js`) với số học Decimal chính xác.
-- **Dữ liệu cá nhân ở máy người dùng**: Tủ lạnh, thực đơn, lịch sử biến động kho và cài đặt nằm trong **IndexedDB của WebView** trên thiết bị. Hỗ trợ xuất/nhập file JSON để sao lưu và chuyển máy.
-- **Không có Supabase hay backend trong bản mobile**: Không chứa URL, API Key hay khoá Supabase nào trong thư mục `www/`.
+Tài liệu này hướng dẫn cách cấu hình, biên dịch, kiểm thử và vận hành ứng dụng di động thuần native (**Pure Native Mobile App**) của EasyMeals trên Android và iOS.
 
 ---
 
-## 2. Yêu cầu môi trường
+## 1. Tổng quan Kiến trúc Native Mới (`mobile/`)
 
-- **Node.js**: 20 trở lên.
-- **Python**: 3.12 trở lên (để chạy `scripts/export_catalogue.py` và `scripts/build_mobile_web.py`).
-- **Android**: Android Studio, JDK 17, Android SDK (minSdk 23, compile/targetSdk 35).
-- **iOS**: Xcode 15 trở lên, CocoaPods, iOS deployment target 15.0+.
-- **Capacitor CLI**: `@capacitor/cli` (đã có trong `package.json`).
+EasyMeals cung cấp 2 ứng dụng thuần native 100% không phụ thuộc framework hybrid:
 
----
+1. **Android (`mobile/android/`)**:
+   - **Ngôn ngữ & Framework**: Kotlin 2.0.21, Jetpack Compose, Material 3, Android Gradle Plugin 8.7.2.
+   - **Yêu cầu môi trường**: JDK 21 (OpenJDK 21 khuyến nghị trên macOS), Android SDK (minSdk 26, targetSdk 35).
+   - **Bảo mật tuyệt đối**: **KHÔNG CÓ QUYỀN INTERNET** (`android.permission.INTERNET` bị loại bỏ hoàn toàn trong `AndroidManifest.xml`), `allowBackup="false"`, `usesCleartextTraffic="false"`.
+   - **Số học chính xác**: `ExactDecimal` bọc `java.math.BigDecimal` với chuẩn hoá số không dư (`stripTrailingZeros()`), đảm bảo khớp 100% với Python `Decimal` và JavaScript `Decimal`.
 
-## 3. Chuẩn bị assets `www/`
-
-Trước khi build native, phải xuất danh mục và đóng gói giao diện web tĩnh vào thư mục `www/`:
-
-```bash
-# 1. Xuất file catalogue.json chuẩn từ kho dữ liệu
-python scripts/export_catalogue.py
-
-# 2. Đóng gói HTML/CSS/JS tĩnh, nạp catalogue.json, thiết lập chế độ offline và quét bảo mật www/
-python scripts/build_mobile_web.py
-
-# 3. Đồng bộ assets vào các dự án native Android & iOS
-npm run cap:sync
-```
-
-`npm run cap:sync` tương đương `python scripts/build_mobile_web.py && npx cap sync`.
-
-Lưu ý: `www/` là artifact sinh ra từ bản build, **không được commit** vào kho lưu trữ.
+2. **iOS (`mobile/ios/`)**:
+   - **Ngôn ngữ & Framework**: Swift 5.9 / 6.0, SwiftUI, Foundation Decimal, Swift Package Manager.
+   - **Yêu cầu môi trường**: macOS 14+, Xcode 15+ (iOS 17+ deployment target).
+   - **Bảo mật tuyệt đối**: **KHÔNG CÓ ATS EXCEPTION** (`NSAppTransportSecurity` / `NSAllowsArbitraryLoads`), không theo dõi, chạy hoàn toàn offline trên sandbox của máy.
+   - **Số học chính xác**: `ExactDecimal` bọc `Foundation.Decimal` với quy tắc làm tròn `bankers` / `plainString`, đảm bảo kết quả trùng khớp chính xác bộ dữ liệu mẫu `engine_test_cases.json`.
 
 ---
 
-## 4. Build & chạy Android
+## 2. Đồng bộ Assets & Dữ liệu Danh mục
+
+Toàn bộ dữ liệu món ăn Việt Nam (`catalogue.json`) và bộ ca kiểm thử quy chuẩn (`engine_test_cases.json`) được đồng bộ tự động từ thư mục gốc dự án vào các ứng dụng native thông qua script:
 
 ```bash
-# Đồng bộ www/ vào dự án Android
-npx cap sync android
+# Đồng bộ assets vào Android & iOS
+python scripts/sync_mobile_assets.py
 
-# Biên dịch APK Debug để cài thử
-cd android
-./gradlew assembleDebug
-# File xuất ra: android/app/build/outputs/apk/debug/app-debug.apk
-cd ..
+# Kiểm tra tính toàn vẹn (SHA256) của assets đã đồng bộ
+python scripts/sync_mobile_assets.py --check
 ```
 
-Cài APK vào thiết bị/máy ảo:
-
-```bash
-adb install android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-Để mở dự án trong Android Studio (cấu hình ký số, build App Bundle `.aab` phát hành):
-
-```bash
-npx cap open android
-```
-
-Thông số native Android (xem `android/app/build.gradle`):
-
-- `applicationId`: `com.easymeals.app`
-- `minSdkVersion`: 23, `compileSdkVersion`: 35, `targetSdkVersion`: 35
-- `versionCode`: 5, `versionName`: 1.4.0
-- Quyền: `VIBRATE`; `usesCleartextTraffic="false"`, `allowBackup="false"`.
+Assets đích:
+- **Android**: `mobile/android/app/src/main/assets/catalogue.json` & `mobile/android/app/src/test/resources/engine_test_cases.json`
+- **iOS**: `mobile/ios/EasyMeals/Resources/catalogue.json` & `mobile/ios/EasyMealsTests/Resources/engine_test_cases.json`
 
 ---
 
-## 5. Build & chạy iOS
+## 3. Kiểm thử Tương đương Một Lệnh (`scripts/check_mobile.sh`)
+
+Script chạy tự động kiểm tra toàn diện 3 phần:
+1. Kiểm tra mã SHA256 assets catalogue & engine test cases.
+2. Android: Chạy JUnit `EngineEquivalenceTest` trên JVM OpenJDK 21.
+3. iOS: Chạy `EngineTests` qua `swift test` (XCTest).
 
 ```bash
-# Đồng bộ www/ vào dự án iOS
-npx cap sync ios
-
-# Mở Xcode workspace để chạy Simulator hoặc build lên iPhone thật
-npx cap open ios
+bash scripts/check_mobile.sh
 ```
 
-Yêu cầu: Xcode 15+, iOS deployment target 15.0+, CocoaPods đã cài (`pod install` trong `ios/App`).
+Kết quả:
+- **Android**: 7/7 ca kiểm thử tương đương đạt chuẩn (`testUnitConversions`, `testFifoStockDeduction`, `testUndoConsumption`, `testMealPlannerGeneration`, `testFifoSameExpiryTiebreak`, `testStockInsufficient`, `testIncompatibleUnitThrows`).
+- **iOS**: 7/7 ca kiểm thử tương đương đạt chuẩn (0 thất bại).
 
 ---
 
-## 6. Chạy kiểm thử
-
-Kiểm thử toàn diện một lệnh (bao gồm build `www/` và quét bảo mật):
+## 4. Biên dịch & Cài đặt Ứng dụng Android
 
 ```bash
-bash scripts/check.sh
+cd mobile/android
+export JAVA_HOME="/opt/homebrew/opt/openjdk@21"
+
+# Biên dịch APK gỡ lỗi
+./gradlew --no-daemon assembleDebug
+
+# File APK xuất xưởng:
+# mobile/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Trong `scripts/check.sh`:
-
-- **Bước 5**: `python scripts/build_mobile_web.py` — build `www/` và quét chuỗi cấm (`supabase.co`, `SUPABASE`, `eyJ`, `service_role`).
-- **Bước 6**: `npx playwright test` — E2E hành trình người dùng trên Desktop, Mobile và static build `www/` offline.
-
-Chạy chỉ kiểm thử unit JavaScript (IndexedDB storage, engine equivalence, atomic eat/undo):
-
+Cài đặt lên máy Android thực tế hoặc máy ảo qua ADB:
 ```bash
-npm run test:js
+adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ---
 
-## 7. Lưu ý bảo mật & phát hành
+## 5. Biên dịch & Chạy Ứng dụng iOS
 
-- **Không có URL/khoá Supabase trong `www/`**: Script `build_mobile_web.py` tự quét và từ chối build nếu phát hiện `supabase.co`, `SUPABASE`, `eyJ` hoặc `service_role` trong `www/`.
-- **Chưa ký AAB/IPA release**: việc ký App Bundle (`.aab`) cho Google Play và IPA cho App Store chưa được thực hiện; chủ dự án tự ký bằng keystore và chứng chỉ của mình.
-- `www/` là artifact build, không commit vào kho lưu trữ.
+```bash
+cd mobile/ios
+
+# Chạy bộ test trên máy Mac
+swift test
+
+# Hoặc mở trong Xcode:
+open Package.swift
+# Chọn target EasyMeals và chạy trên iOS Simulator / iPhone thật
+```
 
 ---
 
-> Xem thêm: `docs/deploy.md` §4 (Đóng Gói Ứng Dụng Di Động Offline), `INSTALL.md` §5, `README.md` §5.
+## 6. Phiên bản Hybrid Cũ (Capacitor)
+
+Dự án vẫn duy trì mã nguồn hybrid cũ trong `android/`, `ios/`, và `www/` cho mục đích tham chiếu và kiểm thử E2E Playwright qua `bash scripts/check.sh`.

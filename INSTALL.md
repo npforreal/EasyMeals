@@ -162,7 +162,11 @@ npx cap open ios
 
 ### 🔗 Tài liệu chi tiết di động
 
-Hướng dẫn chi tiết đóng gói, build và phát hành ứng dụng di động (Capacitor Android/iOS) nằm tại [`mobile/README.md`](mobile/README.md).
+EasyMeals hỗ trợ cả hai hình thức:
+- **Ứng dụng thuần Native mới (Khuyến nghị)**: Nằm tại `mobile/android/` (Kotlin + Jetpack Compose) và `mobile/ios/` (Swift + SwiftUI). Chạy hoàn toàn offline không cần quyền Internet. Kiểm thử tự động bằng `bash scripts/check_mobile.sh`.
+- **Ứng dụng Hybrid (Capacitor)**: Nằm tại `android/`, `ios/` phục vụ kiểm thử web offline.
+
+Hướng dẫn chi tiết đóng gói, build và phát hành ứng dụng di động nằm tại [`mobile/README.md`](mobile/README.md).
 
 **Lưu ý quan trọng về phát hành:**
 - `www/` là artifact sinh ra từ bản build (`python scripts/build_mobile_web.py`), **không được commit** vào kho lưu trữ.

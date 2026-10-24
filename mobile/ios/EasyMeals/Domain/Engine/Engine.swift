@@ -1,0 +1,463 @@
+import Foundation
+
+public struct IncompatibleUnitError: Error, LocalizedError, Equatable {
+    public let message: String
+    public init(_ message: String) { self.message = message }
+    public var errorDescription: String? { message }
+}
+
+public struct InsufficientStockError: Error, LocalizedError, Equatable {
+    public let message: String
+    public let deficits: [String: DeficitItem]
+    public init(_ message: String, deficits: [String: DeficitItem] = [:]) {
+        self.message = message
+        self.deficits = deficits
+    }
+    public var errorDescription: String? { message }
+}
+
+public enum UnitDimensions {
+    private static let dimensions: [String: UnitDimension] = [
+        "g": .mass,
+        "kg": .mass,
+        "ml": .volume,
+        "l": .volume,
+        "piece": .count
+    ]
+
+    private static let multipliers: [String: ExactDecimal] = [
+        "g": ExactDecimal("1"),
+        "kg": ExactDecimal("1000"),
+        "ml": ExactDecimal("1"),
+        "l": ExactDecimal("1000"),
+        "piece": ExactDecimal("1")
+    ]
+
+    public static func dimension(of unit: String) -> UnitDimension? {
+        dimensions[unit]
+    }
+
+    public static func areCompatible(_ a: String, _ b: String) -> Bool {
+        guard let da = dimension(of: a), let db = dimension(of: b) else { return false }
+        return da == db
+    }
+
+    public static func convert(quantity: ExactDecimal, from fromUnit: String, to toUnit: String) throws -> ExactDecimal {
+        if fromUnit == toUnit { return quantity }
+        guard let dimFrom = dimension(of: fromUnit),
+              let dimTo = dimension(of: toUnit),
+              dimFrom == dimTo else {
+            throw IncompatibleUnitError(
+                "Không thể chuyển đổi đơn vị '\(fromUnit)' sang '\(toUnit)' vì khác thứ nguyên."
+            )
+        }
+        guard let multFrom = multipliers[fromUnit], let multTo = multipliers[toUnit] else {
+            throw IncompatibleUnitError("Không có hệ số quy đổi cho '\(fromUnit)' hoặc '\(toUnit)'.")
+        }
+
+        let base = quantity * multFrom
+        return base / multTo
+    }
+}
+
+public struct AggregatedRequirement: Equatable {
+    public let ingredientId: String
+    public let name: String
+    public var quantity: ExactDecimal
+    public let unit: String
+}
+
+public enum EasyMealsEngine {
+
+    public static func aggregateRequirements(recipe: Recipe, multiplier: String = "1") -> [AggregatedRequirement] {
+        let mult = ExactDecimal(multiplier)
+        var merged: [String: AggregatedRequirement] = [:]
+        var mergedKeys: [String] = []
+
+        for req in recipe.ingredients {
+            let qty = ExactDecimal(req.quantity) * mult
+            let dimStr = UnitDimensions.dimension(of: req.unit)?.rawValue ?? "unknown"
+            let key = "\(req.ingredientId)|\(dimStr)"
+
+            if var existing = merged[key] {
+                let converted = try? UnitDimensions.convert(quantity: qty, from: req.unit, to: existing.unit)
+                existing.quantity = existing.quantity + (converted ?? qty)
+                merged[key] = existing
+            } else {
+                mergedKeys.append(key)
+                merged[key] = AggregatedRequirement(
+                    ingredientId: req.ingredientId,
+                    name: req.ingredientName,
+                    quantity: qty,
+                    unit: req.unit
+                )
+            }
+        }
+        return mergedKeys.compactMap { merged[$0] }
+    }
+
+    public static func lotSortKey(for lot: PantryLot) -> String {
+        let exp = lot.expiresAt ?? "9999-12-31"
+        let pur = lot.purchasedAt ?? "1970-01-01"
+        return "\(exp)_\(pur)"
+    }
+
+    public static func getTotalIngredientStock(pantryLots: [PantryLot], ingredientId: String, targetUnit: String) -> ExactDecimal {
+        var total = ExactDecimal.zero
+        for lot in pantryLots {
+            if lot.ingredientId != ingredientId || !UnitDimensions.areCompatible(lot.unit, targetUnit) {
+                continue
+            }
+            let rem = ExactDecimal(lot.remainingQuantity)
+            if rem > .zero {
+                if let converted = try? UnitDimensions.convert(quantity: rem, from: lot.unit, to: targetUnit) {
+                    total = total + converted
+                }
+            }
+        }
+        return total
+    }
+
+    public static func consumeAvailable(
+        pantryLots: inout [PantryLot],
+        ingredientId: String,
+        quantity: ExactDecimal,
+        unit: String
+    ) -> ExactDecimal {
+        var needed = quantity
+        var consumed = ExactDecimal.zero
+
+        pantryLots.sort { lotSortKey(for: $0) < lotSortKey(for: $1) }
+
+        for i in 0..<pantryLots.count {
+            if needed <= .zero { break }
+            if pantryLots[i].ingredientId != ingredientId || !UnitDimensions.areCompatible(pantryLots[i].unit, unit) {
+                continue
+            }
+            let rem = ExactDecimal(pantryLots[i].remainingQuantity)
+            if rem <= .zero { continue }
+
+            guard let available = try? UnitDimensions.convert(quantity: rem, from: pantryLots[i].unit, to: unit) else {
+                continue
+            }
+
+            let take = available < needed ? available : needed
+            let takeInLotUnit = (take == available)
+                ? rem
+                : (try? UnitDimensions.convert(quantity: take, from: unit, to: pantryLots[i].unit)) ?? rem
+
+            pantryLots[i].remainingQuantity = (rem - takeInLotUnit).description
+            needed = needed - take
+            consumed = consumed + take
+        }
+
+        return consumed
+    }
+
+    public static func checkRecipeStock(
+        recipe: Recipe,
+        pantryLots: [PantryLot],
+        multiplier: String = "1"
+    ) -> (canCook: Bool, deficits: [String: DeficitItem]) {
+        var deficits: [String: DeficitItem] = [:]
+        let requirements = aggregateRequirements(recipe: recipe, multiplier: multiplier)
+
+        for req in requirements {
+            let available = getTotalIngredientStock(pantryLots: pantryLots, ingredientId: req.ingredientId, targetUnit: req.unit)
+            if available < req.quantity {
+                let missing = req.quantity - available
+                deficits[req.ingredientId] = DeficitItem(
+                    ingredientName: req.name,
+                    missingQuantity: missing.description,
+                    unit: req.unit
+                )
+            }
+        }
+
+        return (deficits.isEmpty, deficits)
+    }
+
+    public static func deductRecipeStockFifo(
+        pantryLots: [PantryLot],
+        recipe: Recipe,
+        mealPlanId: String,
+        idempotencyKey: String,
+        multiplier: String = "1"
+    ) throws -> (updatedLots: [PantryLot], movements: [StockMovement]) {
+        let (canCook, deficits) = checkRecipeStock(recipe: recipe, pantryLots: pantryLots, multiplier: multiplier)
+        if !canCook {
+            throw InsufficientStockError("Không đủ nguyên liệu để nấu món '\(recipe.name)'", deficits: deficits)
+        }
+
+        let requirements = aggregateRequirements(recipe: recipe, multiplier: multiplier)
+        var clonedLots = pantryLots
+        let reqIds = Set(requirements.map { $0.ingredientId })
+
+        var candidateIndices = clonedLots.indices.filter { reqIds.contains(clonedLots[$0].ingredientId) }
+        candidateIndices.sort { lotSortKey(for: clonedLots[$0]) < lotSortKey(for: clonedLots[$1]) }
+
+        var updatedLotsMap: [String: PantryLot] = [:]
+        var updatedLotKeys: [String] = []
+        var movements: [StockMovement] = []
+
+        for req in requirements {
+            var remainingNeeded = req.quantity
+
+            for idx in candidateIndices {
+                if remainingNeeded <= .zero { break }
+                let lot = clonedLots[idx]
+                if lot.ingredientId != req.ingredientId || !UnitDimensions.areCompatible(lot.unit, req.unit) {
+                    continue
+                }
+                let lotRem = ExactDecimal(lot.remainingQuantity)
+                if lotRem <= .zero { continue }
+
+                guard let availableInReq = try? UnitDimensions.convert(quantity: lotRem, from: lot.unit, to: req.unit) else {
+                    continue
+                }
+
+                let deductedLotUnit: ExactDecimal
+                if availableInReq <= remainingNeeded {
+                    deductedLotUnit = lotRem
+                    clonedLots[idx].remainingQuantity = "0"
+                    remainingNeeded = remainingNeeded - availableInReq
+                } else {
+                    let deductedReqUnit = remainingNeeded
+                    deductedLotUnit = (try? UnitDimensions.convert(quantity: deductedReqUnit, from: req.unit, to: lot.unit)) ?? lotRem
+                    clonedLots[idx].remainingQuantity = (lotRem - deductedLotUnit).description
+                    remainingNeeded = .zero
+                }
+
+                if updatedLotsMap[lot.id] == nil {
+                    updatedLotKeys.append(lot.id)
+                }
+                updatedLotsMap[lot.id] = clonedLots[idx]
+                let mov = StockMovement(
+                    id: UUID().uuidString,
+                    pantryLotId: lot.id,
+                    quantityDelta: "-\(deductedLotUnit.description)",
+                    reason: "meal_consumption",
+                    mealPlanId: mealPlanId,
+                    idempotencyKey: "\(idempotencyKey)_\(lot.id)"
+                )
+                movements.append(mov)
+            }
+        }
+
+        let updatedLots = updatedLotKeys.compactMap { updatedLotsMap[$0] }
+        return (updatedLots, movements)
+    }
+
+    public static func reverseStockMovements(
+        pantryLots: [PantryLot],
+        movements: [StockMovement],
+        mealPlanId: String
+    ) -> (restoredLots: [PantryLot], reversalMovements: [StockMovement]) {
+        var lotMap = Dictionary(uniqueKeysWithValues: pantryLots.map { ($0.id, $0) })
+        var restoredLotsMap: [String: PantryLot] = [:]
+        var restoredLotKeys: [String] = []
+        var reversalMovements: [StockMovement] = []
+
+        let alreadyReversed = Set(
+            movements
+                .filter { ($0.idempotencyKey ?? "").hasPrefix("reversal_") }
+                .compactMap { $0.idempotencyKey?.dropFirst("reversal_".count).description }
+        )
+
+        let targetMovements = movements.filter {
+            $0.mealPlanId == mealPlanId &&
+            $0.reason == "meal_consumption" &&
+            ExactDecimal($0.quantityDelta) < .zero &&
+            !alreadyReversed.contains($0.id)
+        }
+
+        for mov in targetMovements {
+            guard var lot = lotMap[mov.pantryLotId] else { continue }
+            let deltaAbs = ExactDecimal(mov.quantityDelta).abs()
+            let currentRem = ExactDecimal(lot.remainingQuantity)
+            let cap = ExactDecimal(lot.purchasedQuantity)
+            let restored = currentRem + deltaAbs
+            lot.remainingQuantity = (restored > cap ? cap : restored).description
+
+            lotMap[lot.id] = lot
+            if restoredLotsMap[lot.id] == nil {
+                restoredLotKeys.append(lot.id)
+            }
+            restoredLotsMap[lot.id] = lot
+
+            let revMov = StockMovement(
+                id: UUID().uuidString,
+                pantryLotId: lot.id,
+                quantityDelta: deltaAbs.description,
+                reason: "correction",
+                mealPlanId: mealPlanId,
+                idempotencyKey: "reversal_\(mov.id)"
+            )
+            reversalMovements.append(revMov)
+        }
+
+        let restoredLots = restoredLotKeys.compactMap { restoredLotsMap[$0] }
+        return (restoredLots, reversalMovements)
+    }
+
+    public static func generatePeriodPlan(
+        startDateStr: String,
+        endDateStr: String,
+        recipes: [Recipe],
+        currentPantryLots: [PantryLot],
+        allowLeftovers: Bool = true
+    ) throws -> (periodId: String, meals: [MealPlan], shoppingList: [ShoppingItem]) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+        guard let start = formatter.date(from: startDateStr),
+              let end = formatter.date(from: endDateStr) else {
+            throw IncompatibleUnitError("Định dạng ngày không hợp lệ (cần yyyy-MM-dd)")
+        }
+
+        let calendar = Calendar(identifier: .gregorian)
+        let diff = calendar.dateComponents([.day], from: start, to: end).day ?? -1
+        let diffDays = diff + 1
+
+        guard diffDays > 0 else {
+            throw IncompatibleUnitError("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.")
+        }
+
+        let periodId = UUID().uuidString
+        let recipesByCat: [String: [Recipe]] = [
+            "man": recipes.filter { $0.category == "man" },
+            "rau": recipes.filter { $0.category == "rau" },
+            "canh": recipes.filter { $0.category == "canh" }
+        ]
+
+        let simulatedLots = currentPantryLots
+        var cookedRecipeIds = Set<String>()
+        var availableLeftovers: [PlannedDish] = []
+        var mealPlans: [MealPlan] = []
+        var shoppingItemsMap: [String: ShoppingItem] = [:]
+
+        let periods = ["lunch", "dinner"]
+        var curr = start
+
+        for _ in 0..<diffDays {
+            let dateStr = formatter.string(from: curr)
+            // Lọc các lô còn hạn dùng tại ngày lập
+            var usableLots = simulatedLots.filter { lot in
+                guard let exp = lot.expiresAt else { return true }
+                return exp >= dateStr
+            }
+
+            for p in periods {
+                let planId = UUID().uuidString
+                var plannedDishes: [PlannedDish] = []
+
+                for cat in ["man", "rau", "canh"] {
+                    var dishChosen: PlannedDish?
+
+                    // 1. Dùng thức ăn thừa
+                    if allowLeftovers && !availableLeftovers.isEmpty {
+                        if let leftIdx = availableLeftovers.firstIndex(where: { $0.category == cat }) {
+                            let left = availableLeftovers.remove(at: leftIdx)
+                            dishChosen = PlannedDish(
+                                id: UUID().uuidString,
+                                mealPlanId: planId,
+                                recipeId: left.recipeId,
+                                recipeName: "\(left.recipeName) (Ăn lại)",
+                                category: cat,
+                                isLeftover: true,
+                                originalDishId: left.id,
+                                servings: left.servings
+                            )
+                        }
+                    }
+
+                    // 2. Chọn món mới
+                    if dishChosen == nil {
+                        let candidates = (recipesByCat[cat] ?? []).filter { !cookedRecipeIds.contains($0.id) }
+                        var fullyStocked: Recipe?
+                        for r in candidates {
+                            let (canCook, _) = checkRecipeStock(recipe: r, pantryLots: usableLots)
+                            if canCook {
+                                fullyStocked = r
+                                break
+                            }
+                        }
+
+                        var chosen: Recipe?
+                        if let stocked = fullyStocked {
+                            chosen = stocked
+                            for req in aggregateRequirements(recipe: stocked) {
+                                _ = consumeAvailable(pantryLots: &usableLots, ingredientId: req.ingredientId, quantity: req.quantity, unit: req.unit)
+                            }
+                        } else if let first = candidates.first {
+                            chosen = first
+                            let (_, deficits) = checkRecipeStock(recipe: first, pantryLots: usableLots)
+                            for req in aggregateRequirements(recipe: first) {
+                                _ = consumeAvailable(pantryLots: &usableLots, ingredientId: req.ingredientId, quantity: req.quantity, unit: req.unit)
+                            }
+                            for (ingId, def) in deficits {
+                                let dimStr = UnitDimensions.dimension(of: def.unit)?.rawValue ?? "unknown"
+                                let key = "\(ingId)|\(dimStr)"
+                                if var item = shoppingItemsMap[key] {
+                                    let missingDecimal = ExactDecimal(def.missingQuantity)
+                                    let converted = (try? UnitDimensions.convert(quantity: missingDecimal, from: def.unit, to: item.unit)) ?? missingDecimal
+                                    item.neededQuantity = (ExactDecimal(item.neededQuantity) + converted).description
+                                    if !item.dishNames.contains(first.name) {
+                                        item.dishNames.append(first.name)
+                                    }
+                                    shoppingItemsMap[key] = item
+                                } else {
+                                    shoppingItemsMap[key] = ShoppingItem(
+                                        ingredientId: ingId,
+                                        ingredientName: def.ingredientName,
+                                        neededQuantity: def.missingQuantity,
+                                        unit: def.unit,
+                                        dishNames: [first.name]
+                                    )
+                                }
+                            }
+                        }
+
+                        if let validChosen = chosen {
+                            let dish = PlannedDish(
+                                id: UUID().uuidString,
+                                mealPlanId: planId,
+                                recipeId: validChosen.id,
+                                recipeName: validChosen.name,
+                                category: cat,
+                                isLeftover: false,
+                                servings: validChosen.servings
+                            )
+                            dishChosen = dish
+                            cookedRecipeIds.insert(validChosen.id)
+
+                            if allowLeftovers && validChosen.servings >= 4 {
+                                availableLeftovers.append(dish)
+                            }
+                        }
+                    }
+
+                    if let d = dishChosen {
+                        plannedDishes.append(d)
+                    }
+                }
+
+                let plan = MealPlan(
+                    id: planId,
+                    plannedFor: dateStr,
+                    mealPeriod: p,
+                    periodId: periodId,
+                    dishes: plannedDishes
+                )
+                mealPlans.append(plan)
+            }
+
+            if let next = calendar.date(byAdding: .day, value: 1, to: curr) {
+                curr = next
+            }
+        }
+
+        return (periodId, mealPlans, Array(shoppingItemsMap.values))
+    }
+}

@@ -26,6 +26,12 @@ release-artifacts/
 android/.gradle/
 android/build/
 android/app/build/
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/local.properties
+mobile/ios/.build/
+mobile/ios/.swiftpm/
 ios/App/build*/
 ios/App/Pods/
 ios/App/Podfile.lock

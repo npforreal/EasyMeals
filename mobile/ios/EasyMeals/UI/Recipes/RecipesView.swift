@@ -1,0 +1,301 @@
+import SwiftUI
+
+public struct RecipesView: View {
+    @State private var storage = AppStorage.shared
+    @State private var searchText = ""
+    @State private var selectedCategory = "all"
+    @State private var canCookOnly = false
+
+    var filteredRecipes: [Recipe] {
+        storage.recipes.filter { r in
+            let matchesQuery = CatalogueLoader.matches(text: r.name, query: searchText)
+            let matchesCat = (selectedCategory == "all") || (r.category == selectedCategory)
+            if !matchesQuery || !matchesCat { return false }
+            if canCookOnly {
+                let (canCook, _) = EasyMealsEngine.checkRecipeStock(recipe: r, pantryLots: storage.pantryLots)
+                return canCook
+            }
+            return true
+        }
+    }
+
+    public var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Category Filter Chips
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        filterChip(title: "Tất cả", key: "all")
+                        filterChip(title: "Món mặn", key: "man")
+                        filterChip(title: "Món rau", key: "rau")
+                        filterChip(title: "Món canh", key: "canh")
+
+                        Button {
+                            canCookOnly.toggle()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: canCookOnly ? "checkmark.circle.fill" : "circle")
+                                Text("Nấu được ngay")
+                            }
+                            .font(.caption.bold())
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(canCookOnly ? AppColors.primary : AppColors.secondarySurface)
+                            .foregroundColor(canCookOnly ? .white : AppColors.textPrimary)
+                            .cornerRadius(12)
+                        }
+                    }
+                    .padding()
+                }
+
+                List(filteredRecipes) { recipe in
+                    NavigationLink(destination: RecipeDetailView(recipe: recipe)) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(recipe.name)
+                                    .font(.headline)
+                                HStack(spacing: 12) {
+                                    Text("\(recipe.servings) người ăn")
+                                        .font(.caption)
+                                        .foregroundColor(AppColors.textSecondary)
+                                    Text("\(recipe.ingredients.count) nguyên liệu")
+                                        .font(.caption)
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                            }
+                            Spacer()
+                            let (canCook, _) = EasyMealsEngine.checkRecipeStock(recipe: recipe, pantryLots: storage.pantryLots)
+                            if canCook {
+                                Label("Đủ đồ", systemImage: "sparkles")
+                                    .font(.caption2.bold())
+                                    .foregroundColor(.green)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.green.opacity(0.12))
+                                    .cornerRadius(8)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+                .searchable(text: $searchText, prompt: "Tìm theo tên món (ví dụ: kho quẹt, bò xào...)")
+            }
+            .navigationTitle("Công thức")
+        }
+    }
+
+    private func filterChip(title: String, key: String) -> some View {
+        Button {
+            selectedCategory = key
+        } label: {
+            Text(title)
+                .font(.caption.bold())
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(selectedCategory == key ? AppColors.primary : AppColors.secondarySurface)
+                .foregroundColor(selectedCategory == key ? .white : AppColors.textPrimary)
+                .cornerRadius(12)
+        }
+    }
+}
+
+public struct RecipeDetailView: View {
+    let recipe: Recipe
+    @State private var servings: Int
+    @State private var showingCookingMode = false
+    @State private var storage = AppStorage.shared
+
+    public init(recipe: Recipe) {
+        self.recipe = recipe
+        _servings = State(initialValue: recipe.servings)
+    }
+
+    var multiplier: String {
+        let mult = ExactDecimal(servings) / ExactDecimal(recipe.servings)
+        return mult.description
+    }
+
+    var scaledRequirements: [AggregatedRequirement] {
+        EasyMealsEngine.aggregateRequirements(recipe: recipe, multiplier: multiplier)
+    }
+
+    public var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // Header & Stepper
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(recipe.name)
+                        .font(.title2.bold())
+
+                    HStack {
+                        Text("Khẩu phần:")
+                            .font(.subheadline)
+                        Stepper("\(servings) người", value: $servings, in: 1...20)
+                            .font(.headline)
+                    }
+                    .padding()
+                    .background(AppColors.secondarySurface)
+                    .cornerRadius(12)
+                }
+
+                // Nguyên liệu
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Nguyên liệu")
+                        .font(.title3.bold())
+
+                    ForEach(scaledRequirements, id: \.ingredientId) { req in
+                        let stock = EasyMealsEngine.getTotalIngredientStock(pantryLots: storage.pantryLots, ingredientId: req.ingredientId, targetUnit: req.unit)
+                        let hasEnough = stock >= req.quantity
+
+                        HStack {
+                            Image(systemName: hasEnough ? "checkmark.circle.fill" : "circle")
+                                .foregroundColor(hasEnough ? .green : .secondary)
+
+                            Text(req.name)
+                                .font(.body)
+
+                            Spacer()
+
+                            Text("\(req.quantity.description) \(req.unit)")
+                                .font(.subheadline.bold())
+                                .foregroundColor(hasEnough ? AppColors.primary : AppColors.textPrimary)
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+                .cardStyle()
+
+                // Hướng dẫn
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Các bước nấu")
+                        .font(.title3.bold())
+
+                    ForEach(Array(recipe.instructions.enumerated()), id: \.offset) { idx, step in
+                        HStack(alignment: .top, spacing: 12) {
+                            Text("\(idx + 1)")
+                                .font(.headline)
+                                .foregroundColor(AppColors.primary)
+                                .frame(width: 24)
+                            Text(step)
+                                .font(.body)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+                .cardStyle()
+
+                // Nút vào chế độ nấu
+                Button {
+                    showingCookingMode = true
+                } label: {
+                    Label("Bật chế độ nấu (Giữ màn hình sáng)", systemImage: "flame.fill")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(AppColors.primary)
+                        .cornerRadius(14)
+                }
+            }
+            .padding()
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .fullScreenCover(isPresented: $showingCookingMode) {
+            CookingModeView(recipe: recipe)
+        }
+    }
+}
+
+public struct CookingModeView: View {
+    let recipe: Recipe
+    @Environment(\.dismiss) private var dismiss
+    @State private var currentStep = 0
+    @State private var storage = AppStorage.shared
+
+    public var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                // Thanh tiến trình
+                ProgressView(value: Double(currentStep + 1), total: Double(recipe.instructions.count))
+                    .tint(AppColors.primary)
+                    .padding(.horizontal)
+
+                Text("Bước \(currentStep + 1) / \(recipe.instructions.count)")
+                    .font(.caption.bold())
+                    .foregroundColor(AppColors.primary)
+
+                Spacer()
+
+                // Nội dung bước chữ lớn
+                if currentStep < recipe.instructions.count {
+                    Text(recipe.instructions[currentStep])
+                        .font(.system(size: 26, weight: .medium))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                        .minimumScaleFactor(0.7)
+                }
+
+                Spacer()
+
+                // Điều khiển Tiếp / Trước
+                HStack(spacing: 20) {
+                    Button {
+                        if currentStep > 0 { currentStep -= 1 }
+                    } label: {
+                        Text("Trước")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(AppColors.secondarySurface)
+                            .foregroundColor(AppColors.textPrimary)
+                            .cornerRadius(12)
+                    }
+                    .disabled(currentStep == 0)
+
+                    if currentStep < recipe.instructions.count - 1 {
+                        Button {
+                            currentStep += 1
+                        } label: {
+                            Text("Tiếp theo")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(AppColors.primary)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                        }
+                    } else {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Text("Nấu xong")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            }
+            .navigationTitle(recipe.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Thoát") { dismiss() }
+                }
+            }
+            .onAppear {
+                // Giữ màn hình sáng khi đang nấu
+                UIApplication.shared.isIdleTimerDisabled = true
+            }
+            .onDisappear {
+                // Khôi phục tắt màn hình tiết kiệm pin
+                UIApplication.shared.isIdleTimerDisabled = false
+            }
+        }
+    }
+}
