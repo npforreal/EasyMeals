@@ -30,6 +30,7 @@ ios/App/build*/
 ios/App/Pods/
 ios/App/Podfile.lock
 .translation_work/
+.review_work/
 
 # Tài liệu/ghi chú làm việc của agent: chỉ giữ ở máy local, không đưa lên GitHub
 AGENT.md

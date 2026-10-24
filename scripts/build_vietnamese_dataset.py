@@ -75,7 +75,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
         make_recipe(
             "vn_m_01", "Thịt kho tàu với trứng", "man", 4,
             [
-                "Thịt ba chỉ cạo sạch lông, rửa với nước muối loãng, cắt miếng vuông khoảng 3-4cm.",
+                "Thịt ba chỉ cạo sạch lông, rửa sạch để ráo, cắt miếng vuông khoảng 3-4cm.",
                 "Ướp thịt với hành tím băm, tỏi băm, 2 muỗng nước mắm, 1 muỗng đường, tiêu trong 30 phút.",
                 "Luộc chín 4 quả trứng vịt, bóc sạch vỏ.",
                 "Thắng nước màu đường caramen trên chảo, cho thịt vào đảo săn đều màu.",
@@ -97,7 +97,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
             "vn_m_02", "Sườn non rim mặn ngọt", "man", 4,
             [
                 "Sườn non chặt khúc vừa ăn, chần qua nước sôi 2 phút rồi rửa sạch, để ráo.",
-                "Ướp sườn với hành tỏi băm, 1 muỗng nước mắm, 1 muỗng hạt nêm, tiêu trong 15 phút.",
+                "Ướp sườn với hành tỏi băm, 1 muỗng nước mắm, tiêu trong 15 phút.",
                 "Chiên sườn trên chảo với ít dầu đến khi vàng xém các mặt.",
                 "Pha nước sốt: 2 muỗng nước mắm, 1.5 muỗng đường, 1 muỗng giấm, 3 muỗng nước lọc.",
                 "Đổ nước sốt vào chảo sườn, đậy nắp đun lửa nhỏ đến khi sốt keo lại bám đều quanh miếng sườn."
@@ -115,7 +115,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
         make_recipe(
             "vn_m_03", "Sườn xào chua ngọt", "man", 4,
             [
-                "Sườn non rửa sạch, chặt miếng 3cm, chần sơ nước sôi rồi ướp chút hạt nêm.",
+                "Sườn non rửa sạch, chặt miếng 3cm, chần sơ nước sôi rồi ướp.",
                 "Chiên sườn vàng đều hai mặt rồi vớt ra đĩa.",
                 "Cà chua bổ múi cau, ớt chuông và hành tây cắt miếng vuông.",
                 "Pha sốt chua ngọt: nước mắm, đường, giấm táo, tương cà.",
@@ -188,7 +188,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
         make_recipe(
             "vn_m_07", "Thịt băm viên sốt cà chua", "man", 4,
             [
-                "Thịt nạc vai xay nhuyễn trộn cùng hành tím băm, mộc nhĩ nấm mèo ngâm nở thái nhỏ, hạt nêm, tiêu.",
+                "Thịt nạc vai xay nhuyễn trộn cùng hành tím băm, mộc nhĩ nấm mèo ngâm nở thái nhỏ, tiêu.",
                 "Vo thịt thành các viên tròn đường kính 3cm.",
                 "Chiên sơ các viên thịt trong chảo dầu nóng cho săn mặt ngoài.",
                 "Cà chua băm nhuyễn xào nhừ với hành phi thành sốt sệt, nêm nước mắm và chút đường.",
@@ -247,7 +247,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
             "vn_m_10", "Thịt kho măng tươi", "man", 4,
             [
                 "Măng tươi luộc 2-3 lần với chút muối mở nắp để khử hết độc và đắng, xé miếng vừa ăn.",
-                "Thịt ba chỉ thái con chì, ướp hành tỏi băm, nước mắm, hạt nêm, đường trong 20 phút.",
+                "Thịt ba chỉ thái con chì, ướp hành tỏi băm, nước mắm, đường trong 20 phút.",
                 "Xào săn thịt trên chảo, sau đó trút măng vào xào chung cho ngấm gia vị.",
                 "Đổ thêm nước xâm xấp mặt thịt, kho lửa nhỏ khoảng 25 phút cho thịt mềm và măng giòn ngọt.",
                 "Rắc hành lá, tiêu xay rồi múc ra đĩa dùng với cơm nóng."
@@ -267,7 +267,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
                 "Thịt bò thăn thái lát mỏng ngang thớ, ướp tỏi băm, gừng, dầu hào, tiêu và chút dầu ăn.",
                 "Cần tây nhặt sạch cắt khúc 4cm, hành tây bổ múi cau, tỏi tây cắt xéo, cà chua bổ múi cau.",
                 "Làm nóng chảo với lửa lớn, phi thơm tỏi, cho thịt bò vào xào nhanh 1-2 phút vừa chín tới rồi trút ra đĩa.",
-                "Tiếp tục cho cần tây, tỏi tây, hành tây, cà chua vào xào trên lửa lớn, nêm chút hạt nêm.",
+                "Tiếp tục cho cần tây, tỏi tây, hành tây, cà chua vào xào trên lửa lớn, nêm.",
                 "Trút thịt bò trở lại đảo đều 30 giây, rắc tiêu thơm rồi tắt bếp."
             ],
             [
@@ -321,10 +321,10 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
             "vn_m_14", "Bò xào bông cải xanh", "man", 4,
             [
                 "Thịt bò thái lát mỏng, ướp tỏi băm, dầu hào, nước tương và tiêu.",
-                "Bông cải xanh (súp lơ) cắt miếng vừa ăn, ngâm nước muối loãng rồi chần sơ nước sôi.",
+                "Bông cải xanh (súp lơ) cắt miếng vừa ăn, ngâm rửa sạch rồi chần sơ nước sôi.",
                 "Cà rốt tỉa hoa thái lát mỏng.",
                 "Xào thịt bò trên lửa lớn vừa chín tới thì trút riêng ra đĩa.",
-                "Xào bông cải và cà rốt với chút dầu ăn và hạt nêm cho chín giòn, trút thịt bò vào đảo đều 1 phút."
+                "Xào bông cải và cà rốt với chút dầu ăn và cho chín giòn, trút thịt bò vào đảo đều 1 phút."
             ],
             [
                 make_ing("Thịt bò thăn", 300, "g"),
@@ -354,9 +354,9 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
         make_recipe(
             "vn_m_16", "Gà kho gừng", "man", 4,
             [
-                "Thịt gà ta chặt miếng vừa ăn, bóp muối và rượu trắng rửa sạch, để ráo.",
+                "Thịt gà ta chặt miếng vừa ăn, rửa thật sạch để ráo, để ráo.",
                 "Gừng cạo vỏ, 1 nửa băm nhỏ ướp gà, 1 nửa thái sợi dài.",
-                "Ướp gà với gừng băm, hành tím băm, 2 muỗng nước mắm, 1 muỗng hạt nêm, tiêu trong 20 phút.",
+                "Ướp gà với gừng băm, hành tím băm, 2 muỗng nước mắm, tiêu trong 20 phút.",
                 "Thắng nước màu đường trong chảo, phi thơm gừng thái sợi rồi trút gà vào xào săn trên lửa lớn.",
                 "Hạ nhỏ lửa, đậy vung kho khoảng 15 phút đến khi gà chín mềm, nước kho sánh thơm nức mùi gừng."
             ],
@@ -374,7 +374,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
             [
                 "Thịt gà chặt miếng vừa ăn, rửa sạch để ráo.",
                 "Sả băm nhỏ, ớt hiểm băm nhuyễn, tỏi băm thơm.",
-                "Ướp thịt gà với 1/2 lượng sả ớt, nước mắm, hạt nêm, bột nghệ tạo màu trong 20 phút.",
+                "Ướp thịt gà với 1/2 lượng sả ớt, nước mắm, bột nghệ tạo màu trong 20 phút.",
                 "Phi thơm lượng sả ớt còn lại trong chảo dầu nóng, trút gà vào xào săn vàng các mặt.",
                 "Thêm 50ml nước lọc, đậy nắp kho lửa nhỏ 15 phút đến khi cạn nước, miếng gà thấm đẫm vị sả ớt cay thơm."
             ],
@@ -390,8 +390,8 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
         make_recipe(
             "vn_m_18", "Gà chiên nước mắm giòn da", "man", 4,
             [
-                "Cánh gà hoặc đùi gà chặt miếng vừa ăn, khứa nhẹ mặt thịt, ướp chút hạt nêm và tỏi băm.",
-                "Áo gà qua một lớp mỏng bột bắp rồi chiên ngập dầu trên lửa vừa đến khi da gà vàng ươm giòn rụm.",
+                "Cánh gà hoặc đùi gà chặt miếng vừa ăn, khứa nhẹ mặt thịt, ướp và tỏi băm.",
+                "Áo gà qua một lớp mỏng bột mì rồi chiên ngập dầu trên lửa vừa đến khi da gà vàng ươm giòn rụm.",
                 "Pha sốt nước mắm: 2.5 muỗng nước mắm ngon, 2 muỗng đường, 1 muỗng tương ớt, 1 muỗng nước cốt chanh.",
                 "Phi thơm tỏi băm trên chảo, đổ sốt nước mắm vào đun sôi sủi bọt keo lại.",
                 "Trút gà chiên vào đảo thật nhanh tay 1 phút cho sốt bám đều quanh da gà rồi tắt bếp."
@@ -425,7 +425,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
         make_recipe(
             "vn_m_20", "Cánh gà sốt me chua ngọt", "man", 4,
             [
-                "Cánh gà rửa sạch, chặt 3 khúc, ướp chút hạt nêm, tiêu và hành tỏi băm 15 phút.",
+                "Cánh gà rửa sạch, chặt 3 khúc, ướp, tiêu và hành tỏi băm 15 phút.",
                 "Chiên cánh gà ngập dầu đến khi vàng giòn hai mặt.",
                 "Me chín ngâm nước ấm dầm nát, lọc lấy nước cốt me.",
                 "Pha nước sốt me: nước cốt me, đường, nước mắm, tương ớt khuấy tan.",
@@ -445,7 +445,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
             [
                 "Thịt vịt rửa sạch với rượu trắng và gừng đập dập để khử sạch mùi hôi đặc trưng, chặt miếng vừa ăn.",
                 "Gừng cạo vỏ, thái sợi hoặc thái lát dày đập dập.",
-                "Ướp vịt với gừng, hành tím băm, nước mắm, đường, tiêu và nước màu dừa trong 25 phút.",
+                "Ướp vịt với gừng, hành tím băm, nước mắm, đường, tiêu và nước màu đường trong 25 phút.",
                 "Bắc nồi lên bếp, phi thơm chút hành tím rồi cho thịt vịt vào xào săn trên lửa lớn.",
                 "Hạ nhỏ lửa đun liu riu khoảng 20 phút đến khi thịt vịt mềm rục, nước kho sánh thơm nức mũi."
             ],
@@ -463,7 +463,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
             [
                 "Vịt làm sạch, chặt miếng vừa ăn, chần qua nước gừng nóng khử mùi.",
                 "Sấu cạo vỏ rửa sạch, khía chữ thập quanh quả.",
-                "Ướp vịt với hành, tỏi, sả băm, hạt nêm, nước mắm trong 20 phút.",
+                "Ướp vịt với hành, tỏi, sả băm, nước mắm trong 20 phút.",
                 "Xào săn thịt vịt với sả hành, đổ nước dừa hoặc nước lọc ngập thịt và thả sấu vào nấu sôi.",
                 "Hạ lửa om 25 phút cho vịt mềm, dầm sấu lấy vị chua thanh dịu, thả rau rút và mùi tàu cắt khúc rồi tắt bếp."
             ],
@@ -480,7 +480,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
             "vn_m_23", "Cá lóc kho tộ", "man", 4,
             [
                 "Cá lóc làm sạch vảy, cắt khúc dày 2.5cm, rửa với muối và chanh cho hết nhớt.",
-                "Ướp cá với hành tím, ớt đập dập, 3 muỗng nước mắm ngon, 1.5 muỗng đường, nước màu dừa, tiêu 30 phút.",
+                "Ướp cá với hành tím, ớt đập dập, 3 muỗng nước mắm ngon, 1.5 muỗng đường, nước màu đường, tiêu 30 phút.",
                 "Xếp thịt ba chỉ lát mỏng hoặc mỡ dưới đáy tộ đất, đặt các khúc cá lên trên.",
                 "Bắc tộ lên bếp đun sôi trên lửa lớn cho cá săn chắc thịt.",
                 "Đổ thêm 50ml nước nóng hoặc nước dừa, hạ lửa thật nhỏ kho liu riu 35 phút đến khi nước cạn sánh kẹo.",
@@ -500,7 +500,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
         make_recipe(
             "vn_m_24", "Cá bống kho tiêu", "man", 4,
             [
-                "Cá bống làm sạch ruột, đánh sạch vảy, xóc với muối hạt rồi rửa sạch, để ráo nước.",
+                "Cá bống làm sạch ruột, đánh sạch vảy, rửa thật sạch để ráo, để ráo nước.",
                 "Ướp cá với nước mắm ngon, tiêu xay thật nhiều, đường, hành tỏi băm trong 30 phút.",
                 "Thắng nước màu đường trong nồi đất cho vàng cánh gián, cho cá bống vào đun sôi lăn tăn.",
                 "Không đảo cá để tránh vỡ nát, thỉnh thoảng lắc nhẹ nồi cho ngấm đều gia vị.",
@@ -522,7 +522,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
                 "Cá thu cắt khúc rửa sạch, thấm khô nước, ướp chút muối và tiêu 10 phút.",
                 "Chiên cá thu trên chảo dầu nóng đến khi hai mặt vàng nhẹ thì gắp ra đĩa.",
                 "Cà chua băm nhuyễn, phi thơm hành tím rồi trút cà chua vào xào nhuyễn thành sốt đỏ sệt.",
-                "Nêm nước mắm, đường, chút hạt nêm vừa vị mặn ngọt hài hòa.",
+                "Nêm nước mắm, đường vừa vị mặn ngọt hài hòa.",
                 "Thả cá thu vào chảo sốt cà, rưới sốt lên mặt cá, đun nhỏ lửa 10 phút cho cá ngấm đều, rắc hành ngò."
             ],
             [
@@ -559,7 +559,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
                 "Ướp cá với chút muối tiêu, chiên sơ hai mặt cho cá săn chắc không bị nát khi kho.",
                 "Cà chua bổ múi cau, hành tím thái lát mỏng.",
                 "Xếp một lớp cà chua dưới đáy nồi, đặt cá nục lên, phủ tiếp lớp cà chua bên trên.",
-                "Nêm nước mắm, đường, hạt nêm, đổ nước dừa hoặc nước sôi ngập cá, đun sôi rồi hạ nhỏ lửa kho 45 phút cho nhừ xương."
+                "Nêm nước mắm, đường, đổ nước dừa hoặc nước sôi ngập cá, đun sôi rồi hạ nhỏ lửa kho 45 phút cho nhừ xương."
             ],
             [
                 make_ing("Cá nục", 500, "g"),
@@ -574,7 +574,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
             "vn_m_28", "Tôm rim mặn ngọt", "man", 4,
             [
                 "Tôm sú hoặc tôm đất cắt bỏ đầu nhọn, râu và chân tôm, giữ lại vỏ để khi rim tôm giòn bóng.",
-                "Rửa sạch tôm, để ráo, ướp với hành tím băm, 1/2 muỗng hạt nêm, tiêu trong 10 phút.",
+                "Rửa sạch tôm, để ráo, ướp với hành tím băm, tiêu trong 10 phút.",
                 "Làm nóng chảo với dầu ăn, phi thơm hành tỏi băm rồi cho tôm vào đảo nhanh tay trên lửa lớn đến khi tôm đổi màu đỏ.",
                 "Pha nước sốt: 2 muỗng nước mắm, 1.5 muỗng đường, 1/2 muỗng tiêu.",
                 "Đổ sốt vào chảo tôm, đảo đều tay trên lửa vừa đến khi nước sốt keo lại bám óng ánh quanh thân tôm."
@@ -595,7 +595,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
                 "Bông cải xanh và trắng cắt miếng vừa ăn, chần nhanh qua nước sôi có chút muối rồi ngâm nước lạnh.",
                 "Cà rốt tỉa hoa thái lát.",
                 "Phi thơm tỏi trên chảo lửa lớn, cho tôm vào xào săn chín tới rồi múc ra đĩa.",
-                "Cho bông cải và cà rốt vào xào nhanh tay, nêm hạt nêm dầu hào, trút tôm vào đảo đều 1 phút rắc tiêu."
+                "Cho bông cải và cà rốt vào xào nhanh tay, nêm dầu hào, trút tôm vào đảo đều 1 phút rắc tiêu."
             ],
             [
                 make_ing("Tôm sú", 300, "g"),
@@ -708,7 +708,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
                 "Chiên đậu hũ trong chảo dầu ngập lửa vừa đến khi bốn mặt vàng ươm giòn rụm rồi vớt ra.",
                 "Sả băm nhỏ, ớt hiểm băm nhuyễn, tỏi băm thơm.",
                 "Chắt bớt dầu trong chảo, cho sả tỏi ớt vào phi thật vàng thơm giòn.",
-                "Nêm chút muối, đường, hạt nêm vào sả rồi trút đậu hũ chiên vào xóc đều tay 1 phút cho bám quanh miếng đậu."
+                "Nêm đường, o sả rồi trút đậu hũ chiên vào xóc đều tay 1 phút cho bám quanh miếng đậu."
             ],
             [
                 make_ing("Đậu hũ trắng", 4, "piece"),
@@ -723,7 +723,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
             [
                 "Thịt nạc vai băm nhỏ, nấm mèo và miến ngâm nở thái nhuyễn, hành tím băm nhỏ.",
                 "Đập 3 quả trứng vào tô thịt, chừa lại 1 lòng đỏ để quét mặt bánh.",
-                "Nêm nước mắm, tiêu, hạt nêm trộn đều các nguyên liệu cho sánh mịn.",
+                "Nêm nước mắm, tiêu trộn đều các nguyên liệu cho sánh mịn.",
                 "Đổ hỗn hợp vào khuôn hoặc tô sứ, cho vào xửng hấp lửa vừa trong 20 phút.",
                 "Đánh tan lòng đỏ trứng còn lại với chút dầu màu điều, quét đều lên mặt trứng rồi hấp tiếp 5 phút không đậy nắp cho mặt vàng đẹp."
             ],
@@ -741,7 +741,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
             "vn_m_37", "Lòng gà xào mướp hương", "man", 4,
             [
                 "Lòng mề gà bóp muối và chanh thật kỹ khử mùi hôi, rửa sạch, thái miếng vừa ăn.",
-                "Ướp lòng gà với hành tím băm, hạt nêm, nước mắm và tiêu trong 15 phút.",
+                "Ướp lòng gà với hành tím băm, nước mắm và tiêu trong 15 phút.",
                 "Mướp hương gọt vỏ, bổ đôi thái vát dày 1cm, hành lá cắt khúc.",
                 "Phi thơm hành tím trên chảo dầu nóng, trút lòng gà vào xào chín săn trên lửa lớn rồi múc ra đĩa.",
                 "Cho mướp vào xào nhanh trên lửa lớn vừa chín tới thì trút lòng gà vào đảo đều, rắc hành hoa tiêu xay."
@@ -760,7 +760,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
             [
                 "Cá ba sa cắt khúc, chà muối gừng khử mùi tanh, để ráo nước.",
                 "Củ nghệ tươi gọt vỏ giã nhuyễn lấy cả nước lẫn xác nghệ.",
-                "Ướp cá với nghệ giã, hành tím băm, nước mắm, đường, hạt nêm và ớt đập dập trong 25 phút.",
+                "Ướp cá với nghệ giã, hành tím băm, nước mắm, đường, ớt đập dập trong 25 phút.",
                 "Bắc nồi lên bếp xào săn cá trên lửa lớn để cá thấm màu vàng tươi của nghệ.",
                 "Thêm 80ml nước sôi, đậy vung hạ lửa nhỏ kho liu riu 25 phút cho cá ngấm vị đậm đà và nước sánh lại."
             ],
@@ -850,7 +850,7 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
             "vn_m_43", "Thịt bò né hoa thiên lý", "man", 4,
             [
                 "Thịt bò thăn thái lát mỏng ngang thớ, ướp tỏi băm, dầu hào, tiêu và chút bơ thơm.",
-                "Hoa thiên lý nhặt rửa sạch, ngâm nước muối loãng 5 phút rồi để ráo.",
+                "Hoa thiên lý nhặt rửa sạch, ngâm rửa sạch 5 phút rồi để ráo.",
                 "Làm nóng chảo gang với lửa lớn, cho 1 muỗng bơ lạt phi thơm tỏi băm.",
                 "Cho thịt bò vào đảo nhanh tay 1 phút trên lửa lớn vừa chín tái thì cho hoa thiên lý vào đảo chung.",
                 "Đảo đều trong 1 phút đến khi hoa thiên lý vừa chín tới giữ độ giòn ngọt, rắc tiêu rồi dọn ăn ngay trên chảo gang."
@@ -861,23 +861,6 @@ def get_vietnamese_man() -> list[dict[str, Any]]:
                 make_ing("Bơ", 25, "g"),
                 make_ing("Tỏi", 20, "g"),
                 make_ing("Tiêu", 5, "g"),
-            ]
-        ),
-        make_recipe(
-            "vn_m_44", "Sườn cừu áp chảo hương sả", "man", 4,
-            [
-                "Sườn chặt từng giẻ rửa sạch thấm khô nước.",
-                "Ướp sườn với sả băm nhuyễn, tỏi, nước mắm, mật ong, tiêu xay trong 30 phút.",
-                "Làm nóng chảo với chút dầu ăn, cho sườn vào áp chảo lửa vừa mỗi mặt 4-5 phút cho vàng xém đẹp.",
-                "Đậy nắp vung hạ nhỏ lửa thêm 3 phút để thịt bên trong chín mềm mọng nước.",
-                "Gắp ra đĩa dùng cùng cơm hoặc khoai tây chiên."
-            ],
-            [
-                make_ing("Sườn non heo", 500, "g"),
-                make_ing("Sả", 40, "g"),
-                make_ing("Tỏi", 20, "g"),
-                make_ing("Nước mắm", 25, "ml"),
-                make_ing("Đường", 15, "g"),
             ]
         ),
         make_recipe(
@@ -907,10 +890,10 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
             "vn_r_01", "Rau muống xào tỏi", "rau", 4,
             [
                 "Rau muống nhặt khúc non, bỏ bớt lá già, rửa sạch để ráo.",
-                "Đun sôi nồi nước có chút muối, chần nhanh rau muống 30 giây rồi vớt ra xả nước lạnh giữ màu xanh giòn.",
+                "Đun sôi nồi nước có chần nhanh rau muống 30 giây rồi vớt ra xả nước lạnh giữ màu xanh giòn.",
                 "Tỏi bóc vỏ đập dập, chia làm hai phần.",
                 "Làm nóng chảo với dầu ăn trên lửa lớn, phi thơm một nửa tỏi.",
-                "Trút rau muống vào đảo nhanh tay, nêm nước mắm hạt nêm, cho nốt phần tỏi còn lại vào đảo đều 1 phút rồi tắt bếp."
+                "Trút rau muống vào đảo nhanh tay, nêm nước mắm, cho nốt phần tỏi còn lại vào đảo đều 1 phút rồi tắt bếp."
             ],
             [
                 make_ing("Rau muống", 500, "g"),
@@ -926,7 +909,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
                 "Tỏi bóc vỏ đập dập thơm.",
                 "Làm nóng chảo với dầu ăn, phi thơm tỏi vàng óng trên lửa lớn.",
                 "Trút phần cọng cải vào xào trước 1 phút, sau đó cho phần lá vào xào chung.",
-                "Nêm hạt nêm dầu hào vừa ăn, đảo nhanh tay thêm 1 phút cho rau chín giòn rồi trút ra đĩa."
+                "Nêm dầu hào vừa ăn, đảo nhanh tay thêm 1 phút cho rau chín giòn rồi trút ra đĩa."
             ],
             [
                 make_ing("Cải ngọt", 450, "g"),
@@ -940,7 +923,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
                 "Bắp cải rửa sạch, thái sợi dày khoảng 1cm.",
                 "Cà chua rửa sạch bổ múi cau, hành lá cắt khúc.",
                 "Phi thơm hành tím băm trên chảo dầu nóng, cho cà chua vào đảo nhuyễn tạo màu.",
-                "Trút bắp cải vào xào trên lửa lớn, nêm chút nước mắm và hạt nêm.",
+                "Trút bắp cải vào xào trên lửa lớn, nêm chút nước mắm và .",
                 "Xào đến khi bắp cải chín mềm ngọt nhưng vẫn giữ được độ tươi giòn, rắc hành lá tiêu xay."
             ],
             [
@@ -957,7 +940,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
             [
                 "Su su gọt vỏ dưới vòi nước chảy để không dính mủ, bổ đôi bỏ hạt rồi thái sợi mỏng.",
                 "Phi thơm hành tím băm với dầu ăn trên chảo nóng.",
-                "Trút su su vào xào trên lửa lớn, nêm chút hạt nêm cho vừa miệng.",
+                "Trút su su vào xào trên lửa lớn, nêm cho vừa miệng.",
                 "Khi su su vừa chín tới, đập 2 quả trứng gà vào chảo, đảo nhanh tay cho trứng bám đều quanh sợi su su.",
                 "Rắc hành lá cắt nhỏ và tiêu xay thơm nồng rồi tắt bếp."
             ],
@@ -974,7 +957,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
             "vn_r_05", "Đậu cô ve xào thịt băm", "rau", 4,
             [
                 "Đậu cô ve tước xơ hai bên mép, rửa sạch, cắt khúc xéo vừa ăn.",
-                "Thịt nạc băm ướp chút hạt nêm và tiêu.",
+                "Thịt nạc băm ướp và tiêu.",
                 "Phi thơm tỏi trên chảo, cho thịt băm vào xào săn chín tới rồi múc riêng ra đĩa.",
                 "Tiếp tục cho đậu cô ve vào chảo xào với lửa lớn, thêm chút nước lọc để đậu nhanh chín mềm ngọt.",
                 "Trút thịt băm trở lại chảo đảo đều cùng đậu cô ve trong 1 phút, rắc tiêu thơm."
@@ -990,10 +973,10 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
         make_recipe(
             "vn_r_06", "Bông cải trắng xào tỏi", "rau", 4,
             [
-                "Bông cải trắng cắt thành các nhánh nhỏ vừa ăn, ngâm nước muối loãng 5 phút rồi rửa sạch.",
+                "Bông cải trắng cắt thành các nhánh nhỏ vừa ăn, ngâm rửa sạch 5 phút rồi rửa sạch.",
                 "Chần nhanh qua nước sôi 1 phút rồi vớt ra để ráo.",
                 "Làm nóng chảo với dầu ăn, phi thơm tỏi đập dập.",
-                "Cho bông cải vào xào nhanh tay trên lửa lớn, nêm dầu hào, hạt nêm.",
+                "Cho bông cải vào xào nhanh tay trên lửa lớn, nêm dầu hào.",
                 "Rắc hành lá thái nhỏ và tiêu xay thơm rồi trút ra đĩa dùng nóng."
             ],
             [
@@ -1044,7 +1027,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
                 "Chần cọng bí qua nước sôi 1 phút rồi thả lá bí vào đảo nhanh vớt ra ngay.",
                 "Làm nóng chảo với nhiều dầu ăn, phi thơm thật nhiều tỏi đập dập.",
                 "Trút ngọn bí vào xào nhanh tay trên lửa thật lớn để rau xanh giòn.",
-                "Nêm nước mắm ngon và chút hạt nêm, đảo đều 1 phút cho ngấm tỏi rồi trút ra đĩa."
+                "Nêm nước mắm ngon và, đảo đều 1 phút cho ngấm tỏi rồi trút ra đĩa."
             ],
             [
                 make_ing("Rau bí", 500, "g"),
@@ -1077,7 +1060,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
                 "Cải thìa cắt đôi dọc theo thân, rửa sạch bùn đất trong các bẹ lá.",
                 "Chần cải thìa trong nước sôi có chút muối và vài giọt dầu ăn 1 phút để cải bóng xanh giòn.",
                 "Vớt cải xếp ngay ngắn ra đĩa tròn.",
-                "Pha nước sốt: 2 muỗng dầu hào, 1 muỗng nước tương, 1 muỗng đường, 3 muỗng nước lọc, chút bột bắp.",
+                "Pha nước sốt: 2 muỗng dầu hào, 1 muỗng nước tương, 1 muỗng đường, 3 muỗng nước lọc, chút bột mì.",
                 "Phi thơm tỏi băm, đổ sốt vào đun sôi sánh lại rồi rưới đều lên đĩa cải thìa luộc."
             ],
             [
@@ -1113,7 +1096,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
                 "Đậu hũ trắng cắt miếng vuông 3cm, chiên vàng đều các mặt trên chảo dầu nóng.",
                 "Cà chua rửa sạch, băm nhuyễn hoặc thái múi cau.",
                 "Phi thơm hành tím băm, trút cà chua vào xào nhừ thành nước sốt sệt đỏ au.",
-                "Nêm nước mắm, đường, chút hạt nêm cho vừa miệng.",
+                "Nêm nước mắm, đường cho vừa miệng.",
                 "Cho đậu hũ chiên vào sốt cà chua, đun nhỏ lửa 5-7 phút cho ngấm gia vị, rắc hành lá cắt nhỏ."
             ],
             [
@@ -1147,7 +1130,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
             "vn_r_15", "Bắp cải luộc dầm trứng nước mắm", "rau", 4,
             [
                 "Bắp cải rửa sạch, cắt miếng tam giác to bản vừa ăn.",
-                "Đun sôi nồi nước với vài hạt muối và một nhánh gừng đập dập.",
+                "Đun sôi nồi nước với một nhánh gừng đập dập.",
                 "Thả bắp cải vào luộc trên lửa lớn khoảng 4-5 phút đến khi bắp cải chín trong mềm ngọt.",
                 "Vớt bắp cải ra đĩa sâu lòng, giữ lại nước luộc làm canh thanh mát.",
                 "Luộc chín lòng đào 2 quả trứng vịt (hoặc trứng gà), dầm nát vào chén nước mắm nhĩ ngon nhiều ớt để chấm rau."
@@ -1163,7 +1146,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
         make_recipe(
             "vn_r_16", "Rau muống luộc chấm tương bần", "rau", 4,
             [
-                "Rau muống nhặt khúc non, rửa sạch ngâm nước muối loãng.",
+                "Rau muống nhặt khúc non, rửa sạch ngâm rửa sạch.",
                 "Đun nồi nước thật sôi trên lửa lớn, thả rau muống vào dìm ngập nước.",
                 "Luộc khoảng 3 phút cho cọng rau vừa chín tới nhưng vẫn giữ độ xanh giòn.",
                 "Vớt rau ra đĩa, vắt chút chanh hoặc thả vài quả sấu vào nồi nước luộc làm canh.",
@@ -1246,7 +1229,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
             [
                 "Tai heo bóp muối chanh luộc chín giòn, ngâm nước đá rồi thái lát thật mỏng.",
                 "Hoa chuối thái mỏng ngâm ngay vào âu nước có pha nước cốt chanh và muối để không bị thâm đen.",
-                "Cà rốt bào sợi, giá đỗ rửa sạch, rau kinh giới húng quế thái nhỏ.",
+                "Cà rốt bào sợi, giá đỗ rửa sạch, rau rau thơm húng quế thái nhỏ.",
                 "Pha nước mắm chua ngọt tỏi ớt đậm đà.",
                 "Vắt ráo hoa chuối, trộn đều cùng tai heo giòn sần sật, các loại rau thơm và nước sốt nộm, rắc lạc rang."
             ],
@@ -1280,13 +1263,13 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
             ]
         ),
         make_recipe(
-            "vn_r_23", "Nộm dưa chuột thịt bò", "rau", 4,
+            "vn_r_23", "Nộm dưa leo thịt bò", "rau", 4,
             [
                 "Thịt bò thăn thái lát mỏng, xào nhanh trên lửa lớn vừa chín tới với chút tỏi.",
                 "Dưa chuột rửa sạch bỏ bớt ruột, thái lát xéo ngâm chút muối đường 10 phút rồi vắt nhẹ ráo nước.",
-                "Cà rốt bào sợi, rau kinh giới mùi tàu thái khúc nhỏ.",
-                "Trộn dưa chuột, cà rốt với thịt bò xào, rưới nước mắm chua ngọt tỏi ớt trộn đều.",
-                "Rắc đậu phộng rang giã dập lên trên đĩa nộm dòn mát."
+                "Cà rốt bào sợi, rau rau thơm mùi tàu thái khúc nhỏ.",
+                "Trộn dưa leo, cà rốt với thịt bò xào, rưới nước mắm chua ngọt tỏi ớt trộn đều.",
+                "Rắc đậu phộng rang giã dập lên trên đĩa nộm giòn mát."
             ],
             [
                 make_ing("Dưa leo", 350, "g"),
@@ -1304,7 +1287,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
                 "Chần nhanh rau lang qua nước sôi 30 giây để giữ màu xanh mướt.",
                 "Tỏi bóc vỏ đập dập thơm.",
                 "Làm nóng chảo với nhiều dầu ăn, phi thơm tỏi trên lửa lớn.",
-                "Cho rau lang vào đảo nhanh tay, nêm chút hạt nêm và nước mắm ngon, xào 2 phút rau vừa chín tới rồi trút ra đĩa."
+                "Cho rau lang vào đảo nhanh tay, nêm và nước mắm ngon, xào 2 phút rau vừa chín tới rồi trút ra đĩa."
             ],
             [
                 make_ing("Rau khoai lang", 450, "g"),
@@ -1319,7 +1302,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
                 "Bông bí tước sạch phần xơ ở cuống, ngắt bỏ nhụy đắng bên trong hoa, rửa nhẹ nhàng để không dập nát.",
                 "Phi thơm thật nhiều tỏi đập dập với dầu ăn trên chảo lửa lớn.",
                 "Trút bông bí vào đảo nhanh tay trên lửa lớn 2 phút.",
-                "Nêm nước mắm hạt nêm vừa ăn, khi cánh hoa vừa mềm chín giòn ngọt thì tắt bếp dọn ra đĩa."
+                "Nêm nước mắm vừa ăn, khi cánh hoa vừa mềm chín giòn ngọt thì tắt bếp dọn ra đĩa."
             ],
             [
                 make_ing("Bông bí", 350, "g"),
@@ -1333,7 +1316,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
             [
                 "Khổ qua (mướp đắng) rửa sạch, bổ đôi nạo sạch ruột trắng, thái lát mỏng xéo.",
                 "Ngâm khổ qua vào âu nước đá lạnh 10 phút để giảm vị đắng và tăng độ giòn.",
-                "Đập 3 quả trứng gà vào chén, nêm chút hạt nêm tiêu đánh tan.",
+                "Đập 3 quả trứng gà vào chén, nêm tiêu đánh tan.",
                 "Phi thơm hành tím trên chảo dầu nóng, cho khổ qua vào xào trên lửa lớn 2 phút vừa chín tới.",
                 "Rưới trứng vào chảo, đảo đều tay nhẹ nhàng đến khi trứng chín bám quanh miếng khổ qua rồi tắt bếp."
             ],
@@ -1352,7 +1335,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
                 "Măng củ tươi thái con chì hoặc xé sợi, luộc 2 lần nước sôi mở nắp để thải hết độc đắng, rửa sạch để ráo.",
                 "Tỏi bóc vỏ băm nhỏ, ớt hiểm thái lát mỏng, hành lá cắt khúc.",
                 "Phi thơm tỏi ớt trên chảo dầu nóng dậy mùi thơm cay nồng.",
-                "Trút măng vào xào đều trên lửa lớn, nêm nước mắm, hạt nêm và chút tiêu.",
+                "Trút măng vào xào đều trên lửa lớn, nêm nước mắm và chút tiêu.",
                 "Đảo đều khoảng 4-5 phút cho măng ngấm đượm gia vị vàng giòn, rắc hành lá rồi tắt bếp."
             ],
             [
@@ -1365,9 +1348,9 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
             ]
         ),
         make_recipe(
-            "vn_r_28", "Rau dền luộc chấm mắm cá", "rau", 4,
+            "vn_r_28", "Rau dền luộc chấm nước mắm", "rau", 4,
             [
-                "Rau dền đỏ và dền cơm nhặt lấy đọt non, rửa sạch ngâm nước muối loãng 5 phút.",
+                "Rau dền đỏ và dền cơm nhặt lấy đọt non, rửa sạch ngâm rửa sạch 5 phút.",
                 "Đun sôi nồi nước lớn với 1/2 muỗng muối hạt trên lửa lớn.",
                 "Thả rau dền vào dìm ngập nước, luộc khoảng 3 phút cho rau mềm ngọt vừa tới.",
                 "Vớt rau ra đĩa sâu lòng, phần nước luộc màu hồng tím ngọt mát để riêng làm canh.",
@@ -1384,7 +1367,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
             [
                 "Su hào và cà rốt gọt vỏ, bào sợi mỏng dài.",
                 "Trộn sợi su hào cà rốt với 1 muỗng muối hạt trong 10 phút, sau đó vắt nhẹ bỏ bớt nước để giữ độ giòn.",
-                "Rau mùi, kinh giới rửa sạch thái nhỏ.",
+                "Rau mùi, rau thơm rửa sạch thái nhỏ.",
                 "Pha nước trộn: 2 muỗng giấm, 2 muỗng đường, 1.5 muỗng nước mắm ngon, tỏi ớt băm nhuyễn.",
                 "Trộn đều su hào cà rốt với nước sốt chua ngọt và rau thơm, rắc đậu phộng rang giã dập lên trên."
             ],
@@ -1404,7 +1387,7 @@ def get_vietnamese_rau() -> list[dict[str, Any]]:
                 "Bí đao gọt vỏ, bổ đôi bỏ phần ruột xốp bên trong, thái lát mỏng vừa ăn.",
                 "Tỏi bóc vỏ đập dập thơm.",
                 "Làm nóng chảo với dầu ăn, phi thơm tỏi đập dập trên lửa vừa.",
-                "Cho bí đao vào xào trên lửa lớn, nêm chút hạt nêm nước mắm đảo đều tay.",
+                "Cho bí đao vào xào trên lửa lớn, nêm nước mắm đảo đều tay.",
                 "Xào khoảng 3 phút đến khi miếng bí vừa trong chín giòn ngọt thanh, rắc hành lá tiêu xay rồi tắt bếp."
             ],
             [
@@ -1488,7 +1471,7 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
                 "Dứa (thơm) gọt vỏ bỏ mắt, thái lát mỏng hình tam giác, cà chua bổ múi cau.",
                 "Hầm sườn với 1 lít nước trên lửa vừa trong 25 phút cho thịt mềm ngọt nước.",
                 "Phi thơm hành tím trên chảo xào cà chua và dứa lấy màu đẹp rồi trút vào nồi sườn.",
-                "Nêm nước mắm hạt nêm đường vừa vị chua ngọt thanh mát, đun sôi 3 phút rắc hành lá thì là."
+                "Nêm nước mắm, đường vừa vị chua ngọt thanh mát, đun sôi 3 phút rắc hành lá thì là."
             ],
             [
                 make_ing("Sườn non heo", 400, "g"),
@@ -1540,10 +1523,10 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
             "vn_c_07", "Canh bí đỏ thịt băm", "canh", 4,
             [
                 "Bí đỏ gọt vỏ, nạo bỏ ruột hạt, rửa sạch, cắt miếng vuông quân cờ vừa ăn.",
-                "Thịt nạc băm ướp chút hạt nêm, tiêu và hành tím băm nhỏ 10 phút.",
+                "Thịt nạc băm ướp, tiêu và hành tím băm nhỏ 10 phút.",
                 "Phi thơm hành tím trong nồi với chút dầu ăn, trút thịt băm vào xào săn chín tới.",
                 "Đổ 1 lít nước vào đun sôi, thả bí đỏ vào nấu trên lửa vừa khoảng 12 phút cho bí chín mềm bùi.",
-                "Nêm nước mắm hạt nêm vừa vị ngọt dịu, rắc rau ngò ôm (rau ngổ) và mùi tàu thái nhỏ rồi tắt bếp."
+                "Nêm nước mắm vừa vị ngọt dịu, rắc rau ngò ôm (rau ngổ) và mùi tàu thái nhỏ rồi tắt bếp."
             ],
             [
                 make_ing("Bí đỏ", 400, "g"),
@@ -1561,7 +1544,7 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
                 "Nhồi phần thịt băm vào giữa từng khúc mướp đắng, miết phẳng hai đầu.",
                 "Đun sôi 1.2 lít nước hầm xương hoặc nước lọc có nêm chút muối hạt.",
                 "Thả từng khúc mướp đắng nhồi thịt vào nấu nhỏ lửa mở nắp trong 20 phút cho mướp đắng chín mềm trong và nước canh ngọt thanh.",
-                "Nêm nước mắm hạt nêm vừa ăn, rắc hành lá mùi tàu thái nhỏ."
+                "Nêm nước mắm vừa ăn, rắc hành lá mùi tàu thái nhỏ."
             ],
             [
                 make_ing("Khổ qua", 500, "g"),
@@ -1580,7 +1563,7 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
                 "Thịt nạc vai xay nhuyễn trộn cùng nấm mèo, cà rốt băm nhỏ, hành tím, nước mắm, tiêu.",
                 "Trải lá bắp cải ra, cho nhân thịt vào giữa rồi cuộn tròn lại như cuốn nem, buộc bằng cọng hành lá chần mềm.",
                 "Đun sôi 1 lít nước dùng trên nồi, thả từng cuộn bắp cải vào nấu lửa vừa trong 15 phút.",
-                "Nước canh ngọt thanh từ bắp cải và thịt băm, nêm hạt nêm nước mắm vừa miệng, rắc tiêu hành hoa."
+                "Nước canh ngọt thanh từ bắp cải và thịt băm, nêm nước mắm vừa miệng, rắc tiêu hành hoa."
             ],
             [
                 make_ing("Bắp cải", 400, "g"),
@@ -1598,7 +1581,7 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
                 "Sườn non chặt khúc chần nước sôi rửa sạch bọt bẩn.",
                 "Cho sườn vào nồi cùng 1.2 lít nước đun sôi vớt sạch bọt, hầm nhỏ lửa 20 phút cho ra nước ngọt.",
                 "Thả đu đủ vào hầm chung thêm 15 phút đến khi đu đủ chín mềm bùi ngọt lịm.",
-                "Nêm nước mắm hạt nêm vừa ăn, rắc hành ngò thái nhỏ và chút tiêu xay."
+                "Nêm nước mắm vừa ăn, rắc hành ngò thái nhỏ và chút tiêu xay."
             ],
             [
                 make_ing("Đu đủ", 450, "g"),
@@ -1631,8 +1614,8 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
         make_recipe(
             "vn_c_12", "Canh rau ngót nấu thịt băm", "canh", 4,
             [
-                "Rau ngót tuốt lá, rửa sạch ngâm nước muối loãng, dùng tay vò hơi dập lá để rau mềm ngọt nước khi nấu.",
-                "Thịt nạc vai băm nhỏ ướp chút hạt nêm và hành tím băm.",
+                "Rau ngót tuốt lá, rửa sạch ngâm rửa sạch, dùng tay vò hơi dập lá để rau mềm ngọt nước khi nấu.",
+                "Thịt nạc vai băm nhỏ ướp và hành tím băm.",
                 "Phi thơm hành tím với 1 muỗng dầu ăn, cho thịt băm vào xào săn chín.",
                 "Cho rau ngót vào xào cùng thịt khoảng 1-2 phút cho ngấm gia vị.",
                 "Đổ 1 lít nước lọc vào đun sôi bùng lên trong 3-4 phút cho rau ngót chín mềm nước ngọt lịm, nêm nước mắm vừa ăn rồi tắt bếp."
@@ -1649,7 +1632,7 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
             "vn_c_13", "Canh cải cúc nấu thịt băm", "canh", 4,
             [
                 "Rau cải cúc (tần ô) nhặt gốc rửa sạch, cắt đôi hoặc để nguyên ngọn.",
-                "Thịt nạc băm ướp chút hạt nêm và hành tím băm nhỏ.",
+                "Thịt nạc băm ướp và hành tím băm nhỏ.",
                 "Phi thơm hành tím, xào săn thịt băm rồi đổ 1 lít nước vào đun sôi bùng.",
                 "Thả rau cải cúc vào dìm ngập nước sôi, nấu nhanh trong 1-2 phút vì cải cúc rất nhanh chín.",
                 "Nêm nước mắm ngon và tiêu thơm rồi tắt bếp ngay để cải cúc giữ vị ngăm ngọt thơm nồng."
@@ -1669,8 +1652,8 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
                 "Rong biển khô ngâm nước lạnh 10 phút cho nở to, rửa sạch bóp nhẹ ráo nước, cắt khúc vừa ăn.",
                 "Đậu hũ non cắt khối vuông nhỏ 2cm.",
                 "Thịt băm xào săn với chút dầu ăn và gừng băm khử mùi tanh.",
-                "Đổ 1 lít nước vào đun sôi, thả đậu hũ non và rong biển vào nấu sôi lăn tăn trong 5 phút.",
-                "Nêm hạt nêm nước tương ngon vừa ăn, rắc hành hoa và vài giọt dầu mè thơm ngát."
+                "Đổ 1 lít nước vào đun sôi, thả đậu hũ trắng và rong biển vào nấu sôi lăn tăn trong 5 phút.",
+                "Nêm nước tương ngon vừa ăn, rắc hành hoa và vài giọt dầu mè thơm ngát."
             ],
             [
                 make_ing("Rong biển", 30, "g"),
@@ -1684,10 +1667,10 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
         make_recipe(
             "vn_c_15", "Canh hoa thiên lý thịt bò", "canh", 4,
             [
-                "Hoa thiên lý nhặt cuống sâu úa, ngâm nước muối loãng 5 phút rồi rửa sạch để ráo.",
-                "Thịt bò thăn thái lát mỏng ướp tỏi băm, hạt nêm, tiêu và chút dầu ăn.",
+                "Hoa thiên lý nhặt cuống sâu úa, ngâm rửa sạch 5 phút rồi rửa sạch để ráo.",
+                "Thịt bò thăn thái lát mỏng ướp tỏi băm, tiêu và chút dầu ăn.",
                 "Phi thơm tỏi trong nồi, xào thịt bò trên lửa lớn vừa chín tái thì trút riêng ra đĩa.",
-                "Đổ 1 lít nước vào nồi đun sôi bùng, nêm nước mắm hạt nêm vừa ăn.",
+                "Đổ 1 lít nước vào nồi đun sôi bùng, nêm nước mắm vừa ăn.",
                 "Thả hoa thiên lý vào nấu sôi 1 phút cho vừa chín tới giữ độ giòn ngọt, trút thịt bò vào đảo đều rồi tắt bếp ngay."
             ],
             [
@@ -1706,7 +1689,7 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
                 "Đậu hũ trắng cắt miếng vuông dày 1.5cm.",
                 "Xào thịt ba chỉ trên nồi cho xém cạnh tiết bớt mỡ, cho tỏi băm và kim chi vào đảo đều 3 phút.",
                 "Đổ 900ml nước lọc và nước kim chi vào đun sôi, hạ nhỏ lửa đun 10 phút cho vị chua cay ngấm đều.",
-                "Thả đậu hũ non vào nấu sôi thêm 3 phút, nêm chút hạt nêm đường, rắc hành lá cắt khúc."
+                "Thả đậu hũ trắng vào nấu sôi thêm 3 phút, nêm đường, rắc hành lá cắt khúc."
             ],
             [
                 make_ing("Kim chi", 300, "g"),
@@ -1724,7 +1707,7 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
                 "Khoai tây, cà rốt gọt vỏ cắt khối vuông quân cờ vừa ăn.",
                 "Cho sườn vào nồi hầm với 1.2 lít nước trên lửa vừa trong 25 phút vớt sạch bọt cho nước trong.",
                 "Cho cà rốt và khoai tây vào hầm thêm 15 phút đến khi củ quả chín mềm bở bùi ngọt lịm.",
-                "Nêm nước mắm hạt nêm vừa miệng, rắc hành lá mùi tàu thái nhỏ và tiêu xay thơm nồng."
+                "Nêm nước mắm vừa miệng, rắc hành lá mùi tàu thái nhỏ và tiêu xay thơm nồng."
             ],
             [
                 make_ing("Sườn non heo", 450, "g"),
@@ -1758,7 +1741,7 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
             [
                 "Cá thác lác nạo quết thật dai dẻo với hành tím băm, tiêu xay, chút muối và thì là.",
                 "Khổ qua rửa sạch bỏ ruột bào lát mỏng xéo.",
-                "Đun sôi 1 lít nước lọc hoặc nước hầm xương với vài hạt muối.",
+                "Đun sôi 1 lít nước lọc hoặc nước hầm xương với .",
                 "Dùng thìa múc từng viên chả cá thả vào nồi nước sôi đun 5 phút cho chả cá chín nổi lên mặt.",
                 "Thả khổ qua vào nấu sôi lại trong 1 phút để khổ qua chín tới giòn ngọt không đắng, nêm nước mắm rắc hành thì là."
             ],
@@ -1796,7 +1779,7 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
                 "Tôm đồng hoặc tôm sú bóc vỏ băm nhỏ, ướp chút hành tím nước mắm tiêu.",
                 "Phi thơm hành tím trên nồi dầu nóng, xào săn tôm thơm lừng.",
                 "Đổ 1 lít nước vào đun sôi, thả bầu băm vào đun lửa lớn khoảng 2 phút đến khi miếng bầu trong suốt.",
-                "Nêm nước mắm vừa miệng, rắc nhiều hành hoa và mùi ngò thơm nức mũi."
+                "Nêm nước mắm vừa miệng, rắc nhiều hành hoa và hành lá thơm nức mũi."
             ],
             [
                 make_ing("Bầu", 500, "g"),
@@ -1827,11 +1810,11 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
         make_recipe(
             "vn_c_23", "Canh rau má nấu thịt nạc", "canh", 4,
             [
-                "Rau má nhặt bỏ lá vàng rễ sâu, rửa sạch nhiều lần, ngâm nước muối loãng rồi để ráo.",
+                "Rau má nhặt bỏ lá vàng rễ sâu, rửa sạch nhiều lần, ngâm rửa sạch rồi để ráo.",
                 "Thịt heo nạc băm nhỏ ướp chút hành tím, nước mắm, tiêu.",
                 "Phi thơm hành tím trong nồi xào chín săn thịt băm.",
                 "Đổ 1 lít nước vào đun sôi bùng, thả rau má vào dìm ngập nước nấu trong 2 phút.",
-                "Nêm nước mắm hạt nêm vừa vị thanh mát giải nhiệt, tắt bếp dọn ăn nóng hoặc nguội."
+                "Nêm nước mắm vừa vị thanh mát giải nhiệt, tắt bếp dọn ăn nóng hoặc nguội."
             ],
             [
                 make_ing("Rau má", 350, "g"),
@@ -1865,7 +1848,7 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
                 "Tôm sú bóc vỏ băm nhỏ ướp chút muối tiêu hành tím.",
                 "Xào săn tôm trên nồi với 1 muỗng dầu ăn.",
                 "Đổ 1 lít nước vào đun sôi bùng, thả rau dền vào nấu lửa vừa khoảng 3 phút đến khi rau mềm chín nước có màu tím đỏ tuyệt đẹp.",
-                "Nêm nước mắm hạt nêm ngọt lành thanh nhiệt ngày hè."
+                "Nêm nước mắm ngọt lành thanh nhiệt ngày hè."
             ],
             [
                 make_ing("Rau dền", 400, "g"),
@@ -1875,12 +1858,12 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
             ]
         ),
         make_recipe(
-            "vn_c_26", "Canh cà chua trứng đậu phụ", "canh", 4,
+            "vn_c_26", "Canh cà chua trứng đậu hũ trắng", "canh", 4,
             [
-                "Cà chua bổ múi cau, đậu hũ non cắt khối vuông nhỏ.",
+                "Cà chua bổ múi cau, đậu hũ trắng cắt khối vuông nhỏ.",
                 "Đập 2 quả trứng gà ra bát đánh tan đều.",
                 "Phi thơm hành tím xào cà chua cho mềm nhừ đỏ au.",
-                "Đổ 900ml nước lọc vào đun sôi, thả đậu hũ non vào nấu sôi lăn tăn 3 phút.",
+                "Đổ 900ml nước lọc vào đun sôi, thả đậu hũ trắng vào nấu sôi lăn tăn 3 phút.",
                 "Hạ nhỏ lửa, từ từ rưới trứng vào nồi đồng thời khuấy nhẹ theo một chiều tạo vân mây trứng bồng bềnh, rắc hành lá mùi tàu."
             ],
             [
@@ -1899,7 +1882,7 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
                 "Hạt sen tươi thông tâm rửa sạch, nấm hương nấm rơm ngâm rửa sạch cắt đôi.",
                 "Hầm sườn non với 1.2 lít nước trên lửa vừa trong 25 phút.",
                 "Thả hạt sen và nấm vào hầm chung thêm 15 phút đến khi hạt sen bở mềm bùi ngọt nước.",
-                "Nêm hạt nêm nước mắm vừa ăn, rắc hành ngò tiêu xay bổ dưỡng thơm dịu."
+                "Nêm nước mắm vừa ăn, rắc hành ngò tiêu xay bổ dưỡng thơm dịu."
             ],
             [
                 make_ing("Sườn non heo", 400, "g"),
@@ -1914,7 +1897,7 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
             "vn_c_28", "Canh nghêu nấu hoa thiên lý", "canh", 4,
             [
                 "Nghêu ngâm ớt rửa sạch, luộc sôi với nước cho mở miệng, tách lấy ruột và gạn nước luộc trong.",
-                "Hoa thiên lý nhặt rửa sạch ngâm nước muối loãng để ráo.",
+                "Hoa thiên lý nhặt rửa sạch ngâm rửa sạch để ráo.",
                 "Phi thơm hành tím xào sơ ruột nghêu với nước mắm tiêu.",
                 "Đổ nước luộc nghêu vào đun sôi bùng, thả hoa thiên lý vào nấu trong 1-2 phút cho vừa chín tới giữ độ giòn thơm ngọt mát.",
                 "Tắt bếp nêm nếm lại rồi múc ra tô lớn thưởng thức."
@@ -1931,9 +1914,9 @@ def get_vietnamese_canh() -> list[dict[str, Any]]:
             "vn_c_29", "Canh xà lách xoong nấu thịt bò", "canh", 4,
             [
                 "Rau xà lách xoong nhặt ngọn non rửa sạch nhiều lần để ráo.",
-                "Thịt bò thăn thái lát mỏng ướp tỏi băm, tiêu, hạt nêm và chút dầu ăn.",
+                "Thịt bò thăn thái lát mỏng ướp tỏi băm, tiêu, chút dầu ăn.",
                 "Phi thơm tỏi xào nhanh thịt bò vừa chín tái rồi múc riêng ra đĩa.",
-                "Đổ 1 lít nước vào nồi đun sôi bùng nêm nước mắm hạt nêm vừa ăn.",
+                "Đổ 1 lít nước vào nồi đun sôi bùng nêm nước mắm vừa ăn.",
                 "Thả xà lách xoong vào nấu sôi trong 1 phút, trút thịt bò vào đảo đều rồi tắt bếp ngay tránh rau nát."
             ],
             [
@@ -2013,7 +1996,7 @@ def get_international_recipes() -> list[dict[str, Any]]:
                 "Phi lê cá hồi rửa sạch thấm khô nước, ướp muối, tiêu và chút dầu oliu 10 phút.",
                 "Làm nóng chảo với chút dầu oliu, đặt mặt da cá xuống áp chảo lửa vừa 4 phút cho da vàng giòn rụm.",
                 "Lật mặt thịt cá áp chảo thêm 2 phút cho cá chín tới mọng nước rồi gắp ra đĩa.",
-                "Hạ nhỏ lửa, cho bơ lạt vào chảo phi thơm tỏi băm, vắt nước cốt chanh vàng và chút ngò tây thái nhỏ khuấy đều.",
+                "Hạ nhỏ lửa, cho bơ lạt vào chảo phi thơm tỏi băm, vắt nước cốt chanh vàng và chút hành lá thái nhỏ khuấy đều.",
                 "Rưới sốt bơ chanh tỏi thơm béo ngậy lên miếng cá hồi, ăn kèm măng tây hoặc khoai tây nghiền."
             ],
             [
@@ -2106,7 +2089,7 @@ def get_international_recipes() -> list[dict[str, Any]]:
             "intl_08", "Gà sốt cay ngọt Hàn Quốc (Dakgangjeong)", "man", 4,
             [
                 "Thịt đùi hoặc cánh gà chặt miếng vừa ăn, ướp muối tiêu gừng băm trong 15 phút.",
-                "Lăn thịt gà qua lớp bột bắp rồi chiên ngập dầu lần 1 trên lửa vừa đến khi chín vàng nhạt.",
+                "Lăn thịt gà qua lớp bột mì rồi chiên ngập dầu lần 1 trên lửa vừa đến khi chín vàng nhạt.",
                 "Vớt gà ra để nghỉ 5 phút rồi chiên lại lần 2 trên lửa lớn trong 2 phút để lớp vỏ giòn tan không ngấy mỡ.",
                 "Pha sốt: tương ớt Gochujang, tương cà, mật ong, nước tương, tỏi băm đun sôi sủi bọt trong chảo lớn.",
                 "Trút gà chiên giòn vào chảo sốt đảo thật nhanh tay cho sốt bám đều óng ánh, rắc mè rang thơm."
@@ -2144,10 +2127,10 @@ def get_international_recipes() -> list[dict[str, Any]]:
             "intl_10", "Salad cá ngừ trứng luộc sốt Mayonnaise", "rau", 4,
             [
                 "Xà lách rửa sạch ngâm nước đá cho giòn ráo, xé miếng vừa ăn.",
-                "Cà chua bi bổ đôi, dưa chuột thái lát tròn, hành tây thái mỏng ngâm giấm đường khử hăng.",
+                "Cà chua bi bổ đôi, dưa leo thái lát tròn, hành tây thái mỏng ngâm giấm đường khử hăng.",
                 "Trứng gà luộc chín tới, bóc vỏ bổ múi cau.",
                 "Cá ngừ ngâm dầu đóng hộp chắt bớt dầu, dằm nhẹ thành miếng nhỏ.",
-                "Xếp xà lách, cà chua, dưa chuột ra đĩa lớn, cho cá ngừ và trứng luộc lên trên, rưới sốt Mayonnaise pha chút cốt chanh và tiêu xay."
+                "Xếp xà lách, cà chua, dưa leo ra đĩa lớn, cho cá ngừ và trứng luộc lên trên, rưới sốt Mayonnaise pha chút cốt chanh và tiêu xay."
             ],
             [
                 make_ing("Xà lách", 250, "g"),
@@ -2162,7 +2145,7 @@ def get_international_recipes() -> list[dict[str, Any]]:
         make_recipe(
             "intl_11", "Salad Caesar ức gà nướng", "rau", 4,
             [
-                "Ức gà ướp chút muối, tiêu, dầu oliu và tỏi băm, áp chảo chín vàng hai mặt rồi thái lát xéo.",
+                "Ức gà ướp tiêu, dầu oliu và tỏi băm, áp chảo chín vàng hai mặt rồi thái lát xéo.",
                 "Rau xà lách Romaine rửa sạch ngắt khúc 4cm để ráo nước thật giòn.",
                 "Bánh mì sandwich cắt hạt lựu nướng vàng giòn với chút bơ tỏi.",
                 "Pha sốt Caesar: sốt mayonnaise, phô mai Parmesan bào, tỏi băm, nước cốt chanh vàng, tiêu đen.",
@@ -2183,7 +2166,7 @@ def get_international_recipes() -> list[dict[str, Any]]:
             [
                 "Khoai tây, cà rốt gọt vỏ cắt hạt lựu, luộc chín mềm vừa tới rồi vớt ra ngâm nước lạnh cho ráo.",
                 "Đậu Hà Lan và bắp ngọt chần sơ nước sôi.",
-                "Thịt nguội jambon thái hạt lựu, dưa chuột muối thái hạt lựu.",
+                "Thịt nguội jambon thái hạt lựu, dưa leo muối thái hạt lựu.",
                 "Trứng gà luộc chín bóc vỏ cắt hạt lựu.",
                 "Cho toàn bộ các nguyên liệu vào âu lớn, thêm sốt Mayonnaise, chút muối tiêu trộn nhẹ tay cho sốt bao đều rồi để ngăn mát 30 phút."
             ],
@@ -2203,7 +2186,7 @@ def get_international_recipes() -> list[dict[str, Any]]:
                 "Ức gà luộc chín xé sợi mỏng, giữ lại nước luộc gà ngọt thanh.",
                 "Bắp ngọt tách hạt luộc chín, nấm hương ngâm nở thái sợi mỏng.",
                 "Đun sôi nước luộc gà, cho bắp non, nấm hương và gà xé vào nấu trên lửa vừa 10 phút.",
-                "Hòa tan bột bắp với nước lọc, từ từ đổ vào nồi súp khuấy đều tay đến khi súp sánh mịn.",
+                "Hòa tan bột mì với nước lọc, từ từ đổ vào nồi súp khuấy đều tay đến khi súp sánh mịn.",
                 "Đánh tan lòng trắng trứng, rưới từ từ qua rây vào nồi súp khuấy nhẹ tạo vân sợi trắng đẹp mắt, thêm chút kem sữa tươi rắc tiêu ngò."
             ],
             [
@@ -2329,11 +2312,11 @@ def get_international_recipes() -> list[dict[str, Any]]:
             area="French", source="international_curated_vi"
         ),
         make_recipe(
-            "intl_20", "Bánh kếp kim chi hải sản Hàn Quốc (Pajeon)", "man", 4,
+            "intl_20", "Bánh kếp kim chi hải sản Hàn Quốc (Haemul Kimchijeon)", "man", 4,
             [
                 "Mực và tôm bóc vỏ cắt miếng nhỏ, kim chi cải thảo thái nhỏ vắt nhẹ ráo nước.",
                 "Hành lá rửa sạch cắt khúc dài 6cm.",
-                "Pha bột bánh: bột mì, bột bắp, 1 quả trứng gà, nước kim chi khuấy tan thành hỗn hợp sánh sệt vừa phải.",
+                "Pha bột bánh: bột mì, bột mì, 1 quả trứng gà, nước kim chi khuấy tan thành hỗn hợp sánh sệt vừa phải.",
                 "Trộn hải sản, kim chi và hành lá vào tô bột.",
                 "Đun nóng chảo dầu, múc bột trải đều thành lớp bánh mỏng, chiên lửa vừa đến khi hai mặt vàng ruộm giòn tan chấm nước tương ớt."
             ],
@@ -2355,7 +2338,7 @@ def get_international_recipes() -> list[dict[str, Any]]:
                 "Làm nóng chảo với bơ lạt, phi thơm hành tây băm nhỏ.",
                 "Cho nấm và ức gà vào xào săn trên lửa vừa trong 4 phút.",
                 "Đổ 600ml nước luộc gà vào đun sôi hầm 10 phút.",
-                "Thêm sữa tươi và kem tươi khuấy đều, hòa tan chút bột bắp tạo độ sánh mịn như nhung, rắc tiêu đen thơm ngát."
+                "Thêm sữa tươi và kem tươi khuấy đều, hòa tan chút bột mì tạo độ sánh mịn như nhung, rắc tiêu đen thơm ngát."
             ],
             [
                 make_ing("Nấm rơm", 250, "g"),
