@@ -1,0 +1,115 @@
+/**
+ * Ca logic bổ sung dùng chung Python/JS (tests/fixtures/engine_logic_cases.json).
+ * Python tương ứng: tests/test_engine_logic_cases.py. Hai bên phải cho cùng kết quả.
+ */
+
+import { test, describe } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import {
+  checkRecipeStock,
+  deductRecipeStockFifo,
+  reverseStockMovements,
+  generatePeriodPlan,
+  Decimal,
+} from "../../app/static/js/engine.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const { cases } = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, "../fixtures/engine_logic_cases.json"), "utf-8")
+);
+
+const toRecipe = (r) => ({
+  id: r.id,
+  name: r.name,
+  category: r.category,
+  servings: r.servings,
+  ingredients: r.ingredients.map((i) => ({
+    ingredient_id: i.ingredient_id,
+    ingredient_name: i.name,
+    quantity: i.quantity,
+    unit: i.unit,
+  })),
+});
+
+const toLots = (items) =>
+  items.map((x) => ({
+    id: x.id,
+    ingredient_id: x.ingredient_id,
+    ingredient_name: x.name,
+    purchased_quantity: x.purchased,
+    remaining_quantity: x.remaining,
+    unit: x.unit,
+    purchased_at: "2025-12-01T00:00:00",
+    expires_at: x.expires_at || null,
+  }));
+
+const norm = (v) => new Decimal(String(v)).toString();
+
+describe("Ca logic dùng chung Python/JS", () => {
+  for (const c of cases) {
+    test(c.name, () => {
+      if (c.op === "check") {
+        const { canCook, deficits } = checkRecipeStock(
+          toRecipe(c.recipe),
+          toLots(c.pantry),
+          c.multiplier
+        );
+        assert.equal(canCook, c.expect.can_cook);
+        const got = Object.fromEntries(
+          Object.entries(deficits).map(([k, v]) => [k, norm(v.missing_quantity)])
+        );
+        assert.deepEqual(got, c.expect.deficits);
+      } else if (c.op === "fifo") {
+        const lots = toLots(c.pantry);
+        const res = deductRecipeStockFifo(lots, toRecipe(c.recipe), "plan-1", "key", c.multiplier);
+        assert.ok(res.movements.length > 0);
+        const remaining = Object.fromEntries(lots.map((l) => [l.id, norm(l.remaining_quantity)]));
+        for (const u of res.updatedLots) remaining[u.id] = norm(u.remaining_quantity);
+        assert.deepEqual(remaining, c.expect.remaining);
+      } else if (c.op === "undo") {
+        const lots = toLots(c.pantry);
+        const movements = c.movements.map((m) => ({
+          id: m.id,
+          pantry_lot_id: m.pantry_lot_id,
+          quantity_delta: m.delta,
+          reason: m.reason,
+          meal_plan_id: m.meal_plan_id,
+          idempotency_key: m.idempotency_key,
+        }));
+        const { restoredLots } = reverseStockMovements(lots, movements, c.meal_plan_id);
+        const remaining = Object.fromEntries(lots.map((l) => [l.id, norm(l.remaining_quantity)]));
+        for (const u of restoredLots) remaining[u.id] = norm(u.remaining_quantity);
+        assert.deepEqual(remaining, c.expect.remaining);
+      } else if (c.op === "plan") {
+        const end = new Date(`${c.start}T00:00:00Z`);
+        end.setUTCDate(end.getUTCDate() + c.days - 1);
+        const plan = generatePeriodPlan(
+          c.start,
+          end.toISOString().slice(0, 10),
+          c.recipes.map(toRecipe),
+          toLots(c.pantry),
+          { allow_leftovers: c.allow_leftovers }
+        );
+        const dishes = plan.meals.flatMap((m) => m.dishes);
+        assert.deepEqual(
+          dishes.map((d) => d.recipe_name),
+          c.expect.dishes
+        );
+        assert.deepEqual(
+          dishes.map((d) => d.servings),
+          c.expect.servings
+        );
+        const shopping = Object.fromEntries(
+          plan.shopping_list.map((s) => [s.ingredient_id, [norm(s.needed_quantity), s.unit]])
+        );
+        assert.deepEqual(shopping, c.expect.shopping);
+      } else {
+        assert.fail(`op không hỗ trợ: ${c.op}`);
+      }
+    });
+  }
+});

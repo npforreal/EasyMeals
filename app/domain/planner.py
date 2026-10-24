@@ -4,8 +4,13 @@ from collections import defaultdict
 from datetime import date, timedelta
 from uuid import UUID, uuid4
 
-from app.domain.inventory import check_recipe_stock
+from app.domain.inventory import (
+    aggregate_requirements,
+    check_recipe_stock,
+    consume_available,
+)
 from app.domain.models import (
+    UNIT_DIMENSIONS,
     DishCategory,
     MealPeriod,
     MealPlan,
@@ -13,6 +18,7 @@ from app.domain.models import (
     PlannedDish,
     Recipe,
     ShoppingItem,
+    convert_quantity,
 )
 
 MAX_DISHES_PER_CATEGORY = 2
@@ -47,7 +53,6 @@ def generate_period_plan(
     end_date: date,
     recipes: list[Recipe],
     current_pantry_lots: list[PantryLot],
-    user_id: UUID | None = None,
     periods: list[MealPeriod] | None = None,
     allow_leftovers: bool = True,
 ) -> tuple[list[MealPlan], list[ShoppingItem]]:
@@ -82,7 +87,6 @@ def generate_period_plan(
     simulated_lots: list[PantryLot] = [
         PantryLot(
             id=lot.id,
-            user_id=lot.user_id,
             ingredient_id=lot.ingredient_id,
             ingredient_name=lot.ingredient_name,
             purchased_quantity=lot.purchased_quantity,
@@ -98,14 +102,18 @@ def generate_period_plan(
     cooked_recipe_ids_in_period: set[UUID] = set()
     available_leftovers: list[PlannedDish] = []
     meal_plans: list[MealPlan] = []
-    shopping_items_map: dict[UUID, ShoppingItem] = {}
+    shopping_items_map: dict[tuple[UUID, str], ShoppingItem] = {}
 
     current_d = start_date
     while current_d <= end_date:
+        # Lô đã quá hạn tại ngày đang lập kế hoạch không được tính là có hàng.
+        # (cùng đối tượng với simulated_lots nên việc trừ kho mô phỏng vẫn có tác dụng)
+        usable_lots = [
+            lot for lot in simulated_lots if lot.expires_at is None or lot.expires_at >= current_d
+        ]
         for period in periods:
             meal_plan = MealPlan(
                 id=uuid4(),
-                user_id=user_id,
                 planned_for=current_d,
                 meal_period=period,
                 period_id=period_id,
@@ -127,6 +135,7 @@ def generate_period_plan(
                                 category=cat,
                                 is_leftover=True,
                                 original_dish_id=leftover.id,
+                                servings=leftover.servings,
                             )
                             available_leftovers.pop(idx)
                             break
@@ -140,7 +149,7 @@ def generate_period_plan(
                     # First priority: Recipes that can be cooked with current simulated stock
                     fully_stocked_recipe: Recipe | None = None
                     for r in candidate_recipes:
-                        can_cook, _ = check_recipe_stock(r, simulated_lots)
+                        can_cook, _ = check_recipe_stock(r, usable_lots)
                         if can_cook:
                             fully_stocked_recipe = r
                             break
@@ -148,29 +157,27 @@ def generate_period_plan(
                     chosen_recipe: Recipe | None = None
                     if fully_stocked_recipe:
                         chosen_recipe = fully_stocked_recipe
-                        # Deduct from simulated stock
-                        for req in chosen_recipe.ingredients:
-                            needed = req.quantity
-                            for lot in simulated_lots:
-                                if (
-                                    lot.ingredient_id == req.ingredient_id
-                                    and lot.remaining_quantity > 0
-                                ):
-                                    # Deduct simplified for simulation
-                                    take = min(lot.remaining_quantity, needed)
-                                    lot.remaining_quantity -= take
-                                    needed -= take
-                                    if needed <= 0:
-                                        break
+                        # Trừ kho mô phỏng (có quy đổi đơn vị, theo FIFO)
+                        for req in aggregate_requirements(chosen_recipe):
+                            consume_available(
+                                usable_lots, req.ingredient_id, req.quantity, req.unit
+                            )
                     elif candidate_recipes:
                         # Stock is insufficient for any remaining fresh recipe in this category.
                         # Pick the first non-repeating recipe and generate
                         # shopping items for deficits
                         chosen_recipe = candidate_recipes[0]
-                        _, deficits = check_recipe_stock(chosen_recipe, simulated_lots)
+                        _, deficits = check_recipe_stock(chosen_recipe, usable_lots)
+                        # Phần đã có trong kho được dùng cho món này, để món sau không đếm lại.
+                        for req in aggregate_requirements(chosen_recipe):
+                            consume_available(
+                                usable_lots, req.ingredient_id, req.quantity, req.unit
+                            )
                         for ing_id, (ing_name, missing_qty, unit) in deficits.items():
-                            if ing_id not in shopping_items_map:
-                                shopping_items_map[ing_id] = ShoppingItem(
+                            key = (ing_id, UNIT_DIMENSIONS[unit])
+                            item = shopping_items_map.get(key)
+                            if item is None:
+                                shopping_items_map[key] = ShoppingItem(
                                     ingredient_id=ing_id,
                                     ingredient_name=ing_name,
                                     needed_quantity=missing_qty,
@@ -178,9 +185,11 @@ def generate_period_plan(
                                     dish_names=[chosen_recipe.name],
                                 )
                             else:
-                                shopping_items_map[ing_id].needed_quantity += missing_qty
-                                if chosen_recipe.name not in shopping_items_map[ing_id].dish_names:
-                                    shopping_items_map[ing_id].dish_names.append(chosen_recipe.name)
+                                item.needed_quantity += convert_quantity(
+                                    missing_qty, unit, item.unit
+                                )
+                                if chosen_recipe.name not in item.dish_names:
+                                    item.dish_names.append(chosen_recipe.name)
 
                     if chosen_recipe:
                         cooked_dish = PlannedDish(
@@ -190,6 +199,7 @@ def generate_period_plan(
                             recipe_name=chosen_recipe.name,
                             category=cat,
                             is_leftover=False,
+                            servings=chosen_recipe.servings,
                         )
                         dish_chosen = cooked_dish
                         # Mark this recipe as cooked in this period -> DO NOT REPEAT!

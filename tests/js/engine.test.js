@@ -17,6 +17,8 @@ import {
   deductRecipeStockFifo,
   reverseStockMovements,
   generatePeriodPlan,
+  InsufficientStockError,
+  IncompatibleUnitError,
 } from "../../app/static/js/engine.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -143,5 +145,73 @@ describe("Engine Equivalence Tests (Python vs JavaScript on Shared Fixture)", ()
       );
       assert.equal(sortedActualShopping[s].unit, expShopping[s].unit);
     }
+  });
+
+  test("5. FIFO chute chuẩn: cùng hạn, sớm mua trước được trừ trước", () => {
+    const tieData = fixture.fifo_deduction_same_expiry_tiebreak;
+
+    const { canCook, deficits } = checkRecipeStock(tieData.recipe, tieData.pantry);
+    assert.equal(canCook, tieData.check_stock_expected.can_cook);
+    assert.equal(Object.keys(deficits).length, tieData.check_stock_expected.deficits_count);
+
+    const { updatedLots, movements } = deductRecipeStockFifo(
+      tieData.pantry,
+      tieData.recipe,
+      "bbbbbbbb-0001-0000-000000000010",
+      "tiebreak_test"
+    );
+
+    const expLots = tieData.deduction_expected.updated_lots;
+    assert.equal(updatedLots.length, expLots.length);
+    // Lot sớm mua hơn (2026-10-20) bị trừ hết trước -> remaining "0"
+    assert.equal(updatedLots[0].id, expLots[0].id);
+    assert.equal(updatedLots[0].remaining_quantity, expLots[0].remaining_quantity);
+    assert.equal(updatedLots[1].id, expLots[1].id);
+    assert.equal(updatedLots[1].remaining_quantity, expLots[1].remaining_quantity);
+
+    const expMovs = tieData.deduction_expected.movements;
+    assert.equal(movements.length, expMovs.length);
+    for (let i = 0; i < movements.length; i++) {
+      assert.equal(movements[i].pantry_lot_id, expMovs[i].pantry_lot_id);
+      assert.equal(movements[i].quantity_delta, expMovs[i].quantity_delta);
+      assert.equal(movements[i].reason, expMovs[i].reason);
+    }
+  });
+
+  test("6. Hết hàng / không đủ hàng ném InsufficientStockError", () => {
+    const insuff = fixture.stock_insufficient;
+
+    const { canCook, deficits } = checkRecipeStock(insuff.recipe, insuff.pantry);
+    assert.equal(canCook, insuff.check_stock_expected.can_cook);
+    assert.equal(Object.keys(deficits).length, insuff.check_stock_expected.deficits_count);
+
+    assert.throws(
+      () =>
+        deductRecipeStockFifo(
+          insuff.pantry,
+          insuff.recipe,
+          "bbbbbbbb-0001-0000-000000000011",
+          "insuff_test"
+        ),
+      InsufficientStockError
+    );
+  });
+
+  test("7. Không chuyển đổi khối lượng sang thể tích ném IncompatibleUnitError", () => {
+    const incompat = fixture.unit_conversion_incompatible_mass_volume;
+
+    const { canCook, deficits } = checkRecipeStock(incompat.recipe, incompat.pantry);
+    assert.equal(canCook, incompat.check_stock_expected.can_cook);
+    assert.equal(Object.keys(deficits).length, incompat.check_stock_expected.deficits_count);
+
+    assert.throws(
+      () =>
+        convertQuantity(
+          incompat.conversion_expected.quantity,
+          incompat.conversion_expected.from_unit,
+          incompat.conversion_expected.to_unit
+        ),
+      IncompatibleUnitError
+    );
   });
 });

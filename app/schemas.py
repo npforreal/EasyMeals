@@ -129,7 +129,8 @@ class StatelessEatDishInput(BaseModel):
 
     recipe_id: UUID
     is_leftover: bool = False
-    servings: int = Field(default=1, ge=1, le=20)
+    # None = nấu trọn công thức (khớp với cách lập thực đơn tính nguyên liệu cho cả công thức).
+    servings: int | None = Field(default=None, ge=1, le=20)
 
 
 class StatelessEatRequest(BaseModel):

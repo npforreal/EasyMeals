@@ -11,6 +11,7 @@ Mục tiêu kiến trúc:
 
 from __future__ import annotations
 
+import json
 import shutil
 import sys
 from pathlib import Path
@@ -23,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from app.theme import BACKGROUND_COLOR, THEME_COLOR  # noqa: E402
 from scripts.export_catalogue import DEFAULT_OUTPUT as DEFAULT_CATALOGUE_PATH  # noqa: E402
 from scripts.export_catalogue import export_catalogue  # noqa: E402
 
@@ -148,7 +150,7 @@ window.CATALOGUE_SOURCE = "bundled";
         }
         req = Request(scope)
         template = env.get_template(page["template"])
-        rendered = template.render(request=req, title=page["title"])
+        rendered = template.render(request=req, title=page["title"], theme_color=THEME_COLOR)
 
         # Chuyển đổi các link điều hướng tuyệt đối sang tên file HTML tĩnh tương ứng
         for orig_url, html_file in NAV_MAPPING.items():
@@ -169,22 +171,17 @@ window.CATALOGUE_SOURCE = "bundled";
         print(f"   + Đã tạo trang: {page['output']}")
 
     # 7. Tạo file manifest.json cho www/
-    manifest_content = """{
-  "name": "EasyMeals — Bữa Ăn Dễ Dàng",
-  "short_name": "EasyMeals",
-  "description": "Lên lịch bữa ăn theo nguyên liệu sẵn có, chống lãng phí thực phẩm.",
-  "start_url": "index.html",
-  "display": "standalone",
-  "background_color": "#f6f1e7",
-  "theme_color": "#3f6b3a",
-  "icons": [
-    {
-      "src": "static/icon.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
+    manifest = {
+        "name": "EasyMeals — Bữa Ăn Dễ Dàng",
+        "short_name": "EasyMeals",
+        "description": "Lên lịch bữa ăn theo nguyên liệu sẵn có, chống lãng phí thực phẩm.",
+        "start_url": "index.html",
+        "display": "standalone",
+        "background_color": BACKGROUND_COLOR,
+        "theme_color": THEME_COLOR,
+        "icons": [{"src": "static/icon.svg", "sizes": "192x192", "type": "image/svg+xml"}],
     }
-  ]
-}"""
+    manifest_content = json.dumps(manifest, ensure_ascii=False, indent=2)
     (WWW_DIR / "manifest.json").write_text(manifest_content, encoding="utf-8")
 
     # 8. Quét kiểm tra bảo mật

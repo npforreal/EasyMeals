@@ -86,13 +86,11 @@ def test_no_repeat_dishes_in_period():
     """Verify that NO recipe is cooked freshly more than once within the planning period."""
     repo = InMemoryRepository()
     recipes = repo.get_recipes()
-    user_id = uuid4()
 
     start = date(2026, 11, 1)
     end = date(2026, 11, 4)  # 4 days x 2 meals = 8 meals
 
     meal_plans, shopping_list = generate_period_plan(
-        user_id=user_id,
         start_date=start,
         end_date=end,
         recipes=recipes,
@@ -119,13 +117,11 @@ def test_leftovers_allowed_in_period():
     """Verify that leftover dishes can be reused in later meals."""
     repo = InMemoryRepository()
     recipes = repo.get_recipes()
-    user_id = uuid4()
 
     start = date(2026, 11, 1)
     end = date(2026, 11, 7)  # 7 days
 
     meal_plans, _ = generate_period_plan(
-        user_id=user_id,
         start_date=start,
         end_date=end,
         recipes=recipes,
@@ -143,13 +139,11 @@ def test_shopping_list_generated_when_stock_deficit():
     for the unique recipes."""
     repo = InMemoryRepository()
     recipes = repo.get_recipes()
-    user_id = uuid4()
 
     start = date(2026, 11, 1)
     end = date(2026, 11, 2)  # 2 days
 
     meal_plans, shopping_list = generate_period_plan(
-        user_id=user_id,
         start_date=start,
         end_date=end,
         recipes=recipes,

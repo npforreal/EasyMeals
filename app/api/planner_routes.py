@@ -159,7 +159,11 @@ def eat_stateless_meal(
                 detail=f"Không tìm thấy công thức món ăn (ID: {dish.recipe_id})",
             )
 
-        multiplier = Decimal(str(dish.servings)) / Decimal(str(recipe.servings))
+        multiplier = (
+            Decimal(1)
+            if dish.servings is None
+            else Decimal(str(dish.servings)) / Decimal(str(recipe.servings))
+        )
 
         try:
             deduction = deduct_recipe_stock_fifo(

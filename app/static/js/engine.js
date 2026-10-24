@@ -159,46 +159,91 @@ export function convertQuantity(quantity, fromUnit, toUnit) {
   return targetQty;
 }
 
+export function unitsCompatible(a, b) {
+  const da = UNIT_DIMENSIONS[a];
+  const db = UNIT_DIMENSIONS[b];
+  return Boolean(da) && da === db;
+}
+
+/**
+ * Gộp các dòng nguyên liệu trùng nhau (cùng nguyên liệu, cùng thứ nguyên) của công thức.
+ * Trả về mảng {ingredient_id, name, quantity: Decimal, unit}.
+ */
+export function aggregateRequirements(recipe, multiplier = "1") {
+  const mult = Decimal.from(multiplier);
+  const merged = new Map();
+  for (const req of recipe.ingredients) {
+    const qty = Decimal.from(req.quantity).mul(mult);
+    const key = `${req.ingredient_id}|${UNIT_DIMENSIONS[req.unit]}`;
+    const prev = merged.get(key);
+    if (prev) {
+      prev.quantity = prev.quantity.add(convertQuantity(qty, req.unit, prev.unit));
+    } else {
+      merged.set(key, {
+        ingredient_id: req.ingredient_id,
+        name: req.ingredient_name,
+        quantity: qty,
+        unit: req.unit,
+      });
+    }
+  }
+  return Array.from(merged.values());
+}
+
+function lotSortKeyFor(lot) {
+  const exp = lot.expires_at ? lot.expires_at : "9999-12-31";
+  const pur = lot.purchased_at ? lot.purchased_at : "1970-01-01";
+  return `${exp}_${pur}`;
+}
+
+/**
+ * Tổng tồn kho của nguyên liệu quy về targetUnit. Lô khác thứ nguyên bị bỏ qua
+ * (không thể quy đổi nên không được tính là đủ hàng) thay vì làm hỏng cả phép tính.
+ */
 export function getTotalIngredientStock(pantryLots, ingredientId, targetUnit) {
   let total = new Decimal(0);
   for (const lot of pantryLots) {
-    if (lot.ingredient_id === ingredientId) {
-      const rem = Decimal.from(lot.remaining_quantity);
-      if (rem.gt(0)) {
-        const converted = convertQuantity(rem, lot.unit, targetUnit);
-        total = total.add(converted);
-      }
+    if (lot.ingredient_id !== ingredientId || !unitsCompatible(lot.unit, targetUnit)) continue;
+    const rem = Decimal.from(lot.remaining_quantity);
+    if (rem.gt(0)) {
+      total = total.add(convertQuantity(rem, lot.unit, targetUnit));
     }
   }
   return total;
 }
 
+/**
+ * Trừ tối đa `quantity` (FIFO, có quy đổi đơn vị) khỏi các lô, sửa trực tiếp
+ * `remaining_quantity` của lô truyền vào. Trả về lượng đã trừ (Decimal).
+ */
+export function consumeAvailable(pantryLots, ingredientId, quantity, unit) {
+  let needed = Decimal.from(quantity);
+  let consumed = new Decimal(0);
+  const ordered = [...pantryLots].sort((a, b) => lotSortKeyFor(a).localeCompare(lotSortKeyFor(b)));
+  for (const lot of ordered) {
+    if (needed.lte(0)) break;
+    if (lot.ingredient_id !== ingredientId || !unitsCompatible(lot.unit, unit)) continue;
+    const rem = Decimal.from(lot.remaining_quantity);
+    if (rem.lte(0)) continue;
+    const available = convertQuantity(rem, lot.unit, unit);
+    const take = available.lt(needed) ? available : needed;
+    const takeInLotUnit = take.eq(available) ? rem : convertQuantity(take, unit, lot.unit);
+    lot.remaining_quantity = rem.sub(takeInLotUnit).toString();
+    needed = needed.sub(take);
+    consumed = consumed.add(take);
+  }
+  return consumed;
+}
+
 export function checkRecipeStock(recipe, pantryLots, multiplier = "1") {
-  const mult = Decimal.from(multiplier);
   const deficits = {};
 
-  for (const req of recipe.ingredients) {
-    const requiredQty = Decimal.from(req.quantity).mul(mult);
-    let available = new Decimal(0);
-    try {
-      available = getTotalIngredientStock(pantryLots, req.ingredient_id, req.unit);
-    } catch (err) {
-      if (err instanceof IncompatibleUnitError) {
-        deficits[req.ingredient_id] = {
-          ingredient_name: req.ingredient_name,
-          missing_quantity: requiredQty.toString(),
-          unit: req.unit,
-        };
-        continue;
-      }
-      throw err;
-    }
-
-    if (available.lt(requiredQty)) {
-      const missing = requiredQty.sub(available);
+  for (const req of aggregateRequirements(recipe, multiplier)) {
+    const available = getTotalIngredientStock(pantryLots, req.ingredient_id, req.unit);
+    if (available.lt(req.quantity)) {
       deficits[req.ingredient_id] = {
-        ingredient_name: req.ingredient_name,
-        missing_quantity: missing.toString(),
+        ingredient_name: req.name,
+        missing_quantity: req.quantity.sub(available).toString(),
         unit: req.unit,
       };
     }
@@ -236,7 +281,7 @@ export function deductRecipeStockFifo(
     );
   }
 
-  const mult = Decimal.from(multiplier);
+  const requirements = aggregateRequirements(recipe, multiplier);
 
   // Clone lots so we don't mutate input directly until successful
   const clonedLots = pantryLots.map((lot) => ({
@@ -245,23 +290,20 @@ export function deductRecipeStockFifo(
   }));
 
   // Sort lots by earliest expiration (null last), then earliest purchase
-  function lotSortKey(lot) {
-    const exp = lot.expires_at ? lot.expires_at : "9999-12-31";
-    const pur = lot.purchased_at ? lot.purchased_at : "1970-01-01";
-    return `${exp}_${pur}`;
-  }
-
-  const reqIngIds = new Set(recipe.ingredients.map((i) => i.ingredient_id));
+  const reqIngIds = new Set(requirements.map((r) => r.ingredient_id));
   const candidateLots = clonedLots.filter((lot) => reqIngIds.has(lot.ingredient_id));
-  candidateLots.sort((a, b) => lotSortKey(a).localeCompare(lotSortKey(b)));
+  candidateLots.sort((x, y) => lotSortKeyFor(x).localeCompare(lotSortKeyFor(y)));
 
   const updatedLotsMap = new Map();
   const movements = [];
 
-  for (const req of recipe.ingredients) {
-    let remainingNeeded = Decimal.from(req.quantity).mul(mult);
+  for (const req of requirements) {
+    let remainingNeeded = req.quantity;
     const ingredientLots = candidateLots.filter(
-      (l) => l.ingredient_id === req.ingredient_id && Decimal.from(l.remaining_quantity).gt(0)
+      (l) =>
+        l.ingredient_id === req.ingredient_id &&
+        unitsCompatible(l.unit, req.unit) &&
+        Decimal.from(l.remaining_quantity).gt(0)
     );
 
     for (const lot of ingredientLots) {
@@ -309,8 +351,19 @@ export function reverseStockMovements(pantryLots, movements, mealPlanId) {
   const restoredLotsMap = new Map();
   const reversalMovements = [];
 
+  // Bỏ qua các biến động đã được hoàn tác (có biến động `reversal_<id>`) để hoàn tác lặp lại
+  // không cộng kho thêm lần nữa.
+  const alreadyReversed = new Set(
+    movements
+      .filter((m) => typeof m.idempotency_key === "string" && m.idempotency_key.startsWith("reversal_"))
+      .map((m) => m.idempotency_key.slice("reversal_".length))
+  );
   const mealMovements = movements.filter(
-    (m) => m.meal_plan_id === mealPlanId && m.reason === "meal_consumption"
+    (m) =>
+      m.meal_plan_id === mealPlanId &&
+      m.reason === "meal_consumption" &&
+      Decimal.from(m.quantity_delta).lt(0) &&
+      !alreadyReversed.has(String(m.id))
   );
 
   for (const mov of mealMovements) {
@@ -319,7 +372,10 @@ export function reverseStockMovements(pantryLots, movements, mealPlanId) {
 
     const deltaAbs = Decimal.from(mov.quantity_delta).abs();
     const currentRem = Decimal.from(lot.remaining_quantity);
-    lot.remaining_quantity = currentRem.add(deltaAbs).toString();
+    // Không vượt quá lượng đã mua ban đầu (khớp với engine Python).
+    const restored = currentRem.add(deltaAbs);
+    const cap = Decimal.from(lot.purchased_quantity);
+    lot.remaining_quantity = (restored.gt(cap) ? cap : restored).toString();
 
     restoredLotsMap.set(lot.id, lot);
     reversalMovements.push({
@@ -346,8 +402,10 @@ export function generatePeriodPlan(
   currentPantryLots,
   options = { allowLeftovers: true }
 ) {
-  const start = new Date(startDateStr);
-  const end = new Date(endDateStr);
+  // Ngày dạng YYYY-MM-DD được hiểu là UTC; mọi phép tính ngày bên dưới đều dùng UTC để
+  // không lệch ngày theo múi giờ hay giờ mùa hè.
+  const start = new Date(`${startDateStr}T00:00:00Z`);
+  const end = new Date(`${endDateStr}T00:00:00Z`);
   const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
   if (diffDays <= 0) {
@@ -372,13 +430,16 @@ export function generatePeriodPlan(
   const cookedRecipeIds = new Set();
   const availableLeftovers = [];
   const mealPlans = [];
-  const shoppingItemsMap = new Map();
+  const shoppingItemsMap = new Map(); // khoá: `${ingredient_id}|${thứ nguyên}`
 
   const periods = ["lunch", "dinner"];
   const curr = new Date(start);
 
   for (let d = 0; d < diffDays; d++) {
     const dateStr = curr.toISOString().split("T")[0];
+    // Lô đã quá hạn tại ngày đang lập kế hoạch không được tính là có hàng
+    // (cùng đối tượng với simulatedLots nên việc trừ kho mô phỏng vẫn có tác dụng).
+    const usableLots = simulatedLots.filter((l) => !l.expires_at || l.expires_at >= dateStr);
 
     for (const period of periods) {
       const mealPlan = {
@@ -406,7 +467,7 @@ export function generatePeriodPlan(
               category: cat,
               is_leftover: true,
               original_dish_id: leftover.id,
-              servings: 1,
+              servings: leftover.servings,
             };
           }
         }
@@ -417,7 +478,7 @@ export function generatePeriodPlan(
 
           let fullyStockedRecipe = null;
           for (const r of candidateRecipes) {
-            const { canCook } = checkRecipeStock(r, simulatedLots);
+            const { canCook } = checkRecipeStock(r, usableLots);
             if (canCook) {
               fullyStockedRecipe = r;
               break;
@@ -427,27 +488,22 @@ export function generatePeriodPlan(
           let chosenRecipe = null;
           if (fullyStockedRecipe) {
             chosenRecipe = fullyStockedRecipe;
-            // Deduct from simulated stock
-            for (const req of chosenRecipe.ingredients) {
-              let needed = Decimal.from(req.quantity);
-              for (const lot of simulatedLots) {
-                if (lot.ingredient_id === req.ingredient_id) {
-                  const rem = Decimal.from(lot.remaining_quantity);
-                  if (rem.gt(0)) {
-                    const take = rem.lt(needed) ? rem : needed;
-                    lot.remaining_quantity = rem.sub(take).toString();
-                    needed = needed.sub(take);
-                    if (needed.lte(0)) break;
-                  }
-                }
-              }
+            // Trừ kho mô phỏng (có quy đổi đơn vị, theo FIFO)
+            for (const req of aggregateRequirements(chosenRecipe)) {
+              consumeAvailable(usableLots, req.ingredient_id, req.quantity, req.unit);
             }
           } else if (candidateRecipes.length > 0) {
             chosenRecipe = candidateRecipes[0];
-            const { deficits } = checkRecipeStock(chosenRecipe, simulatedLots);
+            const { deficits } = checkRecipeStock(chosenRecipe, usableLots);
+            // Phần đã có trong kho được dùng cho món này, để món sau không đếm lại.
+            for (const req of aggregateRequirements(chosenRecipe)) {
+              consumeAvailable(usableLots, req.ingredient_id, req.quantity, req.unit);
+            }
             for (const [ingId, def] of Object.entries(deficits)) {
-              if (!shoppingItemsMap.has(ingId)) {
-                shoppingItemsMap.set(ingId, {
+              const key = `${ingId}|${UNIT_DIMENSIONS[def.unit]}`;
+              const item = shoppingItemsMap.get(key);
+              if (!item) {
+                shoppingItemsMap.set(key, {
                   ingredient_id: ingId,
                   ingredient_name: def.ingredient_name,
                   needed_quantity: def.missing_quantity,
@@ -455,9 +511,8 @@ export function generatePeriodPlan(
                   dish_names: [chosenRecipe.name],
                 });
               } else {
-                const item = shoppingItemsMap.get(ingId);
                 item.needed_quantity = Decimal.from(item.needed_quantity)
-                  .add(def.missing_quantity)
+                  .add(convertQuantity(def.missing_quantity, def.unit, item.unit))
                   .toString();
                 if (!item.dish_names.includes(chosenRecipe.name)) {
                   item.dish_names.push(chosenRecipe.name);
@@ -474,7 +529,7 @@ export function generatePeriodPlan(
               recipe_name: chosenRecipe.name,
               category: cat,
               is_leftover: false,
-              servings: 1,
+              servings: chosenRecipe.servings,
             };
             cookedRecipeIds.add(chosenRecipe.id);
 
@@ -493,7 +548,7 @@ export function generatePeriodPlan(
       mealPlans.push(mealPlan);
     }
 
-    curr.setDate(curr.getDate() + 1);
+    curr.setUTCDate(curr.getUTCDate() + 1);
   }
 
   return {

@@ -205,6 +205,25 @@ function setupAutocomplete(inputId, dropdownId, hiddenId) {
 
   let timer = null;
 
+  // Trên điện thoại bàn phím ảo chiếm nửa màn hình: cuộn ô gõ lên cao nếu danh sách không đủ chỗ
+  // và giới hạn chiều cao danh sách theo phần màn hình còn nhìn thấy.
+  function fitDropdown() {
+    const vv = window.visualViewport;
+    let viewH = vv ? vv.height : window.innerHeight;
+    // Thanh tab dưới (di động) là lớp cố định che phần đáy màn hình: coi nó là mép dưới vùng nhìn thấy.
+    const tabbar = document.querySelector(".tabbar");
+    if (tabbar && getComputedStyle(tabbar).display !== "none") {
+      viewH = Math.min(viewH, tabbar.getBoundingClientRect().top);
+    }
+    let rect = input.getBoundingClientRect();
+    if (viewH - rect.bottom < 180) {
+      window.scrollBy({ top: rect.top - 72 });
+      rect = input.getBoundingClientRect();
+    }
+    const room = viewH - rect.bottom - 16;
+    dropdown.style.maxHeight = `${Math.max(132, Math.min(300, room))}px`;
+  }
+
   input.addEventListener("input", () => {
     clearTimeout(timer);
     const q = input.value.trim();
@@ -249,6 +268,7 @@ function setupAutocomplete(inputId, dropdownId, hiddenId) {
           empty.textContent = "Không tìm thấy nguyên liệu chuẩn";
           dropdown.appendChild(empty);
           dropdown.style.display = "block";
+          fitDropdown();
           return;
         }
 
@@ -267,17 +287,19 @@ function setupAutocomplete(inputId, dropdownId, hiddenId) {
             el.appendChild(alias);
           }
 
-          const pickItem = (e) => {
+          // Chọn khi nhả tay (click), KHÔNG chọn lúc chạm xuống: nếu không, vuốt để cuộn danh sách
+          // sẽ chọn nhầm mục đầu tiên chạm phải. mousedown chỉ giữ focus ô gõ, không chặn cuộn cảm ứng.
+          el.addEventListener("mousedown", (e) => e.preventDefault());
+          el.addEventListener("click", (e) => {
             e.preventDefault();
             hidden.value = item.id;
             input.value = item.name;
             dropdown.style.display = "none";
-          };
-          el.addEventListener("pointerdown", pickItem);
-          el.addEventListener("click", pickItem);
+          });
           dropdown.appendChild(el);
         });
         dropdown.style.display = "block";
+        fitDropdown();
       } catch (e) {
         console.warn("Autocomplete error:", e);
       }
@@ -648,12 +670,15 @@ async function initPlannerPage() {
                 for (const d of meal.dishes || []) {
                   if (d.is_leftover) continue;
                   const recipe = (catalogue.recipes || []).find((r) => r.id === d.recipe_id);
-                  if (!recipe) continue;
+                  if (!recipe) {
+                    throw new Error(`Không tìm thấy công thức "${d.recipe_name || d.recipe_id}" trong danh mục.`);
+                  }
                   const deduction = engineDeductRecipeStockFifo(
                     updatedLots,
                     recipe,
                     meal.id,
-                    `eat_${meal.id}_${Date.now()}`
+                    `eat_${meal.id}_${Date.now()}`,
+                    d.servings ? String(d.servings / recipe.servings) : "1"
                   );
                   const updatedMap = new Map(deduction.updatedLots.map((l) => [l.id, l]));
                   updatedLots = updatedLots.map((l) => updatedMap.get(l.id) || l);
@@ -677,10 +702,11 @@ async function initPlannerPage() {
               const payload = {
                 pantry: currentLots,
                 meal_plan_id: meal.id,
+                // Không gửi servings khi thiếu: server hiểu là nấu trọn công thức (khớp bản offline)
                 dishes: (meal.dishes || []).map((d) => ({
                   recipe_id: d.recipe_id,
                   is_leftover: d.is_leftover,
-                  servings: d.servings || 1,
+                  ...(d.servings ? { servings: d.servings } : {}),
                 })),
                 idempotency_key: `eat_${meal.id}_${Date.now()}`,
               };

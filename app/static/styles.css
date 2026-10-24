@@ -579,12 +579,19 @@ input[type="number"] { text-align: right; font-variant-numeric: tabular-nums; }
   border-radius: 8px;
   max-height: 220px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   z-index: 50;
   box-shadow: var(--shadow-pop);
   display: none;
 }
 
 .autocomplete-item {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   padding: var(--space-3) var(--space-4);
   cursor: pointer;
   border-bottom: 1px solid var(--line);

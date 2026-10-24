@@ -130,7 +130,6 @@ class PantryLot:
     unit: QuantityUnit
     purchased_at: datetime
     expires_at: date | None = None
-    user_id: UUID | None = None
     created_at: datetime = field(default_factory=datetime.now)
 
 
@@ -156,7 +155,6 @@ class MealPlan:
     eaten_at: datetime | None = None
     notes: str | None = None
     dishes: list[PlannedDish] = field(default_factory=list)
-    user_id: UUID | None = None
     created_at: datetime = field(default_factory=datetime.now)
 
 
@@ -166,7 +164,6 @@ class StockMovement:
     pantry_lot_id: UUID
     quantity_delta: Decimal
     reason: StockMovementReason
-    user_id: UUID | None = None
     meal_plan_id: UUID | None = None
     idempotency_key: str | None = None
     created_at: datetime = field(default_factory=datetime.now)

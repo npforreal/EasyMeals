@@ -84,7 +84,7 @@ Truy cập trang **Dữ liệu** (`/settings`):
 ### 5. Cài đặt ứng dụng (PWA & Mobile)
 - **Trên Android (Chrome)**: Mở trang web -> Bấm biểu tượng ba chấm `⋮` -> Chọn **Cài đặt ứng dụng** (Install App).
 - **Trên iOS / iPhone (Safari)**: Mở trang web -> Bấm biểu tượng **Chia sẻ** -> Chọn **Thêm vào MH chính** (Add to Home Screen).
-- **Ứng dụng Native (Capacitor)**: Dự án hỗ trợ đóng gói trực tiếp thành APK cho Android và ứng dụng iOS thông qua thư mục `android/` và `ios/`.
+- **Ứng dụng Native (Capacitor)**: Dự án hỗ trợ đóng gói trực tiếp thành APK cho Android và ứng dụng iOS thông qua thư mục `android/` và `ios/`. Xem hướng dẫn đóng gói chi tiết tại [`mobile/README.md`](mobile/README.md).
 
 ---
 

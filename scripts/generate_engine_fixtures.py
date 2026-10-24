@@ -13,12 +13,14 @@ from pathlib import Path
 from uuid import UUID
 
 from app.domain.inventory import (
+    InsufficientStockError,
     check_recipe_stock,
     deduct_recipe_stock_fifo,
     reverse_stock_movements,
 )
 from app.domain.models import (
     DishCategory,
+    IncompatibleUnitError,
     PantryLot,
     QuantityUnit,
     Recipe,
@@ -353,6 +355,281 @@ def generate_fixtures() -> dict:
         ],
     }
     cases["planner_generation"] = planner_case
+
+    # -------------------------------------------------------------------------
+    # Case 5: FIFO chute chuẩn khi hai lot có cùng hạn sử dụng
+    # (tie-break theo ngày mua: lot sớm mua hơn được trừ trước)
+    # -------------------------------------------------------------------------
+    recipe_tie = Recipe(
+        id=UUID("22222222-0001-0000-0000-000000000001"),
+        name="Thịt kho tàu",
+        category=DishCategory.MAN,
+        servings=4,
+        instructions=["Nấu thịt kho"],
+        ingredients=[
+            RecipeIngredient(
+                recipe_id=UUID("22222222-0001-0000-0000-000000000001"),
+                ingredient_id=ing_pork,
+                ingredient_name="Thịt ba chỉ",
+                quantity=Decimal("500"),
+                unit=QuantityUnit.GRAM,
+            ),
+            RecipeIngredient(
+                recipe_id=UUID("22222222-0001-0000-0000-000000000001"),
+                ingredient_id=ing_egg,
+                ingredient_name="Trứng vịt",
+                quantity=Decimal("4"),
+                unit=QuantityUnit.PIECE,
+            ),
+        ],
+    )
+
+    pantry_tie = [
+        PantryLot(
+            id=UUID("aaaaaaaa-0001-0000-0000-000000000010"),
+            ingredient_id=ing_pork,
+            ingredient_name="Thịt ba chỉ",
+            purchased_quantity=Decimal("500"),
+            remaining_quantity=Decimal("400"),
+            unit=QuantityUnit.GRAM,
+            purchased_at=datetime(2026, 10, 22, 10, 0, 0),
+            expires_at=date(2026, 10, 28),
+        ),
+        PantryLot(
+            id=UUID("aaaaaaaa-0001-0000-0000-000000000011"),
+            ingredient_id=ing_pork,
+            ingredient_name="Thịt ba chỉ",
+            purchased_quantity=Decimal("500"),
+            remaining_quantity=Decimal("300"),
+            unit=QuantityUnit.GRAM,
+            purchased_at=datetime(2026, 10, 20, 10, 0, 0),
+            expires_at=date(2026, 10, 28),
+        ),
+        PantryLot(
+            id=UUID("aaaaaaaa-0001-0000-0000-000000000012"),
+            ingredient_id=ing_egg,
+            ingredient_name="Trứng vịt",
+            purchased_quantity=Decimal("10"),
+            remaining_quantity=Decimal("10"),
+            unit=QuantityUnit.PIECE,
+            purchased_at=datetime(2026, 10, 21, 10, 0, 0),
+            expires_at=date(2026, 10, 30),
+        ),
+    ]
+    # Cả hai lot thịt hết hạn 2026-10-28 → chute chuẩn theo ngày mua:
+    # lot ...0011 (mua 10-20) được trừ trước, rồi mới đến lot ...0010 (mua 10-22).
+
+    pantry_tie_for_deduct = [
+        PantryLot(
+            id=lot.id,
+            ingredient_id=lot.ingredient_id,
+            ingredient_name=lot.ingredient_name,
+            purchased_quantity=lot.purchased_quantity,
+            remaining_quantity=lot.remaining_quantity,
+            unit=lot.unit,
+            purchased_at=lot.purchased_at,
+            expires_at=lot.expires_at,
+        )
+        for lot in pantry_tie
+    ]
+
+    can_cook_tie, deficits_tie = check_recipe_stock(recipe_tie, pantry_tie)
+    deduction_tie = deduct_recipe_stock_fifo(
+        pantry_lots=pantry_tie_for_deduct,
+        recipe=recipe_tie,
+        meal_plan_id=UUID("bbbbbbbb-0001-0000-0000-000000000010"),
+        idempotency_key="tiebreak_test_key",
+    )
+
+    def _serialize_recipe(r: Recipe) -> dict:
+        return {
+            "id": str(r.id),
+            "name": r.name,
+            "category": r.category.value,
+            "servings": r.servings,
+            "ingredients": [
+                {
+                    "ingredient_id": str(i.ingredient_id),
+                    "ingredient_name": i.ingredient_name,
+                    "quantity": norm_dec_str(i.quantity),
+                    "unit": i.unit.value,
+                }
+                for i in r.ingredients
+            ],
+        }
+
+    def _serialize_pantry(lots: list[PantryLot]) -> list[dict]:
+        return [
+            {
+                "id": str(lot.id),
+                "ingredient_id": str(lot.ingredient_id),
+                "ingredient_name": lot.ingredient_name,
+                "purchased_quantity": norm_dec_str(lot.purchased_quantity),
+                "remaining_quantity": norm_dec_str(lot.remaining_quantity),
+                "unit": lot.unit.value,
+                "purchased_at": lot.purchased_at.isoformat(),
+                "expires_at": lot.expires_at.isoformat() if lot.expires_at else None,
+            }
+            for lot in lots
+        ]
+
+    def _serialize_lots(result_lots: list[PantryLot]) -> list[dict]:
+        return [
+            {
+                "id": str(lot.id),
+                "remaining_quantity": norm_dec_str(lot.remaining_quantity),
+            }
+            for lot in result_lots
+        ]
+
+    def _serialize_movements(movements: list) -> list[dict]:
+        return [
+            {
+                "pantry_lot_id": str(m.pantry_lot_id),
+                "quantity_delta": norm_dec_str(m.quantity_delta),
+                "reason": m.reason.value,
+            }
+            for m in movements
+        ]
+
+    tie_case = {
+        "recipe": _serialize_recipe(recipe_tie),
+        "pantry": _serialize_pantry(pantry_tie),
+        "check_stock_expected": {
+            "can_cook": can_cook_tie,
+            "deficits_count": len(deficits_tie),
+        },
+        "deduction_expected": {
+            "updated_lots": _serialize_lots(deduction_tie.updated_lots),
+            "movements": _serialize_movements(deduction_tie.movements),
+        },
+    }
+    cases["fifo_deduction_same_expiry_tiebreak"] = tie_case
+
+    # -------------------------------------------------------------------------
+    # Case 6: Hết hàng / không đủ hàng (InsufficientStockError)
+    # -------------------------------------------------------------------------
+    pantry_insuff = [
+        PantryLot(
+            id=UUID("aaaaaaaa-0001-0000-0000-000000000013"),
+            ingredient_id=ing_pork,
+            ingredient_name="Thịt ba chỉ",
+            purchased_quantity=Decimal("500"),
+            remaining_quantity=Decimal("300"),
+            unit=QuantityUnit.GRAM,
+            purchased_at=datetime(2026, 10, 20, 10, 0, 0),
+            expires_at=date(2026, 10, 25),
+        ),
+        PantryLot(
+            id=UUID("aaaaaaaa-0001-0000-0000-000000000014"),
+            ingredient_id=ing_egg,
+            ingredient_name="Trứng vịt",
+            purchased_quantity=Decimal("10"),
+            remaining_quantity=Decimal("10"),
+            unit=QuantityUnit.PIECE,
+            purchased_at=datetime(2026, 10, 21, 10, 0, 0),
+            expires_at=date(2026, 10, 30),
+        ),
+    ]
+
+    can_cook_insuff, deficits_insuff = check_recipe_stock(recipe_tie, pantry_insuff)
+
+    insuff_deducted = False
+    try:
+        deduct_recipe_stock_fifo(
+            pantry_lots=[
+                PantryLot(
+                    id=lot.id,
+                    ingredient_id=lot.ingredient_id,
+                    ingredient_name=lot.ingredient_name,
+                    purchased_quantity=lot.purchased_quantity,
+                    remaining_quantity=lot.remaining_quantity,
+                    unit=lot.unit,
+                    purchased_at=lot.purchased_at,
+                    expires_at=lot.expires_at,
+                )
+                for lot in pantry_insuff
+            ],
+            recipe=recipe_tie,
+            meal_plan_id=UUID("bbbbbbbb-0001-0000-0000-000000000011"),
+            idempotency_key="insuff_test_key",
+        )
+    except InsufficientStockError:
+        insuff_deducted = True
+
+    insuff_case = {
+        "recipe": _serialize_recipe(recipe_tie),
+        "pantry": _serialize_pantry(pantry_insuff),
+        "check_stock_expected": {
+            "can_cook": can_cook_insuff,
+            "deficits_count": len(deficits_insuff),
+        },
+        "deduction_expected": {
+            "error": "InsufficientStockError",
+            "raised": insuff_deducted,
+            "deficits_count": len(deficits_insuff),
+        },
+    }
+    cases["stock_insufficient"] = insuff_case
+
+    # -------------------------------------------------------------------------
+    # Case 7: Chuyển đổi không tương thích giữa khối lượng (g/kg)
+    # và thể tích (ml/l) -> IncompatibleUnitError
+    # -------------------------------------------------------------------------
+    ing_oil = UUID("11111111-0001-0000-0000-000000000050")
+    recipe_incompat = Recipe(
+        id=UUID("22222222-0001-0000-0000-000000000010"),
+        name="Cá kho dầu",
+        category=DishCategory.MAN,
+        servings=4,
+        instructions=["N cá kho dầu ăn"],
+        ingredients=[
+            RecipeIngredient(
+                recipe_id=UUID("22222222-0001-0000-0000-000000000010"),
+                ingredient_id=ing_oil,
+                ingredient_name="Dầu ăn",
+                quantity=Decimal("250"),
+                unit=QuantityUnit.GRAM,
+            )
+        ],
+    )
+
+    pantry_incompat = [
+        PantryLot(
+            id=UUID("aaaaaaaa-0001-0000-0000-000000000015"),
+            ingredient_id=ing_oil,
+            ingredient_name="Dầu ăn",
+            purchased_quantity=Decimal("1000"),
+            remaining_quantity=Decimal("1000"),
+            unit=QuantityUnit.MILLILITER,
+            purchased_at=datetime(2026, 10, 20, 10, 0, 0),
+            expires_at=date(2026, 10, 28),
+        ),
+    ]
+
+    can_cook_incompat, deficits_incompat = check_recipe_stock(recipe_incompat, pantry_incompat)
+
+    conversion_error_name = None
+    try:
+        convert_quantity(Decimal("250"), QuantityUnit.GRAM, QuantityUnit.MILLILITER)
+    except IncompatibleUnitError as exc:
+        conversion_error_name = exc.__class__.__name__
+
+    incompat_case = {
+        "recipe": _serialize_recipe(recipe_incompat),
+        "pantry": _serialize_pantry(pantry_incompat),
+        "check_stock_expected": {
+            "can_cook": can_cook_incompat,
+            "deficits_count": len(deficits_incompat),
+        },
+        "conversion_expected": {
+            "quantity": "250",
+            "from_unit": "g",
+            "to_unit": "ml",
+            "error": conversion_error_name,
+        },
+    }
+    cases["unit_conversion_incompatible_mass_volume"] = incompat_case
 
     FIXTURE_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(FIXTURE_PATH, "w", encoding="utf-8") as f:

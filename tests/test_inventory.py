@@ -47,11 +47,9 @@ def sample_recipe(sample_ingredient_id):
 
 
 def test_total_ingredient_stock_with_unit_conversion(sample_ingredient_id):
-    user_id = uuid4()
     lots = [
         PantryLot(
             id=uuid4(),
-            user_id=user_id,
             ingredient_id=sample_ingredient_id,
             ingredient_name="Thịt ba chỉ",
             purchased_quantity=Decimal("0.5"),
@@ -61,7 +59,6 @@ def test_total_ingredient_stock_with_unit_conversion(sample_ingredient_id):
         ),
         PantryLot(
             id=uuid4(),
-            user_id=user_id,
             ingredient_id=sample_ingredient_id,
             ingredient_name="Thịt ba chỉ",
             purchased_quantity=Decimal("300"),
@@ -79,11 +76,9 @@ def test_total_ingredient_stock_with_unit_conversion(sample_ingredient_id):
 
 
 def test_check_recipe_stock_sufficient_and_insufficient(sample_recipe, sample_ingredient_id):
-    user_id = uuid4()
     lots_insufficient = [
         PantryLot(
             id=uuid4(),
-            user_id=user_id,
             ingredient_id=sample_ingredient_id,
             ingredient_name="Thịt ba chỉ",
             purchased_quantity=Decimal("200"),
@@ -100,7 +95,6 @@ def test_check_recipe_stock_sufficient_and_insufficient(sample_recipe, sample_in
     lots_sufficient = [
         PantryLot(
             id=uuid4(),
-            user_id=user_id,
             ingredient_id=sample_ingredient_id,
             ingredient_name="Thịt ba chỉ",
             purchased_quantity=Decimal("1"),
@@ -115,13 +109,11 @@ def test_check_recipe_stock_sufficient_and_insufficient(sample_recipe, sample_in
 
 
 def test_deduct_recipe_stock_fifo(sample_recipe, sample_ingredient_id):
-    user_id = uuid4()
     meal_id = uuid4()
 
     # Two lots: lot 1 expires earlier (2026-10-25), lot 2 expires later (2026-10-30)
     lot1 = PantryLot(
         id=uuid4(),
-        user_id=user_id,
         ingredient_id=sample_ingredient_id,
         ingredient_name="Thịt ba chỉ",
         purchased_quantity=Decimal("300"),
@@ -132,7 +124,6 @@ def test_deduct_recipe_stock_fifo(sample_recipe, sample_ingredient_id):
     )
     lot2 = PantryLot(
         id=uuid4(),
-        user_id=user_id,
         ingredient_id=sample_ingredient_id,
         ingredient_name="Thịt ba chỉ",
         purchased_quantity=Decimal("500"),
@@ -146,7 +137,6 @@ def test_deduct_recipe_stock_fifo(sample_recipe, sample_ingredient_id):
     result = deduct_recipe_stock_fifo(
         pantry_lots=all_lots,
         recipe=sample_recipe,
-        user_id=user_id,
         meal_plan_id=meal_id,
         idempotency_key="key1",
     )
@@ -162,12 +152,10 @@ def test_deduct_recipe_stock_fifo(sample_recipe, sample_ingredient_id):
 
 
 def test_reverse_stock_movements_undo(sample_recipe, sample_ingredient_id):
-    user_id = uuid4()
     meal_id = uuid4()
 
     lot = PantryLot(
         id=uuid4(),
-        user_id=user_id,
         ingredient_id=sample_ingredient_id,
         ingredient_name="Thịt ba chỉ",
         purchased_quantity=Decimal("500"),
@@ -179,7 +167,6 @@ def test_reverse_stock_movements_undo(sample_recipe, sample_ingredient_id):
     result = deduct_recipe_stock_fifo(
         pantry_lots=[lot],
         recipe=sample_recipe,
-        user_id=user_id,
         meal_plan_id=meal_id,
         idempotency_key="key_undo",
     )
@@ -188,7 +175,6 @@ def test_reverse_stock_movements_undo(sample_recipe, sample_ingredient_id):
     restored_lots, rev_movements = reverse_stock_movements(
         pantry_lots=[lot],
         movements=result.movements,
-        user_id=user_id,
         meal_plan_id=meal_id,
     )
 

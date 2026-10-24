@@ -291,5 +291,187 @@
         "unit": "g"
       }
     ]
+  },
+  "fifo_deduction_same_expiry_tiebreak": {
+    "recipe": {
+      "id": "22222222-0001-0000-0000-000000000001",
+      "name": "Thịt kho tàu",
+      "category": "man",
+      "servings": 4,
+      "ingredients": [
+        {
+          "ingredient_id": "11111111-0001-0000-0000-000000000001",
+          "ingredient_name": "Thịt ba chỉ",
+          "quantity": "500",
+          "unit": "g"
+        },
+        {
+          "ingredient_id": "11111111-0001-0000-0000-000000000009",
+          "ingredient_name": "Trứng vịt",
+          "quantity": "4",
+          "unit": "piece"
+        }
+      ]
+    },
+    "pantry": [
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000010",
+        "ingredient_id": "11111111-0001-0000-0000-000000000001",
+        "ingredient_name": "Thịt ba chỉ",
+        "purchased_quantity": "500",
+        "remaining_quantity": "400",
+        "unit": "g",
+        "purchased_at": "2026-10-22T10:00:00",
+        "expires_at": "2026-10-28"
+      },
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000011",
+        "ingredient_id": "11111111-0001-0000-0000-000000000001",
+        "ingredient_name": "Thịt ba chỉ",
+        "purchased_quantity": "500",
+        "remaining_quantity": "300",
+        "unit": "g",
+        "purchased_at": "2026-10-20T10:00:00",
+        "expires_at": "2026-10-28"
+      },
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000012",
+        "ingredient_id": "11111111-0001-0000-0000-000000000009",
+        "ingredient_name": "Trứng vịt",
+        "purchased_quantity": "10",
+        "remaining_quantity": "10",
+        "unit": "piece",
+        "purchased_at": "2026-10-21T10:00:00",
+        "expires_at": "2026-10-30"
+      }
+    ],
+    "check_stock_expected": {
+      "can_cook": true,
+      "deficits_count": 0
+    },
+    "deduction_expected": {
+      "updated_lots": [
+        {
+          "id": "aaaaaaaa-0001-0000-0000-000000000011",
+          "remaining_quantity": "0"
+        },
+        {
+          "id": "aaaaaaaa-0001-0000-0000-000000000010",
+          "remaining_quantity": "200"
+        },
+        {
+          "id": "aaaaaaaa-0001-0000-0000-000000000012",
+          "remaining_quantity": "6"
+        }
+      ],
+      "movements": [
+        {
+          "pantry_lot_id": "aaaaaaaa-0001-0000-0000-000000000011",
+          "quantity_delta": "-300",
+          "reason": "meal_consumption"
+        },
+        {
+          "pantry_lot_id": "aaaaaaaa-0001-0000-0000-000000000010",
+          "quantity_delta": "-200",
+          "reason": "meal_consumption"
+        },
+        {
+          "pantry_lot_id": "aaaaaaaa-0001-0000-0000-000000000012",
+          "quantity_delta": "-4",
+          "reason": "meal_consumption"
+        }
+      ]
+    }
+  },
+  "stock_insufficient": {
+    "recipe": {
+      "id": "22222222-0001-0000-0000-000000000001",
+      "name": "Thịt kho tàu",
+      "category": "man",
+      "servings": 4,
+      "ingredients": [
+        {
+          "ingredient_id": "11111111-0001-0000-0000-000000000001",
+          "ingredient_name": "Thịt ba chỉ",
+          "quantity": "500",
+          "unit": "g"
+        },
+        {
+          "ingredient_id": "11111111-0001-0000-0000-000000000009",
+          "ingredient_name": "Trứng vịt",
+          "quantity": "4",
+          "unit": "piece"
+        }
+      ]
+    },
+    "pantry": [
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000013",
+        "ingredient_id": "11111111-0001-0000-0000-000000000001",
+        "ingredient_name": "Thịt ba chỉ",
+        "purchased_quantity": "500",
+        "remaining_quantity": "300",
+        "unit": "g",
+        "purchased_at": "2026-10-20T10:00:00",
+        "expires_at": "2026-10-25"
+      },
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000014",
+        "ingredient_id": "11111111-0001-0000-0000-000000000009",
+        "ingredient_name": "Trứng vịt",
+        "purchased_quantity": "10",
+        "remaining_quantity": "10",
+        "unit": "piece",
+        "purchased_at": "2026-10-21T10:00:00",
+        "expires_at": "2026-10-30"
+      }
+    ],
+    "check_stock_expected": {
+      "can_cook": false,
+      "deficits_count": 1
+    },
+    "deduction_expected": {
+      "error": "InsufficientStockError",
+      "raised": true,
+      "deficits_count": 1
+    }
+  },
+  "unit_conversion_incompatible_mass_volume": {
+    "recipe": {
+      "id": "22222222-0001-0000-0000-000000000010",
+      "name": "Cá kho dầu",
+      "category": "man",
+      "servings": 4,
+      "ingredients": [
+        {
+          "ingredient_id": "11111111-0001-0000-0000-000000000050",
+          "ingredient_name": "Dầu ăn",
+          "quantity": "250",
+          "unit": "g"
+        }
+      ]
+    },
+    "pantry": [
+      {
+        "id": "aaaaaaaa-0001-0000-0000-000000000015",
+        "ingredient_id": "11111111-0001-0000-0000-000000000050",
+        "ingredient_name": "Dầu ăn",
+        "purchased_quantity": "1000",
+        "remaining_quantity": "1000",
+        "unit": "ml",
+        "purchased_at": "2026-10-20T10:00:00",
+        "expires_at": "2026-10-28"
+      }
+    ],
+    "check_stock_expected": {
+      "can_cook": false,
+      "deficits_count": 1
+    },
+    "conversion_expected": {
+      "quantity": "250",
+      "from_unit": "g",
+      "to_unit": "ml",
+      "error": "IncompatibleUnitError"
+    }
   }
 }

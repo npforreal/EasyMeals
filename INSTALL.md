@@ -160,6 +160,14 @@ npx cap sync ios
 npx cap open ios
 ```
 
+### 🔗 Tài liệu chi tiết di động
+
+Hướng dẫn chi tiết đóng gói, build và phát hành ứng dụng di động (Capacitor Android/iOS) nằm tại [`mobile/README.md`](mobile/README.md).
+
+**Lưu ý quan trọng về phát hành:**
+- `www/` là artifact sinh ra từ bản build (`python scripts/build_mobile_web.py`), **không được commit** vào kho lưu trữ.
+- Chưa có artifact release đã ký (AAB cho Google Play, IPA cho App Store). Bản APK/IPA đính kèm release chỉ để thử nghiệm (APK debug, IPA chưa ký); việc ký để phát hành lên cửa hàng ứng dụng do chủ dự án thực hiện.
+
 ---
 
 ## 🛠️ 6. Xử Lý Sự Cố Thường Gặp (Troubleshooting)

@@ -16,6 +16,7 @@ from app.api.catalogue_routes import router as catalogue_router
 from app.api.ingredient_routes import router as ingredients_router
 from app.api.planner_routes import router as planner_router
 from app.api.recipe_routes import router as recipes_router
+from app.theme import BACKGROUND_COLOR, THEME_COLOR
 
 # 1. Environment & Production Verification
 is_production = (
@@ -37,7 +38,7 @@ app = FastAPI(
     title="EasyMeals",
     description="Ứng dụng lên lịch bữa ăn theo nguyên liệu có sẵn, dữ liệu cá nhân "
     "lưu trữ cục bộ trên thiết bị và backend tính toán không trạng thái.",
-    version="1.3.0",
+    version="1.4.0",
     docs_url=None if is_production else "/docs",
     redoc_url=None if is_production else "/redoc",
     openapi_url=None if is_production else "/openapi.json",
@@ -62,6 +63,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 if Path("www").exists():
     app.mount("/mobile", StaticFiles(directory="www", html=True), name="mobile_static")
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["theme_color"] = THEME_COLOR
 
 # 4. Register API routers
 app.include_router(catalogue_router)
@@ -149,8 +151,8 @@ def manifest() -> JSONResponse:
             ),
             "start_url": "/",
             "display": "standalone",
-            "background_color": "#f6f1e7",
-            "theme_color": "#3f6b3a",
+            "background_color": BACKGROUND_COLOR,
+            "theme_color": THEME_COLOR,
             "icons": [
                 {
                     "src": "/static/icon.svg",

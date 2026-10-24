@@ -229,4 +229,43 @@ test.describe("EasyMeals End-to-End User Journey", () => {
     );
     expect(overflow).toBeLessThanOrEqual(1);
   });
+  test("Dropdown gợi ý cuộn được bằng cảm ứng và vuốt không tự chọn mục", async ({ page }) => {
+    await page.goto("/");
+    await page.locator("#ingredient-search").fill("c");
+    const dd = page.locator("#ingredient-dropdown");
+    const items = dd.locator(".autocomplete-item");
+    await expect(items.first()).toBeVisible({ timeout: 5000 });
+    expect(await items.count()).toBeGreaterThanOrEqual(6);
+
+    // Vuốt (cảm ứng) từ cuối danh sách lên đầu: phải cuộn, không được chọn mục nào.
+    const box = await dd.boundingBox();
+    const x = box.x + box.width / 2;
+    // Chỉ vuốt trong phần danh sách nhìn thấy được (không nằm dưới thanh tab cố định).
+    const tabTop = await page.evaluate(() => {
+      const t = document.querySelector(".tabbar");
+      return t && getComputedStyle(t).display !== "none" ? t.getBoundingClientRect().top : innerHeight;
+    });
+    const yFrom = Math.min(box.y + box.height, tabTop) - 16;
+    const yTo = box.y + 16;
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y: yFrom }] });
+    for (let k = 1; k <= 8; k++) {
+      const y = yFrom + ((yTo - yFrom) * k) / 8;
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x, y }] });
+    }
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+
+    await expect(dd).toBeVisible();
+    await expect.poll(() => dd.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    expect(await page.locator("#ingredient-id").inputValue()).toBe("");
+    expect(await page.locator("#ingredient-search").inputValue()).toBe("c");
+
+    // Chạm (click) vào một mục mới chọn.
+    const pick = items.nth(2);
+    const name = (await pick.locator("strong").innerText()).trim();
+    await pick.click();
+    await expect(dd).toBeHidden();
+    expect(await page.locator("#ingredient-search").inputValue()).toBe(name);
+    expect(await page.locator("#ingredient-id").inputValue()).not.toBe("");
+  });
 });
