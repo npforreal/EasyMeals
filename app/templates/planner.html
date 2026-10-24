@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="section-header">
+    <div>
+      <h1>Kế Hoạch Bữa Ăn Theo Đợt</h1>
+      <p class="subtitle">Lên lịch theo chu kỳ (mặc định 1 tuần), tuyệt đối không lặp lại món ăn trong đợt, ưu tiên tận dụng đồ ăn dư.</p>
+    </div>
+  </div>
+
+  <!-- Tạo kế hoạch -->
+  <div class="card">
+    <h2 style="margin-bottom: var(--space-2);">Tạo Đợt Thực Đơn Mới</h2>
+    <form id="generate-plan-form" novalidate>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="plan-start">Từ ngày <span style="color: var(--danger);">*</span></label>
+          <input type="date" id="plan-start" required>
+        </div>
+        <div class="form-group">
+          <label for="plan-end">Đến ngày <span style="color: var(--danger);">*</span></label>
+          <input type="date" id="plan-end" required>
+        </div>
+      </div>
+      <div class="form-group" style="display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2);">
+        <input type="checkbox" id="allow-leftovers" checked style="width: auto; min-height: auto;">
+        <label for="allow-leftovers" style="margin: 0; font-weight: normal;">
+          Cho phép lên lịch ăn lại đồ ăn dư (leftovers) từ bữa trước để tránh lãng phí thực phẩm.
+        </label>
+      </div>
+      <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4); flex-wrap: wrap;">
+        <button type="submit" class="btn btn-primary" id="btn-generate">Tạo thực đơn tự động (không lặp món)</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Cảnh báo cần mua -->
+  <div id="shopping-alert" class="card" style="display: none; border-left: 4px solid var(--accent); align-items: center; gap: var(--space-3);">
+    <svg class="ico" aria-hidden="true" style="width:20px;height:20px; color: var(--accent);"><use href="/static/icons.svg#i-warning"></use></svg>
+    <div style="flex: 1;">
+      <h3 style="margin: 0 0 var(--space-1) 0; font-size: var(--text-sm);">Tủ lạnh thiếu một số nguyên liệu để nấu đủ món mới không lặp lại!</h3>
+      <p id="shopping-alert-text" style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">EasyMeals đã tự động tổng hợp danh sách nguyên liệu cần mua bổ sung.</p>
+    </div>
+    <a href="/shopping-list" class="btn btn-primary btn-sm">Xem danh sách đi chợ</a>
+  </div>
+
+  <!-- Danh sách ngày trong đợt -->
+  <div id="plans-container">
+    <div class="skeleton" style="padding: var(--space-6) 0; text-align: center;">
+      <div class="skeleton-title" style="width: 40%; margin: 0 auto;"></div>
+      <div class="skeleton-text" style="width: 60%; margin: 0 auto;"></div>
+    </div>
+  </div>
+{% endblock %}

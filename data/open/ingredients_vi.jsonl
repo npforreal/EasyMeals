@@ -1,0 +1,147 @@
+{"name": "Bánh mì", "normalized_name": "banh mi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "banh mi"}
+{"name": "Bánh tráng", "normalized_name": "banh trang", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "banh trang"}
+{"name": "Bí đao", "normalized_name": "bi dao", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "bi dao"}
+{"name": "Bí đỏ", "normalized_name": "bi do", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "bi do"}
+{"name": "Bông bí", "normalized_name": "bong bi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "bong bi"}
+{"name": "Bông cải trắng", "normalized_name": "bong cai trang", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "bong cai trang"}
+{"name": "Bông cải xanh", "normalized_name": "bong cai xanh", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "bong cai xanh"}
+{"name": "Bơ", "normalized_name": "bo", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "bo"}
+{"name": "Bầu", "normalized_name": "bau", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "bau"}
+{"name": "Bắp cải", "normalized_name": "bap cai", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "bap cai"}
+{"name": "Bắp ngọt", "normalized_name": "bap ngot", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "bap ngot"}
+{"name": "Bột chiên xù", "normalized_name": "bot chien xu", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "bot chien xu"}
+{"name": "Bột cà ri", "normalized_name": "bot ca ri", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "bot ca ri"}
+{"name": "Bột mì", "normalized_name": "bot mi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "bot mi"}
+{"name": "Chanh", "normalized_name": "chanh", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "chanh"}
+{"name": "Chao", "normalized_name": "chao", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "chao"}
+{"name": "Chả lụa", "normalized_name": "cha lua", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "cha lua"}
+{"name": "Cua đồng", "normalized_name": "cua dong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "cua dong"}
+{"name": "Cà chua", "normalized_name": "ca chua", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ca chua"}
+{"name": "Cà chua bi", "normalized_name": "ca chua bi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ca chua bi"}
+{"name": "Cà rốt", "normalized_name": "ca rot", "aliases": [], "category": "root", "language": "vi", "source": "vietnamese_standard", "source_id": "ca rot"}
+{"name": "Cà tím", "normalized_name": "ca tim", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ca tim"}
+{"name": "Cá ba sa", "normalized_name": "ca ba sa", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ca ba sa"}
+{"name": "Cá bống", "normalized_name": "ca bong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ca bong"}
+{"name": "Cá hồi", "normalized_name": "ca hoi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ca hoi"}
+{"name": "Cá lóc", "normalized_name": "ca loc", "aliases": [], "category": "seafood", "language": "vi", "source": "vietnamese_standard", "source_id": "ca loc"}
+{"name": "Cá ngừ đóng hộp", "normalized_name": "ca ngu dong hop", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ca ngu dong hop"}
+{"name": "Cá nục", "normalized_name": "ca nuc", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ca nuc"}
+{"name": "Cá rô phi", "normalized_name": "ca ro phi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ca ro phi"}
+{"name": "Cá rô đồng", "normalized_name": "ca ro dong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ca ro dong"}
+{"name": "Cá thu", "normalized_name": "ca thu", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ca thu"}
+{"name": "Cá thát lát", "normalized_name": "ca that lat", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ca that lat"}
+{"name": "Cá điêu hồng", "normalized_name": "ca dieu hong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ca dieu hong"}
+{"name": "Cơm nguội", "normalized_name": "com nguoi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "com nguoi"}
+{"name": "Cơm nóng", "normalized_name": "com nong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "com nong"}
+{"name": "Cải bẹ xanh", "normalized_name": "cai be xanh", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "cai be xanh"}
+{"name": "Cải ngọt", "normalized_name": "cai ngot", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "cai ngot"}
+{"name": "Cải thìa", "normalized_name": "cai thia", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "cai thia"}
+{"name": "Cần tây", "normalized_name": "can tay", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "can tay"}
+{"name": "Cốm xanh", "normalized_name": "com xanh", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "com xanh"}
+{"name": "Cốt me", "normalized_name": "cot me", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "cot me"}
+{"name": "Củ nghệ", "normalized_name": "cu nghe", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "cu nghe"}
+{"name": "Dưa leo", "normalized_name": "dua leo", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "dua leo"}
+{"name": "Dầu hào", "normalized_name": "dau hao", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "dau hao"}
+{"name": "Dầu mè", "normalized_name": "dau me", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "dau me"}
+{"name": "Dầu oliu", "normalized_name": "dau oliu", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "dau oliu"}
+{"name": "Dầu ăn", "normalized_name": "dau an", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "dau an"}
+{"name": "Dứa", "normalized_name": "dua", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "dua"}
+{"name": "Giá đỗ", "normalized_name": "gia do", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "gia do"}
+{"name": "Giấm", "normalized_name": "giam", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "giam"}
+{"name": "Gừng", "normalized_name": "gung", "aliases": [], "category": "spice", "language": "vi", "source": "vietnamese_standard", "source_id": "gung"}
+{"name": "Hoa chuối", "normalized_name": "hoa chuoi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "hoa chuoi"}
+{"name": "Hoa thiên lý", "normalized_name": "hoa thien ly", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "hoa thien ly"}
+{"name": "Huyết heo", "normalized_name": "huyet heo", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "huyet heo"}
+{"name": "Hành lá", "normalized_name": "hanh la", "aliases": [], "category": "herb", "language": "vi", "source": "vietnamese_standard", "source_id": "hanh la"}
+{"name": "Hành tây", "normalized_name": "hanh tay", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "hanh tay"}
+{"name": "Hành tím", "normalized_name": "hanh tim", "aliases": [], "category": "spice", "language": "vi", "source": "vietnamese_standard", "source_id": "hanh tim"}
+{"name": "Hạt sen", "normalized_name": "hat sen", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "hat sen"}
+{"name": "Hến", "normalized_name": "hen", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "hen"}
+{"name": "Kem tươi", "normalized_name": "kem tuoi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "kem tuoi"}
+{"name": "Khoai mỡ", "normalized_name": "khoai mo", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "khoai mo"}
+{"name": "Khoai tây", "normalized_name": "khoai tay", "aliases": [], "category": "root", "language": "vi", "source": "vietnamese_standard", "source_id": "khoai tay"}
+{"name": "Khế chua", "normalized_name": "khe chua", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "khe chua"}
+{"name": "Khổ qua", "normalized_name": "kho qua", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "kho qua"}
+{"name": "Kim chi", "normalized_name": "kim chi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "kim chi"}
+{"name": "Lá chanh", "normalized_name": "la chanh", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "la chanh"}
+{"name": "Lòng gà", "normalized_name": "long ga", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "long ga"}
+{"name": "Lạp xưởng", "normalized_name": "lap xuong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "lap xuong"}
+{"name": "Miến", "normalized_name": "mien", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "mien"}
+{"name": "Mè rang", "normalized_name": "me rang", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "me rang"}
+{"name": "Mì trứng", "normalized_name": "mi trung", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "mi trung"}
+{"name": "Mì udon", "normalized_name": "mi udon", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "mi udon"}
+{"name": "Mì Ý spaghetti", "normalized_name": "mi y spaghetti", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "mi y spaghetti"}
+{"name": "Mùi tàu", "normalized_name": "mui tau", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "mui tau"}
+{"name": "Măng chua", "normalized_name": "mang chua", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "mang chua"}
+{"name": "Măng tây", "normalized_name": "mang tay", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "mang tay"}
+{"name": "Măng tươi", "normalized_name": "mang tuoi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "mang tuoi"}
+{"name": "Mướp hương", "normalized_name": "muop huong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "muop huong"}
+{"name": "Mật ong", "normalized_name": "mat ong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "mat ong"}
+{"name": "Mực ống", "normalized_name": "muc ong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "muc ong"}
+{"name": "Ngao", "normalized_name": "ngao", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ngao"}
+{"name": "Ngò gai", "normalized_name": "ngo gai", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ngo gai"}
+{"name": "Ngó sen", "normalized_name": "ngo sen", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ngo sen"}
+{"name": "Nước mắm", "normalized_name": "nuoc mam", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "nuoc mam"}
+{"name": "Nước tương", "normalized_name": "nuoc tuong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "nuoc tuong"}
+{"name": "Nấm hương", "normalized_name": "nam huong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "nam huong"}
+{"name": "Nấm kim châm", "normalized_name": "nam kim cham", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "nam kim cham"}
+{"name": "Nấm mèo", "normalized_name": "nam meo", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "nam meo"}
+{"name": "Nấm rơm", "normalized_name": "nam rom", "aliases": [], "category": "mushroom", "language": "vi", "source": "vietnamese_standard", "source_id": "nam rom"}
+{"name": "Nấm đùi gà", "normalized_name": "nam dui ga", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "nam dui ga"}
+{"name": "Phô mai", "normalized_name": "pho mai", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "pho mai"}
+{"name": "Quả sấu", "normalized_name": "qua sau", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "qua sau"}
+{"name": "Rau bí", "normalized_name": "rau bi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau bi"}
+{"name": "Rau cải cúc", "normalized_name": "rau cai cuc", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau cai cuc"}
+{"name": "Rau dền", "normalized_name": "rau den", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau den"}
+{"name": "Rau khoai lang", "normalized_name": "rau khoai lang", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau khoai lang"}
+{"name": "Rau muống", "normalized_name": "rau muong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau muong"}
+{"name": "Rau má", "normalized_name": "rau ma", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau ma"}
+{"name": "Rau mùi", "normalized_name": "rau mui", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau mui"}
+{"name": "Rau mồng tơi", "normalized_name": "rau mong toi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau mong toi"}
+{"name": "Rau ngò", "normalized_name": "rau ngo", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau ngo"}
+{"name": "Rau ngót", "normalized_name": "rau ngot", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau ngot"}
+{"name": "Rau om", "normalized_name": "rau om", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau om"}
+{"name": "Rau răm", "normalized_name": "rau ram", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau ram"}
+{"name": "Rau thơm", "normalized_name": "rau thom", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau thom"}
+{"name": "Rau đay", "normalized_name": "rau day", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rau day"}
+{"name": "Rong biển", "normalized_name": "rong bien", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "rong bien"}
+{"name": "Su hào", "normalized_name": "su hao", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "su hao"}
+{"name": "Su su", "normalized_name": "su su", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "su su"}
+{"name": "Sườn non heo", "normalized_name": "suon non heo", "aliases": [], "category": "meat", "language": "vi", "source": "vietnamese_standard", "source_id": "suon non heo"}
+{"name": "Sả", "normalized_name": "sa", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "sa"}
+{"name": "Sốt BBQ", "normalized_name": "sot bbq", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "sot bbq"}
+{"name": "Sốt mayonnaise", "normalized_name": "sot mayonnaise", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "sot mayonnaise"}
+{"name": "Sữa tươi", "normalized_name": "sua tuoi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "sua tuoi"}
+{"name": "Tai heo", "normalized_name": "tai heo", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "tai heo"}
+{"name": "Thì là", "normalized_name": "thi la", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "thi la"}
+{"name": "Thịt ba chỉ", "normalized_name": "thit ba chi", "aliases": ["Thịt rọi"], "category": "meat", "language": "vi", "source": "vietnamese_standard", "source_id": "thit ba chi"}
+{"name": "Thịt bò thăn", "normalized_name": "thit bo than", "aliases": [], "category": "meat", "language": "vi", "source": "vietnamese_standard", "source_id": "thit bo than"}
+{"name": "Thịt gà", "normalized_name": "thit ga", "aliases": [], "category": "poultry", "language": "vi", "source": "vietnamese_standard", "source_id": "thit ga"}
+{"name": "Thịt heo nạc dăm", "normalized_name": "thit heo nac dam", "aliases": ["Thịt băm", "Thịt xay"], "category": "meat", "language": "vi", "source": "vietnamese_standard", "source_id": "thit heo nac dam"}
+{"name": "Thịt nguội", "normalized_name": "thit nguoi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "thit nguoi"}
+{"name": "Thịt vịt", "normalized_name": "thit vit", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "thit vit"}
+{"name": "Thịt xông khói", "normalized_name": "thit xong khoi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "thit xong khoi"}
+{"name": "Thịt ếch", "normalized_name": "thit ech", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "thit ech"}
+{"name": "Tiêu", "normalized_name": "tieu", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "tieu"}
+{"name": "Trứng gà", "normalized_name": "trung ga", "aliases": [], "category": "egg", "language": "vi", "source": "vietnamese_standard", "source_id": "trung ga"}
+{"name": "Trứng vịt", "normalized_name": "trung vit", "aliases": [], "category": "egg", "language": "vi", "source": "vietnamese_standard", "source_id": "trung vit"}
+{"name": "Tôm khô", "normalized_name": "tom kho", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "tom kho"}
+{"name": "Tôm sú", "normalized_name": "tom su", "aliases": [], "category": "seafood", "language": "vi", "source": "vietnamese_standard", "source_id": "tom su"}
+{"name": "Tương bần", "normalized_name": "tuong ban", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "tuong ban"}
+{"name": "Tương cà", "normalized_name": "tuong ca", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "tuong ca"}
+{"name": "Tương ớt", "normalized_name": "tuong ot", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "tuong ot"}
+{"name": "Tỏi", "normalized_name": "toi", "aliases": [], "category": "spice", "language": "vi", "source": "vietnamese_standard", "source_id": "toi"}
+{"name": "Xà lách", "normalized_name": "xa lach", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "xa lach"}
+{"name": "Xà lách xoong", "normalized_name": "xa lach xoong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "xa lach xoong"}
+{"name": "Xúc xích", "normalized_name": "xuc xich", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "xuc xich"}
+{"name": "Đu đủ", "normalized_name": "du du", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "du du"}
+{"name": "Đường", "normalized_name": "duong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "duong"}
+{"name": "Đầu cá hồi", "normalized_name": "dau ca hoi", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "dau ca hoi"}
+{"name": "Đậu Hà Lan", "normalized_name": "dau ha lan", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "dau ha lan"}
+{"name": "Đậu bắp", "normalized_name": "dau bap", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "dau bap"}
+{"name": "Đậu cô ve", "normalized_name": "dau co ve", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "dau co ve"}
+{"name": "Đậu hũ trắng", "normalized_name": "dau hu trang", "aliases": ["Tàu hũ"], "category": "tofu", "language": "vi", "source": "vietnamese_standard", "source_id": "dau hu trang"}
+{"name": "Đậu phộng", "normalized_name": "dau phong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "dau phong"}
+{"name": "Ớt", "normalized_name": "ot", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ot"}
+{"name": "Ớt chuông", "normalized_name": "ot chuong", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "ot chuong"}
+{"name": "Ức gà", "normalized_name": "uc ga", "aliases": [], "category": "vegetable", "language": "vi", "source": "vietnamese_standard", "source_id": "uc ga"}

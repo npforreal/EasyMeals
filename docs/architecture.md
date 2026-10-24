@@ -1,0 +1,361 @@
+# EasyMeals — Tài liệu Kiến trúc Hệ thống (Architecture Specification)
+
+Tài liệu này xác định kiến trúc kỹ thuật mới của **EasyMeals**: **Hệ thống dữ liệu cá nhân cục bộ (Local-first / Client-stored Personal Data) kết hợp Backend tính toán không trạng thái (Stateless Backend) và Cơ sở dữ liệu danh mục chỉ đọc (Read-only Public Catalogue)**.
+
+---
+
+## 1. Nguyên lý Thiết kế & Sơ đồ Luồng Dữ liệu (Data Flow)
+
+EasyMeals hoạt động theo nguyên tắc **không lưu bất kỳ dữ liệu cá nhân nào trên máy chủ hay cơ sở dữ liệu từ xa**.
+
+```mermaid
+flowchart TD
+    subgraph Client ["Client (Trình duyệt / PWA / WebView Capacitor)"]
+        UI["Giao diện người dùng (HTML + CSS tokens)"]
+        Store["Kho dữ liệu cục bộ (IndexedDB: pantry, plans, movements, settings, catalogue)"]
+        Backup["Xuất / Nhập JSON (Backup & Restore)"]
+        UI <--> Store
+        Store <--> Backup
+    end
+
+    subgraph Server ["FastAPI Backend (Vercel Serverless Functions)"]
+        CatRepo["Catalogue Repository (Chỉ đọc)"]
+        Domain["Pure Domain Logic (Planner, Inventory FIFO, Safe Units)"]
+        APICat["GET /api/catalogue, /api/recipes, /api/ingredients"]
+        APICalc["POST /api/planner/generate\nPOST /api/planner/eat\nPOST /api/planner/undo-eat"]
+    end
+
+    subgraph Supabase ["Supabase (PostgreSQL - Public Shared)"]
+        DB[(Chỉ có 4 bảng Danh mục:\ningredients, ingredient_aliases,\nrecipes, recipe_ingredients)]
+    end
+
+    %% Data Connections
+    UI -- "1. Tải danh mục (ETag / Cache)" --> APICat
+    APICat --> CatRepo --> DB
+    CatRepo -- "Chỉ đọc với anon key" --> DB
+
+    UI -- "2. Gửi trạng thái tính toán (Tủ, Kỳ, Bữa ăn)" --> APICalc
+    APICalc --> Domain
+    Domain -- "3. Trả về kết quả tính toán (Không ghi DB/đĩa)" --> APICalc
+    APICalc -- "4. Trả về thực đơn / trừ kho mới" --> UI
+    UI -- "5. Lưu trữ cục bộ & Atomic Transaction" --> Store
+```
+
+### Hai Đường Dữ Liệu Chuyên Biệt (Web vs Mobile Native)
+
+Hệ thống thiết lập 2 đường dữ liệu tối ưu theo nền tảng:
+
+```
++---------------------------------------------------------------------------------+
+|                                 ĐƯỜNG 1: WEB APP                                |
+|  - Trình duyệt Web / PWA trên máy tính và di động                               |
+|  - Danh mục: Đồng bộ từ Supabase qua GET /api/catalogue (ETag / If-None-Match) |
+|  - Tính toán: Chạy qua FastAPI Backend không trạng thái (hoặc fallback engine) |
+|  - Dữ liệu cá nhân: Lưu trữ trong IndexedDB của trình duyệt                     |
++---------------------------------------------------------------------------------+
+
++---------------------------------------------------------------------------------+
+|                            ĐƯỜNG 2: MOBILE APP (CAPACITOR)                      |
+|  - Ứng dụng Hybrid Native Android (.apk/.aab) và iOS (.ipa)                     |
+|  - HOÀN TOÀN OFFLINE: Không gọi Supabase, không gọi backend, không cần mạng    |
+|  - Danh mục: Đóng gói sẵn trong file data/catalogue.json (CATALOGUE_SOURCE=bundled)
+|  - Tính toán: Chạy trực tiếp trên máy bằng JavaScript Engine (engine.js)        |
+|    với số học Decimal chính xác, trừ kho FIFO, hoàn tác, lập thực đơn không lặp|
+|  - Dữ liệu cá nhân: Lưu trữ trong IndexedDB của WebView trên thiết bị          |
++---------------------------------------------------------------------------------+
+```
+
+### Bảng phân bố dữ liệu: "Dữ liệu nằm ở đâu?"
+
+| Dữ liệu | Web App | Mobile App (Capacitor) | Vòng đời & Bản quyền | Chế độ Offline |
+|---|---|---|---|---|
+| **Danh mục món ăn, nguyên liệu, công thức, alias** | Supabase Postgres (Public Read) -> Cache IndexedDB | **Đóng gói sẵn trong ứng dụng** (`catalogue.json`) -> Nạp IndexedDB | Dùng chung toàn hệ thống, cập nhật khi nâng cấp app hoặc seed | **100% Offline** (Mobile không cần kết nối mạng) |
+| **Kho thực phẩm / Tủ lạnh (Pantry lots)** | IndexedDB client (`pantry` store) | IndexedDB client (`pantry` store) | Thuộc sở hữu duy nhất của thiết bị | **Xem, thêm, sửa, xoá offline** |
+| **Kế hoạch thực đơn (Meal plans)** | IndexedDB client (`plans` store) | IndexedDB client (`plans` store) | Thuộc sở hữu thiết bị | **Web & Mobile tạo thực đơn offline hoàn toàn** |
+| **Lịch sử biến động kho (Stock movements)** | IndexedDB client (`movements` store) | IndexedDB client (`movements` store) | Thuộc sở hữu thiết bị; phục vụ audit và hoàn tác | **Web & Mobile trừ kho và hoàn tác offline hoàn toàn** |
+| **Cài đặt & Lịch sử sao lưu** | IndexedDB client (`settings` store) | IndexedDB client (`settings` store) | Thuộc sở hữu thiết bị | **Hoạt động offline** |
+| **Tài khoản, phiên, cookie** | **KHÔNG TỒN TẠI** | **KHÔNG TỒN TẠI** | Không có user_id, không theo dõi | Không áp dụng |
+
+
+---
+
+## 2. Hợp đồng API Không Trạng Thái (Stateless API Contracts)
+
+Backend FastAPI hoạt động như một cỗ máy tính toán thuần tuý (pure computational engine). Server **không lưu bất kỳ dữ liệu nào vào DB, không ghi log body request chứa thông tin tủ/thực đơn của người dùng**.
+
+### A. Danh mục dùng chung (Public Catalogue API - Read Only)
+
+#### `GET /api/catalogue`
+- **Mô tả**: Tải toàn bộ danh mục chuẩn (nguyên liệu, công thức, liên kết) kèm ETag/Version để client đồng bộ vào IndexedDB.
+- **Headers**:
+  - `If-None-Match: "<version-hash>"`
+- **Response `200 OK`**:
+  ```json
+  {
+    "catalogue_version": "2026.10.01",
+    "updated_at": "2026-10-23T00:00:00Z",
+    "ingredients": [
+      {
+        "id": "ing_thit_heo_ba_chi",
+        "name": "Thịt heo ba chỉ",
+        "normalized_name": "thit heo ba chi",
+        "category": "man",
+        "default_unit": "g"
+      }
+    ],
+    "recipes": [
+      {
+        "id": "rec_thit_kho_tau",
+        "title": "Thịt kho tàu",
+        "category": "man",
+        "servings": 4,
+        "instructions": "1. Thái thịt vuông...",
+        "ingredients": [
+          { "ingredient_id": "ing_thit_heo_ba_chi", "quantity": "400", "unit": "g" }
+        ]
+      }
+    ]
+  }
+  ```
+- **Response `304 Not Modified`**: Khi ETag trùng khớp.
+
+---
+
+### B. Tính toán Lập thực đơn (Stateless Planner API)
+
+#### `POST /api/planner/generate`
+- **Mô tả**: Nhận danh sách nguyên liệu hiện có trong tủ và cấu hình số ngày, tính toán kế hoạch thực đơn và danh sách cần mua thiếu hụt.
+- **Giới hạn đầu vào**: Body $\le 256$ KB; `pantry` $\le 500$ lots; `days` $\in [1, 31]$.
+- **Request mẫu**:
+  ```json
+  {
+    "pantry": [
+      {
+        "id": "lot-1",
+        "ingredient_id": "ing_thit_heo_ba_chi",
+        "initial_quantity": "500",
+        "remaining_quantity": "500",
+        "unit": "g",
+        "purchased_at": "2026-10-23T08:00:00Z"
+      }
+    ],
+    "start_date": "2026-10-24",
+    "days": 3,
+    "options": {
+      "include_shopping_list": true
+    }
+  }
+  ```
+- **Response mẫu `200 OK`**:
+  ```json
+  {
+    "period_id": "gen_20261024_3d",
+    "start_date": "2026-10-24",
+    "end_date": "2026-10-26",
+    "meals": [
+      {
+        "id": "meal_20261024_lunch",
+        "date": "2026-10-24",
+        "meal_type": "lunch",
+        "dishes": [
+          {
+            "recipe_id": "rec_thit_kho_tau",
+            "title": "Thịt kho tàu",
+            "category": "man",
+            "servings": 4,
+            "ingredients": [
+              { "ingredient_id": "ing_thit_heo_ba_chi", "name": "Thịt heo ba chỉ", "quantity": "400", "unit": "g" }
+            ]
+          }
+        ]
+      }
+    ],
+    "shopping_list": []
+  }
+  ```
+
+---
+
+### C. Tính toán Trừ kho & Hoàn tác (Stateless Stock Deduction & Undo API)
+
+#### `POST /api/planner/eat`
+- **Mô tả**: Nhận trạng thái tủ lạnh hiện tại và chi tiết bữa ăn; tính toán trừ kho theo nguyên tắc FIFO (First In First Out) và chuyển đổi đơn vị an toàn (`app/domain/inventory.py`).
+- **Request mẫu**:
+  ```json
+  {
+    "pantry": [
+      {
+        "id": "lot-1",
+        "ingredient_id": "ing_thit_heo_ba_chi",
+        "initial_quantity": "500",
+        "remaining_quantity": "500",
+        "unit": "g"
+      }
+    ],
+    "meal": {
+      "id": "meal_20261024_lunch",
+      "date": "2026-10-24",
+      "dishes": [
+        {
+          "recipe_id": "rec_thit_kho_tau",
+          "ingredients": [
+            { "ingredient_id": "ing_thit_heo_ba_chi", "quantity": "400", "unit": "g" }
+          ]
+        }
+      ]
+    },
+    "idempotency_key": "eat_meal_20261024_lunch_attempt1"
+  }
+  ```
+- **Response mẫu `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "pantry": [
+      {
+        "id": "lot-1",
+        "ingredient_id": "ing_thit_heo_ba_chi",
+        "initial_quantity": "500",
+        "remaining_quantity": "100",
+        "unit": "g"
+      }
+    ],
+    "movements": [
+      {
+        "id": "mov_uuid",
+        "lot_id": "lot-1",
+        "ingredient_id": "ing_thit_heo_ba_chi",
+        "meal_id": "meal_20261024_lunch",
+        "quantity_delta": "-400",
+        "unit": "g",
+        "reason": "meal_consumed",
+        "created_at": "2026-10-24T12:00:00Z"
+      }
+    ]
+  }
+  ```
+
+#### `POST /api/planner/undo-eat`
+- **Mô tả**: Đảo ngược các biến động kho (`movements`) tương ứng của bữa ăn đã ghi nhận nhầm, cộng hoàn lại số lượng chính xác vào các lot ban đầu.
+- **Request mẫu**:
+  ```json
+  {
+    "pantry": [
+      {
+        "id": "lot-1",
+        "ingredient_id": "ing_thit_heo_ba_chi",
+        "initial_quantity": "500",
+        "remaining_quantity": "100",
+        "unit": "g"
+      }
+    ],
+    "movements": [
+      {
+        "lot_id": "lot-1",
+        "ingredient_id": "ing_thit_heo_ba_chi",
+        "quantity_delta": "-400",
+        "unit": "g"
+      }
+    ]
+  }
+  ```
+- **Response mẫu `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "pantry": [
+      {
+        "id": "lot-1",
+        "ingredient_id": "ing_thit_heo_ba_chi",
+        "initial_quantity": "500",
+        "remaining_quantity": "500",
+        "unit": "g"
+      }
+    ],
+    "reversal_movements": [
+      {
+        "id": "mov_rev_uuid",
+        "lot_id": "lot-1",
+        "ingredient_id": "ing_thit_heo_ba_chi",
+        "quantity_delta": "400",
+        "unit": "g",
+        "reason": "undo_meal_consumed"
+      }
+    ]
+  }
+  ```
+
+---
+
+## 3. Cấu trúc IndexedDB & Quản lý Trạng thái Cục bộ
+
+Tên cơ sở dữ liệu: `easymeals_local_db`
+Phiên bản khởi tạo: `version = 1`
+
+### Object Stores
+1. `pantry` (Kho nguyên liệu):
+   - Key: `id` (UUID chuỗi).
+   - Indexes: `by_ingredient_id`, `by_purchased_at`.
+   - Fields: `id`, `ingredient_id`, `ingredient_name`, `initial_quantity` (string), `remaining_quantity` (string), `unit`, `purchased_at`, `created_at`.
+2. `plans` (Kế hoạch thực đơn):
+   - Key: `id` (UUID chuỗi).
+   - Indexes: `by_start_date`, `by_date`.
+   - Fields: `id`, `start_date`, `end_date`, `meals` (mảng chứa `eaten_at`, `dishes` với snapshot công thức).
+3. `movements` (Lịch sử biến động kho):
+   - Key: `id` (UUID chuỗi).
+   - Indexes: `by_lot_id`, `by_meal_id`, `by_created_at`.
+   - Fields: `id`, `lot_id`, `ingredient_id`, `meal_id`, `quantity_delta` (string), `unit`, `reason`, `created_at`.
+4. `catalogue` (Bản sao danh mục dùng chung):
+   - Key: `key` (chuỗi: `"meta"`, `"ingredients"`, `"recipes"`).
+5. `settings` (Cài đặt ứng dụng):
+   - Key: `key` (ví dụ: `"last_backup_at"`, `"theme"`, `"catalogue_version"`).
+
+### Chiến lược Nâng cấp Phiên bản Schema IndexedDB
+- Mọi hàm nâng cấp schema đều được cài đặt trong sự kiện `onupgradeneeded` tuần tự theo số phiên bản (`oldVersion < 2`, `oldVersion < 3`,...).
+- Dữ liệu luôn giữ tính tương thích xuôi và tương thích ngược.
+
+---
+
+## 4. Định dạng Tệp Sao lưu & Phục hồi (Backup & Restore Format)
+
+Định dạng file xuất ra là tệp JSON với cấu trúc chuẩn:
+```json
+{
+  "schema_version": 1,
+  "app": "EasyMeals",
+  "exported_at": "2026-10-23T20:30:00Z",
+  "metadata": {
+    "total_lots": 12,
+    "total_plans": 2,
+    "total_movements": 8
+  },
+  "data": {
+    "pantry": [ ... ],
+    "plans": [ ... ],
+    "movements": [ ... ],
+    "settings": { ... }
+  }
+}
+```
+
+### Quy tắc Nhập Tệp (Strict Import Rules):
+1. **Kiểm tra Schema Chặt Chẽ**: Kiểm tra cấu trúc `schema_version == 1`, kiểu dữ liệu của từng mảng, giới hạn kích thước file ($\le 10$ MB), giới hạn số bản ghi ($\le 5000$ lots, $\le 500$ plans).
+2. **Từ chối dữ liệu độc hại / XSS**: Tất cả chuỗi văn bản khi nạp vào DOM đều được hiển thị qua `textContent` hoặc DOM API an toàn, không bao giờ dùng `innerHTML` trực tiếp từ dữ liệu nhập.
+3. **Xác nhận Người dùng (Modal 2 lựa chọn)**:
+   - **Ghi đè hoàn toàn (Replace)**: Xoá toàn bộ dữ liệu hiện tại trong IndexedDB và nạp dữ liệu từ file.
+   - **Hợp nhất (Merge)**: Bổ sung các bản ghi chưa có (dựa trên UUID), bảo toàn các dữ liệu hiện có trên máy.
+
+---
+
+## 5. Mô hình Đe dọa Mới & Phòng thủ Chiều sâu (Threat Model)
+
+Khi loại bỏ dữ liệu người dùng khỏi máy chủ, mô hình rủi ro thay đổi căn bản:
+
+| Rủi ro mới | Mức độ | Biện pháp Phòng vệ |
+|---|---|---|
+| **Lạm dụng CPU / DoS qua API tính toán** | Trung bình | Pydantic `extra="forbid"`, giới hạn payload $\le 256$ KB, giới hạn `days` $\le 31$, giới hạn số `pantry` lots $\le 500$. Khuyến nghị bật Cloudflare/Vercel WAF Rate Limit 60 req/min/IP. |
+| **XSS đánh cắp / giả mạo dữ liệu trong IndexedDB** | Cao | Cấu hình CSP nghiêm ngặt: `script-src 'self'`, không `unsafe-inline`, không `unsafe-eval`. Không render dữ liệu động bằng `innerHTML`. |
+| **Tệp JSON độc hại khi Nhập (Malicious JSON Import)** | Cao | Bộ thẩm định Schema JS nghiêm ngặt (Validate Types, Enums, Max Lengths, Numerical Formats). Từ chối ngay nếu có cấu trúc lạ hoặc trường bất thường. |
+| **Mất dữ liệu do trình duyệt dọn dẹp cache** | Cao | Kích hoạt `navigator.storage.persist()`. Hiển thị banner cảnh báo và nhắc nhở xuất file JSON sao lưu định kỳ trên trang `/settings`. |
+| **Trừ kho hai lần do bấm đúp hoặc mở 2 tab song song** | Trung bình | Sử dụng Transaction nguyên tử của IndexedDB ở chế độ `readwrite`: kiểm tra `meal.eaten_at` ngay bên trong transaction trước khi commit ghi nhận trừ kho. |
+| **Lộ khoá quản trị `service_role`** | Rất cao | Khoá `service_role` bị cấm hoàn toàn trong code máy chủ runtime và client. Server runtime sẽ từ chối khởi động (`sys.exit(1)`) nếu phát hiện `SUPABASE_SERVICE_ROLE_KEY` trong môi trường. |

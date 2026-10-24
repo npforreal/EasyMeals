@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>{{ title or "EasyMeals" }}</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preload" href="/static/fonts/fraunces/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <meta name="theme-color" content="{{ theme_color }}">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <script src="/static/theme-init.js"></script>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  {% set path = request.url.path %}
+  {% set nav_items = [
+    ("/", "Trang chủ", "i-home"),
+    ("/planner", "Thực đơn", "i-calendar"),
+    ("/recipes", "Công thức", "i-book"),
+    ("/shopping-list", "Cần mua", "i-cart"),
+    ("/settings", "Dữ liệu", "i-settings"),
+  ] %}
+
+  <a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a href="/" class="brand">
+        <svg class="ico" width="28" height="28" style="width: 28px; height: 28px" aria-hidden="true"><use href="/static/icons.svg#i-leaf"></use></svg>
+        <span class="brand-name">EasyMeals</span>
+      </a>
+      <nav class="nav-list" aria-label="Điều hướng chính">
+        {% for href, label, icon in nav_items %}
+        <a href="{{ href }}" class="nav-link"{% if path == href %} aria-current="page"{% endif %}>
+          <svg class="ico" aria-hidden="true"><use href="/static/icons.svg#{{ icon }}"></use></svg>
+          <span>{{ label }}</span>
+        </a>
+        {% endfor %}
+      </nav>
+      <button type="button" class="theme-toggle" data-theme-toggle id="btn-theme-toggle" aria-label="Đổi giao diện sáng/tối">
+        <svg class="ico icon-sun" aria-hidden="true"><use href="/static/icons.svg#i-sun"></use></svg>
+        <svg class="ico icon-moon" aria-hidden="true"><use href="/static/icons.svg#i-moon"></use></svg>
+        <span>Đổi giao diện</span>
+      </button>
+    </aside>
+
+    <main id="main" class="content">
+      <div id="offline-banner" class="offline-banner" style="display: none; background: var(--surface-variant); border-bottom: 1px solid var(--border); padding: var(--space-2) var(--space-3); font-size: var(--text-xs); text-align: center; color: var(--text-muted); margin-bottom: var(--space-3); border-radius: var(--radius-sm);">
+        <svg class="ico" width="14" height="14" style="vertical-align: -2px; margin-right: 4px;" aria-hidden="true"><use href="/static/icons.svg#i-warning"></use></svg>
+        Đang ngoại tuyến. Xem dữ liệu bình thường; tạo thực đơn hoặc tính trừ kho cần kết nối mạng.
+      </div>
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <nav class="tabbar" aria-label="Điều hướng chính">
+    {% for href, label, icon in nav_items %}
+    <a href="{{ href }}" class="tab"{% if path == href %} aria-current="page"{% endif %}>
+      <span class="tab-pill"><svg class="ico" aria-hidden="true"><use href="/static/icons.svg#{{ icon }}"></use></svg></span>
+      <span>{{ label }}</span>
+    </a>
+    {% endfor %}
+    <button type="button" class="tab theme-tab" data-theme-toggle aria-label="Đổi giao diện sáng/tối" title="Đổi giao diện sáng/tối">
+      <svg class="ico icon-sun" aria-hidden="true"><use href="/static/icons.svg#i-sun"></use></svg>
+      <svg class="ico icon-moon" aria-hidden="true"><use href="/static/icons.svg#i-moon"></use></svg>
+    </button>
+  </nav>
+
+  <!-- Recipe modal -->
+  <div id="recipe-modal-overlay" class="modal-overlay">
+    <div class="modal" id="recipe-modal-content" role="dialog" aria-modal="true" aria-label="Chi tiết công thức"></div>
+  </div>
+
+  <div id="toast-container" role="status" aria-live="polite"></div>
+
+  <script type="module" src="/static/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

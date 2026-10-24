@@ -1,0 +1,44 @@
+[project]
+name = "easymeals"
+version = "1.4.0"
+description = "Plan meals around the ingredients already in your kitchen."
+license = "Apache-2.0"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.117,<1.0",
+  "jinja2>=3.1,<4.0",
+  "pydantic-settings>=2.6,<3.0",
+  "supabase>=2.18,<3.0",
+  "uvicorn[standard]>=0.30,<1.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+# Bo qua thu muc dataset/script cào web cua nguoi dung (song song), chi kiem tra
+# code EasyMeals: app/, tests/ (keu test_harvest.py), scripts/check.sh.
+exclude = [
+  "data",
+  "scripts/harvest",
+  "tests/test_harvest.py",
+  "scripts/build_vietnamese_dataset.py",
+]
+
+[tool.vercel]
+entrypoint = "app.main:app"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+markers = [
+  "integration: integration tests requiring live Supabase credentials",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["B008", "B904"]
+# B008: Depends/Query as route argument defaults is the idiomatic FastAPI
+# dependency-injection pattern (required by the framework), not a real defect.
+# B904: re-raising inside except clauses is intentional here.

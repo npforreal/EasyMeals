@@ -1,0 +1,429 @@
+{
+ "cases": [
+  {
+   "name": "mixed_unit_lots_do_not_block_compatible_stock",
+   "op": "check",
+   "recipe": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "Bánh",
+    "category": "man",
+    "servings": 4,
+    "ingredients": [
+     {
+      "ingredient_id": "00000000-0000-0000-0000-000000000104",
+      "name": "Bột",
+      "quantity": "300",
+      "unit": "g"
+     }
+    ]
+   },
+   "pantry": [
+    {
+     "id": "00000000-0000-0000-0000-000000000001",
+     "ingredient_id": "00000000-0000-0000-0000-000000000104",
+     "name": "Bột",
+     "purchased": "500",
+     "remaining": "500",
+     "unit": "g",
+     "expires_at": null
+    },
+    {
+     "id": "00000000-0000-0000-0000-000000000002",
+     "ingredient_id": "00000000-0000-0000-0000-000000000104",
+     "name": "Bột",
+     "purchased": "3",
+     "remaining": "3",
+     "unit": "piece",
+     "expires_at": null
+    }
+   ],
+   "multiplier": "1",
+   "expect": {
+    "can_cook": true,
+    "deficits": {}
+   }
+  },
+  {
+   "name": "duplicate_requirement_rows_are_summed",
+   "op": "check",
+   "recipe": {
+    "id": "00000000-0000-0000-0000-000000000002",
+    "name": "Cơm",
+    "category": "man",
+    "servings": 4,
+    "ingredients": [
+     {
+      "ingredient_id": "00000000-0000-0000-0000-000000000101",
+      "name": "Gạo",
+      "quantity": "300",
+      "unit": "g"
+     },
+     {
+      "ingredient_id": "00000000-0000-0000-0000-000000000101",
+      "name": "Gạo",
+      "quantity": "300",
+      "unit": "g"
+     }
+    ]
+   },
+   "pantry": [
+    {
+     "id": "00000000-0000-0000-0000-000000000003",
+     "ingredient_id": "00000000-0000-0000-0000-000000000101",
+     "name": "Gạo",
+     "purchased": "400",
+     "remaining": "400",
+     "unit": "g",
+     "expires_at": null
+    }
+   ],
+   "multiplier": "1",
+   "expect": {
+    "can_cook": false,
+    "deficits": {
+     "00000000-0000-0000-0000-000000000101": "200"
+    }
+   }
+  },
+  {
+   "name": "fifo_skips_incompatible_lot",
+   "op": "fifo",
+   "recipe": {
+    "id": "00000000-0000-0000-0000-000000000003",
+    "name": "Bánh",
+    "category": "man",
+    "servings": 4,
+    "ingredients": [
+     {
+      "ingredient_id": "00000000-0000-0000-0000-000000000104",
+      "name": "Bột",
+      "quantity": "300",
+      "unit": "g"
+     }
+    ]
+   },
+   "pantry": [
+    {
+     "id": "00000000-0000-0000-0000-000000000004",
+     "ingredient_id": "00000000-0000-0000-0000-000000000104",
+     "name": "Bột",
+     "purchased": "3",
+     "remaining": "3",
+     "unit": "piece",
+     "expires_at": "2026-01-01"
+    },
+    {
+     "id": "00000000-0000-0000-0000-000000000005",
+     "ingredient_id": "00000000-0000-0000-0000-000000000104",
+     "name": "Bột",
+     "purchased": "500",
+     "remaining": "500",
+     "unit": "g",
+     "expires_at": "2026-02-01"
+    }
+   ],
+   "multiplier": "1",
+   "expect": {
+    "remaining": {
+     "00000000-0000-0000-0000-000000000004": "3",
+     "00000000-0000-0000-0000-000000000005": "200"
+    }
+   }
+  },
+  {
+   "name": "undo_is_idempotent_and_capped",
+   "op": "undo",
+   "pantry": [
+    {
+     "id": "00000000-0000-0000-0000-000000000006",
+     "ingredient_id": "00000000-0000-0000-0000-000000000102",
+     "name": "Thịt",
+     "purchased": "1000",
+     "remaining": "400",
+     "unit": "g",
+     "expires_at": null
+    }
+   ],
+   "movements": [
+    {
+     "id": "00000000-0000-0000-0000-000000000900",
+     "pantry_lot_id": "00000000-0000-0000-0000-000000000006",
+     "delta": "-600",
+     "reason": "meal_consumption",
+     "meal_plan_id": "00000000-0000-0000-0000-000000000800",
+     "idempotency_key": "k_1"
+    },
+    {
+     "id": "00000000-0000-0000-0000-000000000901",
+     "pantry_lot_id": "00000000-0000-0000-0000-000000000006",
+     "delta": "600",
+     "reason": "correction",
+     "meal_plan_id": "00000000-0000-0000-0000-000000000800",
+     "idempotency_key": "reversal_00000000-0000-0000-0000-000000000900"
+    }
+   ],
+   "meal_plan_id": "00000000-0000-0000-0000-000000000800",
+   "expect": {
+    "remaining": {
+     "00000000-0000-0000-0000-000000000006": "400"
+    }
+   }
+  },
+  {
+   "name": "undo_restores_once_when_not_reversed_yet",
+   "op": "undo",
+   "pantry": [
+    {
+     "id": "00000000-0000-0000-0000-000000000007",
+     "ingredient_id": "00000000-0000-0000-0000-000000000102",
+     "name": "Thịt",
+     "purchased": "1000",
+     "remaining": "400",
+     "unit": "g",
+     "expires_at": null
+    }
+   ],
+   "movements": [
+    {
+     "id": "00000000-0000-0000-0000-000000000902",
+     "pantry_lot_id": "00000000-0000-0000-0000-000000000007",
+     "delta": "-600",
+     "reason": "meal_consumption",
+     "meal_plan_id": "00000000-0000-0000-0000-000000000801",
+     "idempotency_key": "k_2"
+    }
+   ],
+   "meal_plan_id": "00000000-0000-0000-0000-000000000801",
+   "expect": {
+    "remaining": {
+     "00000000-0000-0000-0000-000000000007": "1000"
+    }
+   }
+  },
+  {
+   "name": "plan_converts_units_when_simulating_stock",
+   "op": "plan",
+   "start": "2026-01-02",
+   "days": 1,
+   "allow_leftovers": false,
+   "recipes": [
+    {
+     "id": "00000000-0000-0000-0000-000000000011",
+     "name": "A",
+     "category": "man",
+     "servings": 4,
+     "ingredients": [
+      {
+       "ingredient_id": "00000000-0000-0000-0000-000000000102",
+       "name": "Thịt",
+       "quantity": "200",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "00000000-0000-0000-0000-000000000012",
+     "name": "B",
+     "category": "man",
+     "servings": 4,
+     "ingredients": [
+      {
+       "ingredient_id": "00000000-0000-0000-0000-000000000102",
+       "name": "Thịt",
+       "quantity": "700",
+       "unit": "g"
+      }
+     ]
+    }
+   ],
+   "pantry": [
+    {
+     "id": "00000000-0000-0000-0000-000000000008",
+     "ingredient_id": "00000000-0000-0000-0000-000000000102",
+     "name": "Thịt",
+     "purchased": "1",
+     "remaining": "1",
+     "unit": "kg",
+     "expires_at": null
+    }
+   ],
+   "expect": {
+    "dishes": [
+     "A",
+     "B"
+    ],
+    "servings": [
+     4,
+     4
+    ],
+    "shopping": {}
+   }
+  },
+  {
+   "name": "plan_does_not_double_count_partial_stock",
+   "op": "plan",
+   "start": "2026-01-02",
+   "days": 1,
+   "allow_leftovers": false,
+   "recipes": [
+    {
+     "id": "00000000-0000-0000-0000-000000000013",
+     "name": "A",
+     "category": "man",
+     "servings": 4,
+     "ingredients": [
+      {
+       "ingredient_id": "00000000-0000-0000-0000-000000000101",
+       "name": "Gạo",
+       "quantity": "500",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "00000000-0000-0000-0000-000000000014",
+     "name": "B",
+     "category": "man",
+     "servings": 4,
+     "ingredients": [
+      {
+       "ingredient_id": "00000000-0000-0000-0000-000000000101",
+       "name": "Gạo",
+       "quantity": "500",
+       "unit": "g"
+      }
+     ]
+    }
+   ],
+   "pantry": [
+    {
+     "id": "00000000-0000-0000-0000-000000000009",
+     "ingredient_id": "00000000-0000-0000-0000-000000000101",
+     "name": "Gạo",
+     "purchased": "300",
+     "remaining": "300",
+     "unit": "g",
+     "expires_at": null
+    }
+   ],
+   "expect": {
+    "dishes": [
+     "A",
+     "B"
+    ],
+    "servings": [
+     4,
+     4
+    ],
+    "shopping": {
+     "00000000-0000-0000-0000-000000000101": [
+      "700",
+      "g"
+     ]
+    }
+   }
+  },
+  {
+   "name": "plan_merges_shopping_units",
+   "op": "plan",
+   "start": "2026-01-02",
+   "days": 1,
+   "allow_leftovers": false,
+   "recipes": [
+    {
+     "id": "00000000-0000-0000-0000-000000000015",
+     "name": "A",
+     "category": "man",
+     "servings": 4,
+     "ingredients": [
+      {
+       "ingredient_id": "00000000-0000-0000-0000-000000000101",
+       "name": "Gạo",
+       "quantity": "500",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "00000000-0000-0000-0000-000000000016",
+     "name": "B",
+     "category": "man",
+     "servings": 4,
+     "ingredients": [
+      {
+       "ingredient_id": "00000000-0000-0000-0000-000000000101",
+       "name": "Gạo",
+       "quantity": "1",
+       "unit": "kg"
+      }
+     ]
+    }
+   ],
+   "pantry": [],
+   "expect": {
+    "dishes": [
+     "A",
+     "B"
+    ],
+    "servings": [
+     4,
+     4
+    ],
+    "shopping": {
+     "00000000-0000-0000-0000-000000000101": [
+      "1500",
+      "g"
+     ]
+    }
+   }
+  },
+  {
+   "name": "plan_ignores_expired_lots",
+   "op": "plan",
+   "start": "2026-01-02",
+   "days": 1,
+   "allow_leftovers": false,
+   "recipes": [
+    {
+     "id": "00000000-0000-0000-0000-000000000017",
+     "name": "Đậu",
+     "category": "man",
+     "servings": 4,
+     "ingredients": [
+      {
+       "ingredient_id": "00000000-0000-0000-0000-000000000103",
+       "name": "Đậu hũ",
+       "quantity": "200",
+       "unit": "g"
+      }
+     ]
+    }
+   ],
+   "pantry": [
+    {
+     "id": "00000000-0000-0000-0000-000000000010",
+     "ingredient_id": "00000000-0000-0000-0000-000000000103",
+     "name": "Đậu hũ",
+     "purchased": "500",
+     "remaining": "500",
+     "unit": "g",
+     "expires_at": "2026-01-01"
+    }
+   ],
+   "expect": {
+    "dishes": [
+     "Đậu"
+    ],
+    "servings": [
+     4
+    ],
+    "shopping": {
+     "00000000-0000-0000-0000-000000000103": [
+      "200",
+      "g"
+     ]
+    }
+   }
+  }
+ ]
+}

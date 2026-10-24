@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="section-header">
+    <div>
+      <h1>Sổ Tay Món Ăn Gia Đình Việt</h1>
+      <p class="subtitle">Khám phá các công thức món mặn, món rau, món canh truyền thống với định lượng chi tiết.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: var(--space-3);">
+    <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+      <button class="btn btn-primary btn-sm filter-btn active" data-cat="" type="button">Tất cả các món</button>
+      <button class="btn btn-outline btn-sm filter-btn" data-cat="man" type="button">
+        <svg class="ico" aria-hidden="true" style="width:16px;height:16px;margin-right:4px;"><use href="/static/icons.svg#i-dish-man"></use></svg>
+        Món Mặn
+      </button>
+      <button class="btn btn-outline btn-sm filter-btn" data-cat="rau" type="button">
+        <svg class="ico" aria-hidden="true" style="width:16px;height:16px;margin-right:4px;"><use href="/static/icons.svg#i-dish-rau"></use></svg>
+        Món Rau
+      </button>
+      <button class="btn btn-outline btn-sm filter-btn" data-cat="canh" type="button">
+        <svg class="ico" aria-hidden="true" style="width:16px;height:16px;margin-right:4px;"><use href="/static/icons.svg#i-dish-canh"></use></svg>
+        Món Canh
+      </button>
+    </div>
+  </div>
+
+  <div id="recipes-grid" class="grid">
+    <div class="skeleton" style="padding: var(--space-4) 0;">
+      <div class="skeleton-title" style="width: 40%;"></div>
+      <div class="skeleton-text" style="width: 70%;"></div>
+    </div>
+  </div>
+{% endblock %}
