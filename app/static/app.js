@@ -20,6 +20,7 @@ import {
   deletePantryLot,
   getMealPlans,
   saveMealPlans,
+  deleteMealPlansByIds,
   executeEatMealAtomic,
   executeUndoEatMealAtomic,
   getStockMovements,
@@ -32,6 +33,7 @@ import {
 } from "./js/storage.js";
 import {
   generatePeriodPlan as engineGeneratePeriodPlan,
+  mergeNewPlansIntoExisting as engineMergeNewPlansIntoExisting,
   deductRecipeStockFifo as engineDeductRecipeStockFifo,
   deductRecipeStockAvailable as engineDeductRecipeStockAvailable,
   reverseStockMovements as engineReverseStockMovements,
@@ -281,6 +283,74 @@ export function showDeficitDialog(deficitsList, onEatPartial, onAddToShopping) {
     onEatPartial();
     closeDlg();
   };
+}
+
+/**
+ * Hộp thoại giữ/thay khi tạo thực đơn mới trùng ngày bữa chưa ăn (A2 - Vòng 13).
+ * Trả về Promise: "replace" (Thay các bữa chưa ăn trong khoảng ngày này),
+ * "keep" (Giữ thực đơn cũ, chỉ thêm ngày chưa có) hoặc null (Huỷ).
+ */
+export function askPlanConflictChoice() {
+  return new Promise((resolve) => {
+    const old = document.getElementById("plan-conflict-overlay");
+    if (old) old.remove();
+
+    const overlay = document.createElement("div");
+    overlay.id = "plan-conflict-overlay";
+    overlay.className = "modal-overlay";
+    overlay.style.zIndex = "9998";
+
+    const modal = document.createElement("div");
+    modal.className = "modal";
+    modal.style.maxWidth = "480px";
+    modal.style.padding = "var(--space-4)";
+
+    const title = document.createElement("h3");
+    title.style.marginTop = "0";
+    title.textContent = "Thực đơn mới trùng ngày với bữa chưa ăn";
+    modal.appendChild(title);
+
+    const body = document.createElement("p");
+    body.textContent = "Bạn muốn xử lý thế nào? Các bữa đã ăn luôn được giữ cùng lịch sử kho.";
+    modal.appendChild(body);
+
+    const actions = document.createElement("div");
+    actions.style.cssText = "display:flex;flex-direction:column;gap:var(--space-2);";
+
+    const btnReplace = document.createElement("button");
+    btnReplace.type = "button";
+    btnReplace.id = "btn-replace-plans";
+    btnReplace.className = "btn btn-primary";
+    btnReplace.textContent = "Thay các bữa chưa ăn trong khoảng ngày này";
+    actions.appendChild(btnReplace);
+
+    const btnKeep = document.createElement("button");
+    btnKeep.type = "button";
+    btnKeep.id = "btn-keep-plans";
+    btnKeep.className = "btn btn-outline";
+    btnKeep.textContent = "Giữ thực đơn cũ, chỉ thêm ngày chưa có";
+    actions.appendChild(btnKeep);
+
+    const btnCancel = document.createElement("button");
+    btnCancel.type = "button";
+    btnCancel.id = "btn-cancel-plans";
+    btnCancel.className = "btn btn-outline";
+    btnCancel.textContent = "Huỷ";
+    actions.appendChild(btnCancel);
+
+    modal.appendChild(actions);
+    overlay.appendChild(modal);
+    overlay.style.display = "flex";
+    document.body.appendChild(overlay);
+
+    const close = (value) => {
+      overlay.remove();
+      resolve(value);
+    };
+    btnReplace.onclick = () => close("replace");
+    btnKeep.onclick = () => close("keep");
+    btnCancel.onclick = () => close(null);
+  });
 }
 
 export function addDeficitsToShoppingList(deficits) {
@@ -1380,6 +1450,24 @@ async function initPlannerPage() {
   }
   restoreLeftoverPreferences();
 
+  // Lưu đợt thực đơn mới an toàn (A2 - Vòng 13): idempotency theo mã đợt,
+  // gộp giữ bữa đã ăn, xoá các bữa chưa ăn bị thay khỏi kho trước khi lưu.
+  async function saveGeneratedPlansBatch(existingPlans, data, mergeMode) {
+    if (!data.meals || !data.meals.length) return;
+    const periodId = data.period_id || data.meals[0].period_id;
+    if (periodId && existingPlans.some((p) => String(p.period_id) === String(periodId))) {
+      showToast("Thực đơn của đợt này đã được lưu trước đó.", "info");
+      return;
+    }
+    const merged = engineMergeNewPlansIntoExisting(existingPlans, data.meals, mergeMode);
+    await saveMealPlans(merged);
+    const keptIds = new Set(merged.map((p) => String(p.id)));
+    const removedIds = existingPlans
+      .map((p) => String(p.id))
+      .filter((id) => !keptIds.has(id));
+    if (removedIds.length) await deleteMealPlansByIds(removedIds);
+  }
+
   if (planForm) {
     planForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -1396,6 +1484,25 @@ async function initPlannerPage() {
       }
 
       const leftoverPrefs = readAndPersistLeftoverPreferences();
+
+      // A2: nếu tạo thực đơn trùng ngày với bữa CHƯA ăn -> hỏi người dùng giữ hay thay.
+      // Bữa đã ăn luôn được giữ; bấm Huỷ thì không tạo gì cả.
+      const existingPlans = await getMealPlans();
+      const uneatenOverlap = existingPlans.filter(
+        (p) =>
+          !p.eaten_at &&
+          String(p.planned_for).slice(0, 10) >= s &&
+          String(p.planned_for).slice(0, 10) <= end
+      );
+      let mergeMode = "replace";
+      if (uneatenOverlap.length > 0) {
+        const choice = await askPlanConflictChoice();
+        if (!choice) {
+          showToast("Đã giữ nguyên thực đơn cũ.", "info");
+          return;
+        }
+        mergeMode = choice;
+      }
 
       const submitBtn = planForm.querySelector("button[type='submit']");
       if (submitBtn) {
@@ -1416,7 +1523,7 @@ async function initPlannerPage() {
             allowLeftovers: leftoverPrefs.allowLeftovers,
             leftoverDays: leftoverPrefs.leftoverDays,
           });
-          await saveMealPlans(data.meals);
+          await saveGeneratedPlansBatch(existingPlans, data, mergeMode);
 
           if (data.shopping_list && data.shopping_list.length) {
             localStorage.setItem("easymeals_shopping_list", JSON.stringify(data.shopping_list));
@@ -1464,7 +1571,7 @@ async function initPlannerPage() {
         }
 
         const data = await res.json();
-        await saveMealPlans(data.meals);
+        await saveGeneratedPlansBatch(existingPlans, data, mergeMode);
 
         if (data.shopping_list && data.shopping_list.length) {
           localStorage.setItem("easymeals_shopping_list", JSON.stringify(data.shopping_list));

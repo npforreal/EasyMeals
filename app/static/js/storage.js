@@ -108,6 +108,21 @@ export async function saveMealPlans(plans) {
   });
 }
 
+/** Xoá các bữa bị thay khi gộp đợt thực đơn mới (A2 - Vòng 13). */
+export async function deleteMealPlansByIds(ids) {
+  if (!ids || ids.length === 0) return false;
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("plans", "readwrite");
+    const store = tx.objectStore("plans");
+    for (const id of ids) {
+      store.delete(id);
+    }
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = (e) => reject(e.target.error);
+  });
+}
+
 /**
  * Mark a meal as eaten with an ATOMIC transaction in IndexedDB.
  *
