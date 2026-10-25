@@ -98,7 +98,22 @@ object EasyMealsEngine {
         return "${exp}_$pur"
     }
 
-    fun getTotalIngredientStock(pantryLots: List<PantryLot>, ingredientId: String, targetUnit: String): ExactDecimal {
+    fun findConversionsForTarget(
+        ingredientId: String,
+        conversions: List<Conversion>?
+    ): List<Conversion> {
+        if (conversions == null) return emptyList()
+        return conversions.filter {
+            it.toIngredientId == ingredientId && ExactDecimal(it.ratio) > ExactDecimal.ZERO
+        }
+    }
+
+    fun getTotalIngredientStock(
+        pantryLots: List<PantryLot>,
+        ingredientId: String,
+        targetUnit: String,
+        conversions: List<Conversion>? = null
+    ): ExactDecimal {
         var total = ExactDecimal.ZERO
         for (lot in pantryLots) {
             if (lot.ingredientId != ingredientId || !UnitDimensions.areCompatible(lot.unit, targetUnit)) {
@@ -116,6 +131,27 @@ object EasyMealsEngine {
                 }
             }
         }
+
+        val targetConvs = findConversionsForTarget(ingredientId, conversions)
+        for (conv in targetConvs) {
+            if (!UnitDimensions.areCompatible(conv.toUnit, targetUnit)) continue
+            val ratio = ExactDecimal(conv.ratio)
+            for (lot in pantryLots) {
+                if (lot.ingredientId == conv.fromIngredientId && UnitDimensions.areCompatible(lot.unit, conv.fromUnit)) {
+                    val rem = ExactDecimal(lot.remainingQuantity)
+                    if (rem > ExactDecimal.ZERO) {
+                        val rawInFromUnit = try {
+                            UnitDimensions.convert(rem, lot.unit, conv.fromUnit)
+                        } catch (_: Exception) { null } ?: continue
+                        val prodInToUnit = rawInFromUnit * ratio
+                        val converted = try {
+                            UnitDimensions.convert(prodInToUnit, conv.toUnit, targetUnit)
+                        } catch (_: Exception) { null } ?: continue
+                        total += converted
+                    }
+                }
+            }
+        }
         return total
     }
 
@@ -123,13 +159,15 @@ object EasyMealsEngine {
         pantryLots: MutableList<PantryLot>,
         ingredientId: String,
         quantity: ExactDecimal,
-        unit: String
+        unit: String,
+        conversions: List<Conversion>? = null
     ): ExactDecimal {
         var needed = quantity
         var consumed = ExactDecimal.ZERO
 
         pantryLots.sortBy { lotSortKey(it) }
 
+        // 1. Trừ lô trực tiếp trước
         for (lot in pantryLots) {
             if (needed <= ExactDecimal.ZERO) break
             if (lot.ingredientId != ingredientId || !UnitDimensions.areCompatible(lot.unit, unit)) continue
@@ -154,19 +192,56 @@ object EasyMealsEngine {
             consumed += take
         }
 
+        // 2. Trừ lô gốc qua quy đổi (FIFO)
+        if (needed > ExactDecimal.ZERO) {
+            val targetConvs = findConversionsForTarget(ingredientId, conversions)
+            for (conv in targetConvs) {
+                if (needed <= ExactDecimal.ZERO) break
+                if (!UnitDimensions.areCompatible(conv.toUnit, unit)) continue
+                val ratio = ExactDecimal(conv.ratio)
+                for (lot in pantryLots) {
+                    if (needed <= ExactDecimal.ZERO) break
+                    if (lot.ingredientId != conv.fromIngredientId || !UnitDimensions.areCompatible(lot.unit, conv.fromUnit)) continue
+                    val rem = ExactDecimal(lot.remainingQuantity)
+                    if (rem <= ExactDecimal.ZERO) continue
+
+                    val neededInToUnit = try {
+                        UnitDimensions.convert(needed, unit, conv.toUnit)
+                    } catch (_: Exception) { null } ?: continue
+                    val neededRawInFromUnit = neededInToUnit / ratio
+                    val rawAvailable = try {
+                        UnitDimensions.convert(rem, lot.unit, conv.fromUnit)
+                    } catch (_: Exception) { null } ?: continue
+                    val takeRaw = if (rawAvailable < neededRawInFromUnit) rawAvailable else neededRawInFromUnit
+                    val takeInLotUnit = if (takeRaw == rawAvailable) rem else try {
+                        UnitDimensions.convert(takeRaw, conv.fromUnit, lot.unit)
+                    } catch (_: Exception) { rem }
+
+                    lot.remainingQuantity = (rem - takeInLotUnit).toString()
+                    val yieldedInToUnit = takeRaw * ratio
+                    val yieldedUnit = try {
+                        UnitDimensions.convert(yieldedInToUnit, conv.toUnit, unit)
+                    } catch (_: Exception) { null } ?: continue
+                    needed -= yieldedUnit
+                    consumed += yieldedUnit
+                }
+            }
+        }
+
         return consumed
     }
 
     fun checkRecipeStock(
         recipe: Recipe,
         pantryLots: List<PantryLot>,
-        multiplier: String = "1"
+        multiplier: String = "1",
+        conversions: List<Conversion>? = null
     ): Pair<Boolean, Map<String, DeficitItem>> {
         val deficits = mutableMapOf<String, DeficitItem>()
         val requirements = aggregateRequirements(recipe, multiplier)
 
         for (req in requirements) {
-            val available = getTotalIngredientStock(pantryLots, req.ingredientId, req.unit)
+            val available = getTotalIngredientStock(pantryLots, req.ingredientId, req.unit, conversions)
             if (available < req.quantity) {
                 val missing = req.quantity - available
                 deficits[req.ingredientId] = DeficitItem(
@@ -179,42 +254,50 @@ object EasyMealsEngine {
         return Pair(deficits.isEmpty(), deficits)
     }
 
-    fun deductRecipeStockFifo(
+    data class StockDeductionOutcome(
+        val updatedLots: List<PantryLot>,
+        val movements: List<StockMovement>,
+        val deficits: Map<String, DeficitItem>
+    )
+
+    fun executeStockDeduction(
         pantryLots: List<PantryLot>,
         recipe: Recipe,
         mealPlanId: String,
         idempotencyKey: String,
-        multiplier: String = "1"
-    ): Pair<List<PantryLot>, List<StockMovement>> {
-        val (canCook, deficits) = checkRecipeStock(recipe, pantryLots, multiplier)
-        if (!canCook) {
-            throw InsufficientStockException("Không đủ nguyên liệu để nấu món '${recipe.name}'", deficits)
+        multiplier: String = "1",
+        conversions: List<Conversion>? = null,
+        allowPartial: Boolean = false
+    ): StockDeductionOutcome {
+        if (!allowPartial) {
+            val (canCook, deficits) = checkRecipeStock(recipe, pantryLots, multiplier, conversions)
+            if (!canCook) {
+                throw InsufficientStockException("Không đủ nguyên liệu để nấu món '${recipe.name}'", deficits)
+            }
         }
 
         val requirements = aggregateRequirements(recipe, multiplier)
         val clonedLots = pantryLots.map { it.copy() }.toMutableList()
-        val reqIds = requirements.map { it.ingredientId }.toSet()
-
-        val candidateLots = clonedLots.filter { reqIds.contains(it.ingredientId) }.toMutableList()
-        candidateLots.sortBy { lotSortKey(it) }
-
         val updatedLotsMap = linkedMapOf<String, PantryLot>()
         val movements = mutableListOf<StockMovement>()
+        val deficits = mutableMapOf<String, DeficitItem>()
 
         for (req in requirements) {
             var remainingNeeded = req.quantity
 
-            for (lot in candidateLots) {
-                if (remainingNeeded <= ExactDecimal.ZERO) break
-                if (lot.ingredientId != req.ingredientId || !UnitDimensions.areCompatible(lot.unit, req.unit)) continue
-                val lotRem = ExactDecimal(lot.remainingQuantity)
-                if (lotRem <= ExactDecimal.ZERO) continue
+            // 1. Trừ các lô trực tiếp
+            val directLots = clonedLots.filter {
+                it.ingredientId == req.ingredientId &&
+                UnitDimensions.areCompatible(it.unit, req.unit) &&
+                ExactDecimal(it.remainingQuantity) > ExactDecimal.ZERO
+            }.sortedBy { lotSortKey(it) }
 
+            for (lot in directLots) {
+                if (remainingNeeded <= ExactDecimal.ZERO) break
+                val lotRem = ExactDecimal(lot.remainingQuantity)
                 val availableInReq = try {
                     UnitDimensions.convert(lotRem, lot.unit, req.unit)
-                } catch (_: Exception) {
-                    continue
-                }
+                } catch (_: Exception) { continue }
 
                 val deductedLotUnit: ExactDecimal
                 if (availableInReq <= remainingNeeded) {
@@ -225,9 +308,7 @@ object EasyMealsEngine {
                     val deductedReqUnit = remainingNeeded
                     deductedLotUnit = try {
                         UnitDimensions.convert(deductedReqUnit, req.unit, lot.unit)
-                    } catch (_: Exception) {
-                        lotRem
-                    }
+                    } catch (_: Exception) { lotRem }
                     lot.remainingQuantity = (lotRem - deductedLotUnit).toString()
                     remainingNeeded = ExactDecimal.ZERO
                 }
@@ -240,13 +321,95 @@ object EasyMealsEngine {
                         quantityDelta = "-$deductedLotUnit",
                         reason = "meal_consumption",
                         mealPlanId = mealPlanId,
-                        idempotencyKey = "${idempotencyKey}_${lot.id}"
+                        idempotencyKey = "${idempotencyKey}_${lot.id}_${movements.size}"
                     )
+                )
+            }
+
+            // 2. Trừ qua quy đổi
+            if (remainingNeeded > ExactDecimal.ZERO) {
+                val targetConvs = findConversionsForTarget(req.ingredientId, conversions)
+                for (conv in targetConvs) {
+                    if (remainingNeeded <= ExactDecimal.ZERO) break
+                    if (!UnitDimensions.areCompatible(conv.toUnit, req.unit)) continue
+                    val ratio = ExactDecimal(conv.ratio)
+
+                    val rawLots = clonedLots.filter {
+                        it.ingredientId == conv.fromIngredientId &&
+                        UnitDimensions.areCompatible(it.unit, conv.fromUnit) &&
+                        ExactDecimal(it.remainingQuantity) > ExactDecimal.ZERO
+                    }.sortedBy { lotSortKey(it) }
+
+                    for (lot in rawLots) {
+                        if (remainingNeeded <= ExactDecimal.ZERO) break
+                        val lotRem = ExactDecimal(lot.remainingQuantity)
+                        val neededInToUnit = try {
+                            UnitDimensions.convert(remainingNeeded, req.unit, conv.toUnit)
+                        } catch (_: Exception) { null } ?: continue
+                        val neededRawInFromUnit = neededInToUnit / ratio
+                        val lotRawInFromUnit = try {
+                            UnitDimensions.convert(lotRem, lot.unit, conv.fromUnit)
+                        } catch (_: Exception) { null } ?: continue
+                        val takeRaw = if (lotRawInFromUnit < neededRawInFromUnit) lotRawInFromUnit else neededRawInFromUnit
+                        val takeLotUnit = if (takeRaw == lotRawInFromUnit) lotRem else try {
+                            UnitDimensions.convert(takeRaw, conv.fromUnit, lot.unit)
+                        } catch (_: Exception) { lotRem }
+
+                        lot.remainingQuantity = (lotRem - takeLotUnit).toString()
+                        val yieldedInToUnit = takeRaw * ratio
+                        val yieldedReqUnit = try {
+                            UnitDimensions.convert(yieldedInToUnit, conv.toUnit, req.unit)
+                        } catch (_: Exception) { null } ?: continue
+                        remainingNeeded -= yieldedReqUnit
+
+                        updatedLotsMap[lot.id] = lot
+                        movements.add(
+                            StockMovement(
+                                id = UUID.randomUUID().toString(),
+                                pantryLotId = lot.id,
+                                quantityDelta = "-$takeLotUnit",
+                                reason = "meal_consumption",
+                                mealPlanId = mealPlanId,
+                                idempotencyKey = "${idempotencyKey}_${lot.id}_${movements.size}"
+                            )
+                        )
+                    }
+                }
+            }
+
+            if (remainingNeeded > ExactDecimal.ZERO) {
+                deficits[req.ingredientId] = DeficitItem(
+                    ingredientName = req.name,
+                    missingQuantity = remainingNeeded.toString(),
+                    unit = req.unit
                 )
             }
         }
 
-        return Pair(updatedLotsMap.values.toList(), movements)
+        return StockDeductionOutcome(updatedLotsMap.values.toList(), movements, deficits)
+    }
+
+    fun deductRecipeStockFifo(
+        pantryLots: List<PantryLot>,
+        recipe: Recipe,
+        mealPlanId: String,
+        idempotencyKey: String,
+        multiplier: String = "1",
+        conversions: List<Conversion>? = null
+    ): Pair<List<PantryLot>, List<StockMovement>> {
+        val outcome = executeStockDeduction(pantryLots, recipe, mealPlanId, idempotencyKey, multiplier, conversions, false)
+        return Pair(outcome.updatedLots, outcome.movements)
+    }
+
+    fun deductRecipeStockAvailable(
+        pantryLots: List<PantryLot>,
+        recipe: Recipe,
+        mealPlanId: String,
+        idempotencyKey: String,
+        multiplier: String = "1",
+        conversions: List<Conversion>? = null
+    ): StockDeductionOutcome {
+        return executeStockDeduction(pantryLots, recipe, mealPlanId, idempotencyKey, multiplier, conversions, true)
     }
 
     fun reverseStockMovements(
@@ -301,7 +464,9 @@ object EasyMealsEngine {
         endDateStr: String,
         recipes: List<Recipe>,
         currentPantryLots: List<PantryLot>,
-        allowLeftovers: Boolean = true
+        allowLeftovers: Boolean = true,
+        conversions: List<Conversion>? = null,
+        rawIngredientNames: Map<String, String>? = null
     ): Triple<String, List<MealPlan>, List<ShoppingItem>> {
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         val start = LocalDate.parse(startDateStr, formatter)
@@ -365,7 +530,7 @@ object EasyMealsEngine {
                         val candidates = (recipesByCat[cat] ?: emptyList()).filter { !cookedRecipeIds.contains(it.id) }
                         var fullyStocked: Recipe? = null
                         for (r in candidates) {
-                            val (canCook, _) = checkRecipeStock(r, usableLots)
+                            val (canCook, _) = checkRecipeStock(r, usableLots, "1", conversions)
                             if (canCook) {
                                 fullyStocked = r
                                 break
@@ -376,22 +541,40 @@ object EasyMealsEngine {
                         if (fullyStocked != null) {
                             chosen = fullyStocked
                             for (req in aggregateRequirements(fullyStocked)) {
-                                consumeAvailable(usableLots, req.ingredientId, req.quantity, req.unit)
+                                consumeAvailable(usableLots, req.ingredientId, req.quantity, req.unit, conversions)
                             }
                         } else if (candidates.isNotEmpty()) {
                             chosen = candidates.first()
-                            val (_, deficits) = checkRecipeStock(chosen, usableLots)
+                            val (_, deficits) = checkRecipeStock(chosen, usableLots, "1", conversions)
                             for (req in aggregateRequirements(chosen)) {
-                                consumeAvailable(usableLots, req.ingredientId, req.quantity, req.unit)
+                                consumeAvailable(usableLots, req.ingredientId, req.quantity, req.unit, conversions)
                             }
                             for ((ingId, def) in deficits) {
-                                val dimStr = UnitDimensions.dimension(def.unit)?.name ?: "UNKNOWN"
-                                val key = "$ingId|$dimStr"
+                                var actualIngId = ingId
+                                var actualUnit = def.unit
+                                var actualQty = def.missingQuantity
+                                var actualName = def.ingredientName
+
+                                val targetConvs = findConversionsForTarget(ingId, conversions)
+                                if (targetConvs.isNotEmpty()) {
+                                    val conv = targetConvs.first()
+                                    val missingInTo = try {
+                                        UnitDimensions.convert(ExactDecimal(def.missingQuantity), def.unit, conv.toUnit)
+                                    } catch (_: Exception) { ExactDecimal(def.missingQuantity) }
+                                    val rawNeeded = missingInTo / ExactDecimal(conv.ratio)
+                                    actualIngId = conv.fromIngredientId
+                                    actualUnit = conv.fromUnit
+                                    actualQty = rawNeeded.toString()
+                                    actualName = rawIngredientNames?.get(actualIngId) ?: "Nguyên liệu gốc cho ${def.ingredientName}"
+                                }
+
+                                val dimStr = UnitDimensions.dimension(actualUnit)?.name ?: "UNKNOWN"
+                                val key = "$actualIngId|$dimStr"
                                 val item = shoppingItemsMap[key]
                                 if (item != null) {
-                                    val missingDecimal = ExactDecimal(def.missingQuantity)
+                                    val missingDecimal = ExactDecimal(actualQty)
                                     val converted = try {
-                                        UnitDimensions.convert(missingDecimal, def.unit, item.unit)
+                                        UnitDimensions.convert(missingDecimal, actualUnit, item.unit)
                                     } catch (_: Exception) {
                                         missingDecimal
                                     }
@@ -401,10 +584,10 @@ object EasyMealsEngine {
                                     }
                                 } else {
                                     shoppingItemsMap[key] = ShoppingItem(
-                                        ingredientId = ingId,
-                                        ingredientName = def.ingredientName,
-                                        neededQuantity = def.missingQuantity,
-                                        unit = def.unit,
+                                        ingredientId = actualIngId,
+                                        ingredientName = actualName,
+                                        neededQuantity = actualQty,
+                                        unit = actualUnit,
                                         dishNames = mutableListOf(chosen.name)
                                     )
                                 }

@@ -29,7 +29,7 @@ let package = Package(
             dependencies: ["EasyMealsCore"],
             path: "EasyMealsTests",
             resources: [
-                .process("Resources/engine_test_cases.json")
+                .process("Resources")
             ]
         )
     ]

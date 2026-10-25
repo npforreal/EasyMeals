@@ -28,6 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 SRC_CATALOGUE = ROOT / "data" / "catalogue.json"
 SRC_ENGINE_TESTS = ROOT / "tests" / "fixtures" / "engine_test_cases.json"
+SRC_ENGINE_LOGIC_TESTS = ROOT / "tests" / "fixtures" / "engine_logic_cases.json"
 
 ANDROID_ASSETS_DIR = ROOT / "mobile" / "android" / "app" / "src" / "main" / "assets"
 ANDROID_TEST_RESOURCES_DIR = ROOT / "mobile" / "android" / "app" / "src" / "test" / "resources"
@@ -75,6 +76,8 @@ def sync_assets(check_only: bool = False) -> dict[str, str]:
         raise FileNotFoundError(f"Không tìm thấy file nguồn catalogue: {SRC_CATALOGUE}")
     if not SRC_ENGINE_TESTS.exists():
         raise FileNotFoundError(f"Không tìm thấy file nguồn test cases: {SRC_ENGINE_TESTS}")
+    if not SRC_ENGINE_LOGIC_TESTS.exists():
+        raise FileNotFoundError(f"Không tìm thấy file nguồn logic cases: {SRC_ENGINE_LOGIC_TESTS}")
 
     # Xác thực JSON hợp lệ và đúng hợp đồng
     with open(SRC_CATALOGUE, encoding="utf-8") as f:
@@ -83,16 +86,34 @@ def sync_assets(check_only: bool = False) -> dict[str, str]:
 
     with open(SRC_ENGINE_TESTS, encoding="utf-8") as f:
         test_data = json.load(f)
+    if not isinstance(test_data, dict):
+        raise ValueError("engine_test_cases.json must be a dict")
+
+    with open(SRC_ENGINE_LOGIC_TESTS, encoding="utf-8") as f:
+        logic_test_data = json.load(f)
+    if not isinstance(logic_test_data, dict) or "cases" not in logic_test_data:
+        raise ValueError("engine_logic_cases.json must be a dict containing 'cases'")
 
     cat_hash = calc_sha256(SRC_CATALOGUE)
     test_hash = calc_sha256(SRC_ENGINE_TESTS)
+    logic_test_hash = calc_sha256(SRC_ENGINE_LOGIC_TESTS)
 
     targets = [
         (SRC_CATALOGUE, ANDROID_ASSETS_DIR / "catalogue.json", cat_hash),
         (SRC_CATALOGUE, ANDROID_TEST_RESOURCES_DIR / "catalogue.json", cat_hash),
         (SRC_ENGINE_TESTS, ANDROID_TEST_RESOURCES_DIR / "engine_test_cases.json", test_hash),
+        (
+            SRC_ENGINE_LOGIC_TESTS,
+            ANDROID_TEST_RESOURCES_DIR / "engine_logic_cases.json",
+            logic_test_hash,
+        ),
         (SRC_CATALOGUE, IOS_RESOURCES_DIR / "catalogue.json", cat_hash),
         (SRC_ENGINE_TESTS, IOS_TEST_RESOURCES_DIR / "engine_test_cases.json", test_hash),
+        (
+            SRC_ENGINE_LOGIC_TESTS,
+            IOS_TEST_RESOURCES_DIR / "engine_logic_cases.json",
+            logic_test_hash,
+        ),
     ]
 
     mismatches = []

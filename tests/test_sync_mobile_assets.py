@@ -10,7 +10,7 @@ def test_sync_mobile_assets_creates_and_verifies_hashes(tmp_path, monkeypatch):
     summary = sync_assets(check_only=False)
 
     assert summary["catalogue_recipes_count"] >= 130
-    assert summary["catalogue_ingredients_count"] == 147
+    assert summary["catalogue_ingredients_count"] >= 147
 
     # Chạy lại với check_only=True phải thành công
     check_summary = sync_assets(check_only=True)

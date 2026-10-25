@@ -1,73 +1,174 @@
 {
-  "catalogue_version": "2026.10.26",
-  "etag": "\"2026.10.26-c86bbe7e1e0a403c\"",
+  "catalogue_version": "2026.10.27",
+  "categories": [
+    {
+      "display_order": 1,
+      "id": "thit",
+      "name": "Thịt",
+      "name_vi": "Thịt"
+    },
+    {
+      "display_order": 2,
+      "id": "gia_cam",
+      "name": "Gia cầm",
+      "name_vi": "Gia cầm"
+    },
+    {
+      "display_order": 3,
+      "id": "hai_san",
+      "name": "Hải sản",
+      "name_vi": "Hải sản"
+    },
+    {
+      "display_order": 4,
+      "id": "trung_sua",
+      "name": "Trứng & Sữa",
+      "name_vi": "Trứng & Sữa"
+    },
+    {
+      "display_order": 5,
+      "id": "rau_cu",
+      "name": "Rau củ",
+      "name_vi": "Rau củ"
+    },
+    {
+      "display_order": 6,
+      "id": "cu_qua",
+      "name": "Củ quả",
+      "name_vi": "Củ quả"
+    },
+    {
+      "display_order": 7,
+      "id": "gao_bot_mi",
+      "name": "Gạo, Bột & Mì",
+      "name_vi": "Gạo, Bột & Mì"
+    },
+    {
+      "display_order": 8,
+      "id": "gia_vi",
+      "name": "Gia vị",
+      "name_vi": "Gia vị"
+    },
+    {
+      "display_order": 9,
+      "id": "nuoc_cham_dau",
+      "name": "Nước chấm & Dầu",
+      "name_vi": "Nước chấm & Dầu"
+    },
+    {
+      "display_order": 10,
+      "id": "khac",
+      "name": "Khác",
+      "name_vi": "Khác"
+    }
+  ],
+  "conversions": [
+    {
+      "from_ingredient_id": "0738fdf0-710e-5aed-bbb5-5ba1f0c05f3b",
+      "from_unit": "g",
+      "note": "1g gạo nấu ra khoảng 2.5g cơm nguội (xấp xỉ)",
+      "ratio": "2.5",
+      "to_ingredient_id": "16ddda98-781e-5ecf-9778-aedb4d1cd9ef",
+      "to_unit": "g"
+    },
+    {
+      "from_ingredient_id": "0738fdf0-710e-5aed-bbb5-5ba1f0c05f3b",
+      "from_unit": "g",
+      "note": "1g gạo nấu ra khoảng 2.5g cơm nóng chín (xấp xỉ)",
+      "ratio": "2.5",
+      "to_ingredient_id": "412a8c08-4863-5000-aedd-13e2ba3adb69",
+      "to_unit": "g"
+    }
+  ],
+  "etag": "\"2026.10.27-e23d6b337538dc98\"",
   "ingredients": [
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "00adfe1b-efdc-515d-af25-8b127bcd8dcb",
       "name": "Nấm mèo",
       "normalized_name": "nam meo"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "nuoc_cham_dau",
+      "default_unit": "ml",
       "id": "02aa5c61-5cf8-538b-b1d0-83e04882d95b",
       "name": "Dầu hào",
       "normalized_name": "dau hao"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "041f616a-d7c2-588d-94f6-23f07fb548ad",
       "name": "Cà chua bi",
       "normalized_name": "ca chua bi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "nuoc_cham_dau",
+      "default_unit": "ml",
       "id": "06581f9f-c75f-5c44-b59a-7799b8b2f331",
       "name": "Giấm",
       "normalized_name": "giam"
     },
     {
+      "aliases": [
+        "Gạo trắng",
+        "Gạo tẻ"
+      ],
+      "category": "gao_bot_mi",
+      "default_unit": "g",
+      "id": "0738fdf0-710e-5aed-bbb5-5ba1f0c05f3b",
+      "name": "Gạo",
+      "normalized_name": "gao"
+    },
+    {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "07569be6-6c49-5862-91e6-cb8fe994dae6",
       "name": "Sả",
       "normalized_name": "sa"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "nuoc_cham_dau",
+      "default_unit": "g",
       "id": "0759a8af-b4e5-51ef-b0c1-779a9f636f37",
       "name": "Sốt BBQ",
       "normalized_name": "sot bbq"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "07cdbb7d-927b-53d3-85d9-db836ec67363",
       "name": "Măng tây",
       "normalized_name": "mang tay"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "thit",
+      "default_unit": "g",
       "id": "0ce224e4-9890-5fea-8ee5-7c3c4024397f",
       "name": "Lạp xưởng",
       "normalized_name": "lap xuong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "0f1c5578-9150-5376-b0e0-242e43284950",
       "name": "Khế chua",
       "normalized_name": "khe chua"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "nuoc_cham_dau",
+      "default_unit": "g",
       "id": "0fa1df4c-c98b-5cd3-9b9f-1aefcd6710d8",
       "name": "Tương cà",
       "normalized_name": "tuong ca"
@@ -76,7 +177,8 @@
       "aliases": [
         "Thịt rọi"
       ],
-      "category": "meat",
+      "category": "thit",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000001",
       "name": "Thịt ba chỉ",
       "normalized_name": "thit ba chi"
@@ -86,56 +188,64 @@
         "Thịt băm",
         "Thịt xay"
       ],
-      "category": "meat",
+      "category": "thit",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000002",
       "name": "Thịt heo nạc dăm",
       "normalized_name": "thit heo nac dam"
     },
     {
       "aliases": [],
-      "category": "meat",
+      "category": "thit",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000003",
       "name": "Sườn non heo",
       "normalized_name": "suon non heo"
     },
     {
       "aliases": [],
-      "category": "meat",
+      "category": "thit",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000004",
       "name": "Thịt bò thăn",
       "normalized_name": "thit bo than"
     },
     {
       "aliases": [],
-      "category": "poultry",
+      "category": "gia_cam",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000005",
       "name": "Thịt gà",
       "normalized_name": "thit ga"
     },
     {
       "aliases": [],
-      "category": "seafood",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000006",
       "name": "Cá lóc",
       "normalized_name": "ca loc"
     },
     {
       "aliases": [],
-      "category": "seafood",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000007",
       "name": "Tôm sú",
       "normalized_name": "tom su"
     },
     {
       "aliases": [],
-      "category": "egg",
+      "category": "gia_cam",
+      "default_unit": "piece",
       "id": "11111111-0001-0000-0000-000000000008",
       "name": "Trứng gà",
       "normalized_name": "trung ga"
     },
     {
       "aliases": [],
-      "category": "egg",
+      "category": "gia_cam",
+      "default_unit": "piece",
       "id": "11111111-0001-0000-0000-000000000009",
       "name": "Trứng vịt",
       "normalized_name": "trung vit"
@@ -144,77 +254,88 @@
       "aliases": [
         "Tàu hũ"
       ],
-      "category": "tofu",
+      "category": "khac",
+      "default_unit": "piece",
       "id": "11111111-0001-0000-0000-000000000010",
       "name": "Đậu hũ trắng",
       "normalized_name": "dau hu trang"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000011",
       "name": "Rau muống",
       "normalized_name": "rau muong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000012",
       "name": "Cải ngọt",
       "normalized_name": "cai ngot"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000013",
       "name": "Rau mồng tơi",
       "normalized_name": "rau mong toi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000014",
       "name": "Bắp cải",
       "normalized_name": "bap cai"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000015",
       "name": "Cà chua",
       "normalized_name": "ca chua"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000016",
       "name": "Dưa leo",
       "normalized_name": "dua leo"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000017",
       "name": "Bí đỏ",
       "normalized_name": "bi do"
     },
     {
       "aliases": [],
-      "category": "root",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000018",
       "name": "Khoai tây",
       "normalized_name": "khoai tay"
     },
     {
       "aliases": [],
-      "category": "root",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000019",
       "name": "Cà rốt",
       "normalized_name": "ca rot"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000020",
       "name": "Đậu cô ve",
       "normalized_name": "dau co ve"
@@ -224,819 +345,936 @@
         "Dứa",
         "Khóm"
       ],
-      "category": "fruit_vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000021",
       "name": "Thơm (Dứa)",
       "normalized_name": "thom dua"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000022",
       "name": "Đậu bắp",
       "normalized_name": "dau bap"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000023",
       "name": "Giá đỗ",
       "normalized_name": "gia do"
     },
     {
       "aliases": [],
-      "category": "mushroom",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000024",
       "name": "Nấm rơm",
       "normalized_name": "nam rom"
     },
     {
       "aliases": [],
-      "category": "spice",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000025",
       "name": "Tỏi",
       "normalized_name": "toi"
     },
     {
       "aliases": [],
-      "category": "spice",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000026",
       "name": "Hành tím",
       "normalized_name": "hanh tim"
     },
     {
       "aliases": [],
-      "category": "herb",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000027",
       "name": "Hành lá",
       "normalized_name": "hanh la"
     },
     {
       "aliases": [],
-      "category": "spice",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000028",
       "name": "Gừng",
       "normalized_name": "gung"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000029",
       "name": "Cần tây",
       "normalized_name": "can tay"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "12962022-5858-5728-83a0-b435f64c4fd2",
       "name": "Cá bống",
       "normalized_name": "ca bong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gao_bot_mi",
+      "default_unit": "g",
       "id": "16ddda98-781e-5ecf-9778-aedb4d1cd9ef",
       "name": "Cơm nguội",
       "normalized_name": "com nguoi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "khac",
+      "default_unit": "g",
       "id": "1d082590-32f1-5474-a477-d4ffc3c6f75a",
       "name": "Đậu phộng",
       "normalized_name": "dau phong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "20161b9c-0b8e-52c5-a4f0-f1381c378359",
       "name": "Đu đủ",
       "normalized_name": "du du"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "226ca8f7-4b9a-53b7-af05-eec7843f1ded",
       "name": "Rau đay",
       "normalized_name": "rau day"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "23d34b99-c771-5972-b10c-0a5dcb22f6c8",
       "name": "Măng chua",
       "normalized_name": "mang chua"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "24780d3d-9d7b-53ca-98ae-1677c647cdc5",
       "name": "Xà lách",
       "normalized_name": "xa lach"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "25c13eb0-8848-5932-a5f4-2aba98419f3c",
       "name": "Rau dền",
       "normalized_name": "rau den"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "25d4d75b-2a37-5bd5-9a77-c5e86921c6e6",
       "name": "Rau răm",
       "normalized_name": "rau ram"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "27307f32-10a8-5418-a650-b67e1c42f74b",
       "name": "Cá ba sa",
       "normalized_name": "ca ba sa"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_cam",
+      "default_unit": "g",
       "id": "289ade1d-caff-51cf-acd6-7b78519e66c7",
       "name": "Lòng gà",
       "normalized_name": "long ga"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_cam",
+      "default_unit": "g",
       "id": "28d51144-141e-51a4-bfe8-56b56570230a",
       "name": "Thịt vịt",
       "normalized_name": "thit vit"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gao_bot_mi",
+      "default_unit": "g",
       "id": "2aac64db-7407-5e60-a6b5-a88a4d4ac7bc",
       "name": "Mì Ý spaghetti",
       "normalized_name": "mi y spaghetti"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "2cc4ffe6-83a7-59ca-b946-2fdbbd08272c",
       "name": "Rau thơm",
       "normalized_name": "rau thom"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "35d353fb-14c1-5ef7-9eb7-d76108a4ef7a",
       "name": "Cải bẹ xanh",
       "normalized_name": "cai be xanh"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "383705e4-6802-58e5-960c-bfbc0db7ee92",
       "name": "Tiêu",
       "normalized_name": "tieu"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "nuoc_cham_dau",
+      "default_unit": "ml",
       "id": "38a6d0e2-668a-591a-b585-c7e52fb5d425",
       "name": "Nước mắm",
       "normalized_name": "nuoc mam"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "3c4dfb65-9e63-590f-83e6-0dbbe92aa302",
       "name": "Hành tây",
       "normalized_name": "hanh tay"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "3e49235f-ec85-5dc4-9876-edeadec74f8b",
       "name": "Rau om",
       "normalized_name": "rau om"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "3e681f25-7d91-5783-a2d0-d32d509eeb52",
       "name": "Cá hồi",
       "normalized_name": "ca hoi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "3f24e849-e702-5cde-bde4-d77c918f3889",
       "name": "Hoa chuối",
       "normalized_name": "hoa chuoi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "4043b900-41ce-5873-84e6-f179088646f0",
       "name": "Cá thu",
       "normalized_name": "ca thu"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gao_bot_mi",
+      "default_unit": "g",
       "id": "412a8c08-4863-5000-aedd-13e2ba3adb69",
       "name": "Cơm nóng",
       "normalized_name": "com nong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "45b9343b-e4f3-5f5a-b83e-76c53cc71cc5",
       "name": "Hoa thiên lý",
       "normalized_name": "hoa thien ly"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "475163e4-4743-5558-84f9-da944141efaf",
       "name": "Mùi tàu",
       "normalized_name": "mui tau"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "4996721c-f13b-5f9a-ae9c-090bed5de13a",
       "name": "Mực ống",
       "normalized_name": "muc ong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "4a6aa554-60db-5696-b8bb-b69ef5e5d352",
       "name": "Rau bí",
       "normalized_name": "rau bi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "4a85ce87-735e-522f-ac0a-8cddbef30ce8",
       "name": "Đậu Hà Lan",
       "normalized_name": "dau ha lan"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "50019dc2-feda-530f-a551-002811e6c76f",
       "name": "Đường",
       "normalized_name": "duong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "trung_sua",
+      "default_unit": "ml",
       "id": "58b7aab8-0045-570f-8940-6c2a07081cbd",
       "name": "Kem tươi",
       "normalized_name": "kem tuoi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "602d7131-eeee-5a5f-86d6-d7c3d83bcb1e",
       "name": "Bông bí",
       "normalized_name": "bong bi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "nuoc_cham_dau",
+      "default_unit": "g",
       "id": "603fd092-920d-58f7-bffb-044060dbc075",
       "name": "Sốt mayonnaise",
       "normalized_name": "sot mayonnaise"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "6106e6c7-4925-5374-91f3-14c48c61f164",
       "name": "Su hào",
       "normalized_name": "su hao"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "6848fdf4-04e3-5458-a636-1bb3af67b712",
       "name": "Hến",
       "normalized_name": "hen"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "68e135f6-018f-5e2a-9d61-1ef02dd33a78",
       "name": "Nấm hương",
       "normalized_name": "nam huong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "6b6d2aac-52c5-559c-a169-06af713deece",
       "name": "Rau ngò",
       "normalized_name": "rau ngo"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "6b8bbcf1-a781-5416-8ed5-1dbc9a54596d",
       "name": "Mè rang",
       "normalized_name": "me rang"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_cam",
+      "default_unit": "g",
       "id": "7000d49b-2073-55a0-89cb-daab2748509a",
       "name": "Ức gà",
       "normalized_name": "uc ga"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "70a5d8a5-645c-5a46-ac2f-1b23ee71c214",
       "name": "Cá điêu hồng",
       "normalized_name": "ca dieu hong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "7152d7c2-81b8-55a5-8663-02d7c65aba88",
       "name": "Đầu cá hồi",
       "normalized_name": "dau ca hoi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "trung_sua",
+      "default_unit": "g",
       "id": "749d80af-fbd9-5177-8772-0e215b3ac326",
       "name": "Bơ",
       "normalized_name": "bo"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "75e1a678-ffdc-5e9f-8348-9c2ae2b3ba5c",
       "name": "Rau ngót",
       "normalized_name": "rau ngot"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "75f1f149-fc34-587f-8c7f-d1e4a30a6ed6",
       "name": "Lá chanh",
       "normalized_name": "la chanh"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "79f4f60c-3377-550e-af8a-c46ace67ef0f",
       "name": "Rau khoai lang",
       "normalized_name": "rau khoai lang"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gao_bot_mi",
+      "default_unit": "g",
       "id": "7dccd7c7-460d-5d3b-97d5-e7508b8b4c93",
       "name": "Miến",
       "normalized_name": "mien"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "piece",
       "id": "8258d3a0-8a4a-503d-bb97-60127353997b",
       "name": "Quả sấu",
       "normalized_name": "qua sau"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gao_bot_mi",
+      "default_unit": "piece",
       "id": "83759a4d-0602-5048-a8cf-1ef4d0eb1a46",
       "name": "Bánh tráng",
       "normalized_name": "banh trang"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "839b4f3b-70b1-5708-b38a-3b31691746a3",
       "name": "Măng tươi",
       "normalized_name": "mang tuoi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "86a53cb8-e5cc-5349-a50c-a4371d29de87",
       "name": "Ớt chuông",
       "normalized_name": "ot chuong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "khac",
+      "default_unit": "g",
       "id": "889c2f1d-4dae-5d75-8ed6-a6a9f811c9dc",
       "name": "Chao",
       "normalized_name": "chao"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "thit",
+      "default_unit": "g",
       "id": "893549fd-8fcb-536a-b4a1-aecf7582abc6",
       "name": "Xúc xích",
       "normalized_name": "xuc xich"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "897ed7ae-f89b-56af-9aa1-fcfda0c49060",
       "name": "Rong biển",
       "normalized_name": "rong bien"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "89a7c750-9fdb-5578-ae3d-1409763f0ee1",
       "name": "Củ nghệ",
       "normalized_name": "cu nghe"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "8a45e085-b4df-5a9f-8749-531190550973",
       "name": "Cải thìa",
       "normalized_name": "cai thia"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "8b6b7f69-b8ce-5fa0-a98a-6ddf0a67edc1",
       "name": "Su su",
       "normalized_name": "su su"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "nuoc_cham_dau",
+      "default_unit": "ml",
       "id": "8e3e0a57-75e9-5a82-b295-a421c437c254",
       "name": "Dầu oliu",
       "normalized_name": "dau oliu"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "9010c55f-27e2-504c-9c49-7286c13a6d3a",
       "name": "Bầu",
       "normalized_name": "bau"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gao_bot_mi",
+      "default_unit": "g",
       "id": "911f6b62-9ac0-58ac-8a41-9288fc6e2e66",
       "name": "Bột chiên xù",
       "normalized_name": "bot chien xu"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "thit",
+      "default_unit": "g",
       "id": "92688361-e3c2-58c6-928e-4a37f1e84050",
       "name": "Thịt xông khói",
       "normalized_name": "thit xong khoi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "969e10da-48d0-5e19-acaa-f6ce2620d2fb",
       "name": "Thì là",
       "normalized_name": "thi la"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "nuoc_cham_dau",
+      "default_unit": "g",
       "id": "a3a06aed-fe9e-58e0-9ac0-b0039c635696",
       "name": "Tương bần",
       "normalized_name": "tuong ban"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "a3fe5f4c-d3cc-5a43-9556-0a44626f7d00",
       "name": "Mật ong",
       "normalized_name": "mat ong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "a49d14f7-d3a7-5d63-93b1-bebfd88ee7c5",
       "name": "Khổ qua",
       "normalized_name": "kho qua"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "nuoc_cham_dau",
+      "default_unit": "ml",
       "id": "a4e0f9d5-5f01-56b5-998e-0daa96f0647d",
       "name": "Nước tương",
       "normalized_name": "nuoc tuong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gao_bot_mi",
+      "default_unit": "g",
       "id": "a6dcf80d-9427-5950-9e4b-180eb8d8cb4d",
       "name": "Bột cà ri",
       "normalized_name": "bot ca ri"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "nuoc_cham_dau",
+      "default_unit": "ml",
       "id": "ac247e34-bb8c-5deb-a1a5-311782334c68",
       "name": "Dầu ăn",
       "normalized_name": "dau an"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "khac",
+      "default_unit": "g",
       "id": "af25d32d-51ad-51dd-85d2-21f0e6bb09f2",
       "name": "Hạt sen",
       "normalized_name": "hat sen"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "af40e13c-fd55-55f9-abd1-1aee04fc2cd2",
       "name": "Rau mùi",
       "normalized_name": "rau mui"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "af978afc-ed4a-51e3-b542-e06778b233e1",
       "name": "Rau cải cúc",
       "normalized_name": "rau cai cuc"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "piece",
       "id": "b1e2c81f-5f74-53db-b93e-7e7535fe0726",
       "name": "Chanh",
       "normalized_name": "chanh"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "thit",
+      "default_unit": "g",
       "id": "b1fc41b9-fe1e-51dd-b0f4-e7cc91afad09",
       "name": "Thịt nguội",
       "normalized_name": "thit nguoi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "b712ae0c-48ca-5465-9a24-28ea6a0afc87",
       "name": "Ngao",
       "normalized_name": "ngao"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "b87dd579-5188-56c4-b0ac-d239792dc92b",
       "name": "Bí đao",
       "normalized_name": "bi dao"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "nuoc_cham_dau",
+      "default_unit": "g",
       "id": "b95e858c-db38-5227-8890-c1b6f166baa3",
       "name": "Cốt me",
       "normalized_name": "cot me"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "nuoc_cham_dau",
+      "default_unit": "g",
       "id": "bb95478e-90e4-57e4-8e4b-19e1c6e9f6a5",
       "name": "Tương ớt",
       "normalized_name": "tuong ot"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gao_bot_mi",
+      "default_unit": "g",
       "id": "bbc869f8-3219-53ec-9ace-bbc05359aa00",
       "name": "Bánh mì",
       "normalized_name": "banh mi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gao_bot_mi",
+      "default_unit": "g",
       "id": "bca8993a-e5c6-5dcc-8cf4-8205bab215bc",
       "name": "Mì udon",
       "normalized_name": "mi udon"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "bdac25e2-2207-5532-8e44-280283a735c1",
       "name": "Ớt",
       "normalized_name": "ot"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "be5e2e4d-ef37-53cc-a8ed-156f51506a57",
       "name": "Mướp hương",
       "normalized_name": "muop huong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "thit",
+      "default_unit": "g",
       "id": "bfd02f5c-bd91-5709-92bc-be0b6b712e0b",
       "name": "Tai heo",
       "normalized_name": "tai heo"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "c20fc3de-6cfa-5243-86d6-a300f073e216",
       "name": "Cá ngừ đóng hộp",
       "normalized_name": "ca ngu dong hop"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_cam",
+      "default_unit": "g",
       "id": "c29ba7ab-13fb-5d8b-a4cf-067e47c8273d",
       "name": "Nấm đùi gà",
       "normalized_name": "nam dui ga"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "trung_sua",
+      "default_unit": "g",
       "id": "c2c0e95f-a6bb-5dbf-801e-91b2588a5c56",
       "name": "Phô mai",
       "normalized_name": "pho mai"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "khac",
+      "default_unit": "g",
       "id": "c95e1ce9-48f0-5cb4-a055-5297daee1ff6",
       "name": "Cốm xanh",
       "normalized_name": "com xanh"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "trung_sua",
+      "default_unit": "g",
       "id": "cb9975be-8cfa-5f95-bbf1-11dd74974bea",
       "name": "Mì trứng",
       "normalized_name": "mi trung"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "ccbf47ac-0dca-50a2-b756-c31b0c7192b8",
       "name": "Cá thát lát",
       "normalized_name": "ca that lat"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "cdac64c6-8e03-5804-a24b-db666316279d",
       "name": "Rau má",
       "normalized_name": "rau ma"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "khac",
+      "default_unit": "g",
       "id": "ce8f2c0e-c00c-59b2-9be4-20e9cba8c65f",
       "name": "Kim chi",
       "normalized_name": "kim chi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "d0881267-e442-5c13-9e68-4601b70f18fa",
       "name": "Khoai mỡ",
       "normalized_name": "khoai mo"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "d2f82030-7fb5-596f-b49c-35e2bdb6e81a",
       "name": "Xà lách xoong",
       "normalized_name": "xa lach xoong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "trung_sua",
+      "default_unit": "ml",
       "id": "d71b8381-3c2a-5fd9-a621-e172e957ce54",
       "name": "Sữa tươi",
       "normalized_name": "sua tuoi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gia_vi",
+      "default_unit": "g",
       "id": "d8ee9578-8bb3-56f3-bd08-69dd9bbb4b2d",
       "name": "Ngò gai",
       "normalized_name": "ngo gai"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "dabfe410-cc7f-53a0-baae-dbd5a6c4dbc4",
       "name": "Cà tím",
       "normalized_name": "ca tim"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "de465e9f-b0b9-56b6-8375-702cfc4e8e7a",
       "name": "Nấm kim châm",
       "normalized_name": "nam kim cham"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "gao_bot_mi",
+      "default_unit": "g",
       "id": "e3045837-16d2-5b8e-8099-e00683b42084",
       "name": "Bột mì",
       "normalized_name": "bot mi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "thit",
+      "default_unit": "g",
       "id": "e55c04a1-d558-5680-9288-48996185dfdf",
       "name": "Huyết heo",
       "normalized_name": "huyet heo"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "nuoc_cham_dau",
+      "default_unit": "ml",
       "id": "ead7e94f-3f12-50cf-b699-639d56ce6002",
       "name": "Dầu mè",
       "normalized_name": "dau me"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "ec976a2e-b349-5015-8b7a-3d0fc7c92567",
       "name": "Cá rô phi",
       "normalized_name": "ca ro phi"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "ecaf07ed-0d29-5eb4-bcca-c11f4366cb42",
       "name": "Ngó sen",
       "normalized_name": "ngo sen"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "ee5391a2-cd69-53f6-9083-7e158b061194",
       "name": "Bông cải trắng",
       "normalized_name": "bong cai trang"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "ee5d738a-cd42-5887-906a-d429640c1af3",
       "name": "Thịt ếch",
       "normalized_name": "thit ech"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "f15603ca-d91f-54b7-8ad3-398a201de25f",
       "name": "Cá rô đồng",
       "normalized_name": "ca ro dong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "thit",
+      "default_unit": "g",
       "id": "f29072e0-ba66-5322-a9e0-90aec784e9cb",
       "name": "Chả lụa",
       "normalized_name": "cha lua"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "rau_cu",
+      "default_unit": "g",
       "id": "f29af1f0-29bb-582b-8100-5852e83320c9",
       "name": "Bông cải xanh",
       "normalized_name": "bong cai xanh"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "cu_qua",
+      "default_unit": "g",
       "id": "f4a476b9-bd67-5979-bb1c-f6c3f356187c",
       "name": "Bắp ngọt",
       "normalized_name": "bap ngot"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "f67b577a-9d7c-5029-ad69-75566de6a1aa",
       "name": "Cua đồng",
       "normalized_name": "cua dong"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "fefe46a0-4bf7-536a-a9f0-5a44a240b873",
       "name": "Cá nục",
       "normalized_name": "ca nuc"
     },
     {
       "aliases": [],
-      "category": "vegetable",
+      "category": "hai_san",
+      "default_unit": "g",
       "id": "ff58abf7-25a4-5c7b-8394-b5204529cab4",
       "name": "Tôm khô",
       "normalized_name": "tom kho"

@@ -102,7 +102,22 @@ public enum EasyMealsEngine {
         return "\(exp)_\(pur)"
     }
 
-    public static func getTotalIngredientStock(pantryLots: [PantryLot], ingredientId: String, targetUnit: String) -> ExactDecimal {
+    public static func findConversionsForTarget(
+        ingredientId: String,
+        conversions: [Conversion]?
+    ) -> [Conversion] {
+        guard let conversions = conversions else { return [] }
+        return conversions.filter {
+            $0.toIngredientId == ingredientId && ExactDecimal($0.ratio) > .zero
+        }
+    }
+
+    public static func getTotalIngredientStock(
+        pantryLots: [PantryLot],
+        ingredientId: String,
+        targetUnit: String,
+        conversions: [Conversion]? = nil
+    ) -> ExactDecimal {
         var total = ExactDecimal.zero
         for lot in pantryLots {
             if lot.ingredientId != ingredientId || !UnitDimensions.areCompatible(lot.unit, targetUnit) {
@@ -115,6 +130,23 @@ public enum EasyMealsEngine {
                 }
             }
         }
+
+        let targetConvs = findConversionsForTarget(ingredientId: ingredientId, conversions: conversions)
+        for conv in targetConvs {
+            if !UnitDimensions.areCompatible(conv.toUnit, targetUnit) { continue }
+            let ratio = ExactDecimal(conv.ratio)
+            for lot in pantryLots {
+                if lot.ingredientId == conv.fromIngredientId && UnitDimensions.areCompatible(lot.unit, conv.fromUnit) {
+                    let rem = ExactDecimal(lot.remainingQuantity)
+                    if rem > .zero {
+                        guard let rawInFromUnit = try? UnitDimensions.convert(quantity: rem, from: lot.unit, to: conv.fromUnit) else { continue }
+                        let prodInToUnit = rawInFromUnit * ratio
+                        guard let converted = try? UnitDimensions.convert(quantity: prodInToUnit, from: conv.toUnit, to: targetUnit) else { continue }
+                        total = total + converted
+                    }
+                }
+            }
+        }
         return total
     }
 
@@ -122,13 +154,15 @@ public enum EasyMealsEngine {
         pantryLots: inout [PantryLot],
         ingredientId: String,
         quantity: ExactDecimal,
-        unit: String
+        unit: String,
+        conversions: [Conversion]? = nil
     ) -> ExactDecimal {
         var needed = quantity
         var consumed = ExactDecimal.zero
 
         pantryLots.sort { lotSortKey(for: $0) < lotSortKey(for: $1) }
 
+        // 1. Trừ lô trực tiếp
         for i in 0..<pantryLots.count {
             if needed <= .zero { break }
             if pantryLots[i].ingredientId != ingredientId || !UnitDimensions.areCompatible(pantryLots[i].unit, unit) {
@@ -151,19 +185,54 @@ public enum EasyMealsEngine {
             consumed = consumed + take
         }
 
+        // 2. Trừ qua quy đổi (FIFO)
+        if needed > .zero {
+            let targetConvs = findConversionsForTarget(ingredientId: ingredientId, conversions: conversions)
+            for conv in targetConvs {
+                if needed <= .zero { break }
+                if !UnitDimensions.areCompatible(conv.toUnit, unit) { continue }
+                let ratio = ExactDecimal(conv.ratio)
+
+                for i in 0..<pantryLots.count {
+                    if needed <= .zero { break }
+                    if pantryLots[i].ingredientId != conv.fromIngredientId || !UnitDimensions.areCompatible(pantryLots[i].unit, conv.fromUnit) {
+                        continue
+                    }
+                    let rem = ExactDecimal(pantryLots[i].remainingQuantity)
+                    if rem <= .zero { continue }
+
+                    guard let neededInToUnit = try? UnitDimensions.convert(quantity: needed, from: unit, to: conv.toUnit) else { continue }
+                    let neededRawInFromUnit = neededInToUnit / ratio
+                    guard let rawAvailable = try? UnitDimensions.convert(quantity: rem, from: pantryLots[i].unit, to: conv.fromUnit) else { continue }
+
+                    let takeRaw = rawAvailable < neededRawInFromUnit ? rawAvailable : neededRawInFromUnit
+                    let takeInLotUnit = (takeRaw == rawAvailable)
+                        ? rem
+                        : (try? UnitDimensions.convert(quantity: takeRaw, from: conv.fromUnit, to: pantryLots[i].unit)) ?? rem
+
+                    pantryLots[i].remainingQuantity = (rem - takeInLotUnit).description
+                    let yieldedInToUnit = takeRaw * ratio
+                    guard let yieldedUnit = try? UnitDimensions.convert(quantity: yieldedInToUnit, from: conv.toUnit, to: unit) else { continue }
+                    needed = needed - yieldedUnit
+                    consumed = consumed + yieldedUnit
+                }
+            }
+        }
+
         return consumed
     }
 
     public static func checkRecipeStock(
         recipe: Recipe,
         pantryLots: [PantryLot],
-        multiplier: String = "1"
+        multiplier: String = "1",
+        conversions: [Conversion]? = nil
     ) -> (canCook: Bool, deficits: [String: DeficitItem]) {
         var deficits: [String: DeficitItem] = [:]
         let requirements = aggregateRequirements(recipe: recipe, multiplier: multiplier)
 
         for req in requirements {
-            let available = getTotalIngredientStock(pantryLots: pantryLots, ingredientId: req.ingredientId, targetUnit: req.unit)
+            let available = getTotalIngredientStock(pantryLots: pantryLots, ingredientId: req.ingredientId, targetUnit: req.unit, conversions: conversions)
             if available < req.quantity {
                 let missing = req.quantity - available
                 deficits[req.ingredientId] = DeficitItem(
@@ -177,40 +246,56 @@ public enum EasyMealsEngine {
         return (deficits.isEmpty, deficits)
     }
 
-    public static func deductRecipeStockFifo(
+    public struct StockDeductionOutcome: Equatable {
+        public let updatedLots: [PantryLot]
+        public let movements: [StockMovement]
+        public let deficits: [String: DeficitItem]
+
+        public init(updatedLots: [PantryLot], movements: [StockMovement], deficits: [String: DeficitItem]) {
+            self.updatedLots = updatedLots
+            self.movements = movements
+            self.deficits = deficits
+        }
+    }
+
+    public static func executeStockDeduction(
         pantryLots: [PantryLot],
         recipe: Recipe,
         mealPlanId: String,
         idempotencyKey: String,
-        multiplier: String = "1"
-    ) throws -> (updatedLots: [PantryLot], movements: [StockMovement]) {
-        let (canCook, deficits) = checkRecipeStock(recipe: recipe, pantryLots: pantryLots, multiplier: multiplier)
-        if !canCook {
-            throw InsufficientStockError("Không đủ nguyên liệu để nấu món '\(recipe.name)'", deficits: deficits)
+        multiplier: String = "1",
+        conversions: [Conversion]? = nil,
+        allowPartial: Bool = false
+    ) throws -> StockDeductionOutcome {
+        if !allowPartial {
+            let (canCook, deficits) = checkRecipeStock(recipe: recipe, pantryLots: pantryLots, multiplier: multiplier, conversions: conversions)
+            if !canCook {
+                throw InsufficientStockError("Không đủ nguyên liệu để nấu món '\(recipe.name)'", deficits: deficits)
+            }
         }
 
         let requirements = aggregateRequirements(recipe: recipe, multiplier: multiplier)
         var clonedLots = pantryLots
-        let reqIds = Set(requirements.map { $0.ingredientId })
-
-        var candidateIndices = clonedLots.indices.filter { reqIds.contains(clonedLots[$0].ingredientId) }
-        candidateIndices.sort { lotSortKey(for: clonedLots[$0]) < lotSortKey(for: clonedLots[$1]) }
-
         var updatedLotsMap: [String: PantryLot] = [:]
         var updatedLotKeys: [String] = []
         var movements: [StockMovement] = []
+        var deficits: [String: DeficitItem] = [:]
 
         for req in requirements {
             var remainingNeeded = req.quantity
 
-            for idx in candidateIndices {
+            // 1. Trừ các lô trực tiếp
+            var directIndices = clonedLots.indices.filter {
+                clonedLots[$0].ingredientId == req.ingredientId &&
+                UnitDimensions.areCompatible(clonedLots[$0].unit, req.unit) &&
+                ExactDecimal(clonedLots[$0].remainingQuantity) > .zero
+            }
+            directIndices.sort { lotSortKey(for: clonedLots[$0]) < lotSortKey(for: clonedLots[$1]) }
+
+            for idx in directIndices {
                 if remainingNeeded <= .zero { break }
                 let lot = clonedLots[idx]
-                if lot.ingredientId != req.ingredientId || !UnitDimensions.areCompatible(lot.unit, req.unit) {
-                    continue
-                }
                 let lotRem = ExactDecimal(lot.remainingQuantity)
-                if lotRem <= .zero { continue }
 
                 guard let availableInReq = try? UnitDimensions.convert(quantity: lotRem, from: lot.unit, to: req.unit) else {
                     continue
@@ -238,14 +323,112 @@ public enum EasyMealsEngine {
                     quantityDelta: "-\(deductedLotUnit.description)",
                     reason: "meal_consumption",
                     mealPlanId: mealPlanId,
-                    idempotencyKey: "\(idempotencyKey)_\(lot.id)"
+                    idempotencyKey: "\(idempotencyKey)_\(lot.id)_\(movements.count)"
                 )
                 movements.append(mov)
+            }
+
+            // 2. Trừ qua quy đổi
+            if remainingNeeded > .zero {
+                let targetConvs = findConversionsForTarget(ingredientId: req.ingredientId, conversions: conversions)
+                for conv in targetConvs {
+                    if remainingNeeded <= .zero { break }
+                    if !UnitDimensions.areCompatible(conv.toUnit, req.unit) { continue }
+                    let ratio = ExactDecimal(conv.ratio)
+
+                    var rawIndices = clonedLots.indices.filter {
+                        clonedLots[$0].ingredientId == conv.fromIngredientId &&
+                        UnitDimensions.areCompatible(clonedLots[$0].unit, conv.fromUnit) &&
+                        ExactDecimal(clonedLots[$0].remainingQuantity) > .zero
+                    }
+                    rawIndices.sort { lotSortKey(for: clonedLots[$0]) < lotSortKey(for: clonedLots[$1]) }
+
+                    for idx in rawIndices {
+                        if remainingNeeded <= .zero { break }
+                        let lot = clonedLots[idx]
+                        let lotRem = ExactDecimal(lot.remainingQuantity)
+
+                        guard let neededInToUnit = try? UnitDimensions.convert(quantity: remainingNeeded, from: req.unit, to: conv.toUnit) else { continue }
+                        let neededRawInFromUnit = neededInToUnit / ratio
+                        guard let lotRawInFromUnit = try? UnitDimensions.convert(quantity: lotRem, from: lot.unit, to: conv.fromUnit) else { continue }
+
+                        let takeRaw = lotRawInFromUnit < neededRawInFromUnit ? lotRawInFromUnit : neededRawInFromUnit
+                        let takeLotUnit = (takeRaw == lotRawInFromUnit)
+                            ? lotRem
+                            : (try? UnitDimensions.convert(quantity: takeRaw, from: conv.fromUnit, to: lot.unit)) ?? lotRem
+
+                        clonedLots[idx].remainingQuantity = (lotRem - takeLotUnit).description
+                        let yieldedInToUnit = takeRaw * ratio
+                        guard let yieldedReqUnit = try? UnitDimensions.convert(quantity: yieldedInToUnit, from: conv.toUnit, to: req.unit) else { continue }
+                        remainingNeeded = remainingNeeded - yieldedReqUnit
+
+                        if updatedLotsMap[lot.id] == nil {
+                            updatedLotKeys.append(lot.id)
+                        }
+                        updatedLotsMap[lot.id] = clonedLots[idx]
+                        let mov = StockMovement(
+                            id: UUID().uuidString,
+                            pantryLotId: lot.id,
+                            quantityDelta: "-\(takeLotUnit.description)",
+                            reason: "meal_consumption",
+                            mealPlanId: mealPlanId,
+                            idempotencyKey: "\(idempotencyKey)_\(lot.id)_\(movements.count)"
+                        )
+                        movements.append(mov)
+                    }
+                }
+            }
+
+            if remainingNeeded > .zero {
+                deficits[req.ingredientId] = DeficitItem(
+                    ingredientName: req.name,
+                    missingQuantity: remainingNeeded.description,
+                    unit: req.unit
+                )
             }
         }
 
         let updatedLots = updatedLotKeys.compactMap { updatedLotsMap[$0] }
-        return (updatedLots, movements)
+        return StockDeductionOutcome(updatedLots: updatedLots, movements: movements, deficits: deficits)
+    }
+
+    public static func deductRecipeStockFifo(
+        pantryLots: [PantryLot],
+        recipe: Recipe,
+        mealPlanId: String,
+        idempotencyKey: String,
+        multiplier: String = "1",
+        conversions: [Conversion]? = nil
+    ) throws -> (updatedLots: [PantryLot], movements: [StockMovement]) {
+        let outcome = try executeStockDeduction(
+            pantryLots: pantryLots,
+            recipe: recipe,
+            mealPlanId: mealPlanId,
+            idempotencyKey: idempotencyKey,
+            multiplier: multiplier,
+            conversions: conversions,
+            allowPartial: false
+        )
+        return (outcome.updatedLots, outcome.movements)
+    }
+
+    public static func deductRecipeStockAvailable(
+        pantryLots: [PantryLot],
+        recipe: Recipe,
+        mealPlanId: String,
+        idempotencyKey: String,
+        multiplier: String = "1",
+        conversions: [Conversion]? = nil
+    ) throws -> StockDeductionOutcome {
+        return try executeStockDeduction(
+            pantryLots: pantryLots,
+            recipe: recipe,
+            mealPlanId: mealPlanId,
+            idempotencyKey: idempotencyKey,
+            multiplier: multiplier,
+            conversions: conversions,
+            allowPartial: true
+        )
     }
 
     public static func reverseStockMovements(
@@ -305,7 +488,9 @@ public enum EasyMealsEngine {
         endDateStr: String,
         recipes: [Recipe],
         currentPantryLots: [PantryLot],
-        allowLeftovers: Bool = true
+        allowLeftovers: Bool = true,
+        conversions: [Conversion]? = nil,
+        rawIngredientNames: [String: String]? = nil
     ) throws -> (periodId: String, meals: [MealPlan], shoppingList: [ShoppingItem]) {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -377,7 +562,7 @@ public enum EasyMealsEngine {
                         let candidates = (recipesByCat[cat] ?? []).filter { !cookedRecipeIds.contains($0.id) }
                         var fullyStocked: Recipe?
                         for r in candidates {
-                            let (canCook, _) = checkRecipeStock(recipe: r, pantryLots: usableLots)
+                            let (canCook, _) = checkRecipeStock(recipe: r, pantryLots: usableLots, multiplier: "1", conversions: conversions)
                             if canCook {
                                 fullyStocked = r
                                 break
@@ -388,20 +573,36 @@ public enum EasyMealsEngine {
                         if let stocked = fullyStocked {
                             chosen = stocked
                             for req in aggregateRequirements(recipe: stocked) {
-                                _ = consumeAvailable(pantryLots: &usableLots, ingredientId: req.ingredientId, quantity: req.quantity, unit: req.unit)
+                                _ = consumeAvailable(pantryLots: &usableLots, ingredientId: req.ingredientId, quantity: req.quantity, unit: req.unit, conversions: conversions)
                             }
                         } else if let first = candidates.first {
                             chosen = first
-                            let (_, deficits) = checkRecipeStock(recipe: first, pantryLots: usableLots)
+                            let (_, deficits) = checkRecipeStock(recipe: first, pantryLots: usableLots, multiplier: "1", conversions: conversions)
                             for req in aggregateRequirements(recipe: first) {
-                                _ = consumeAvailable(pantryLots: &usableLots, ingredientId: req.ingredientId, quantity: req.quantity, unit: req.unit)
+                                _ = consumeAvailable(pantryLots: &usableLots, ingredientId: req.ingredientId, quantity: req.quantity, unit: req.unit, conversions: conversions)
                             }
                             for (ingId, def) in deficits {
-                                let dimStr = UnitDimensions.dimension(of: def.unit)?.rawValue ?? "unknown"
-                                let key = "\(ingId)|\(dimStr)"
-                                if var item = shoppingItemsMap[key] {
+                                var actualIngId = ingId
+                                var actualUnit = def.unit
+                                var actualQty = def.missingQuantity
+                                var actualName = def.ingredientName
+
+                                let targetConvs = findConversionsForTarget(ingredientId: ingId, conversions: conversions)
+                                if let conv = targetConvs.first {
                                     let missingDecimal = ExactDecimal(def.missingQuantity)
-                                    let converted = (try? UnitDimensions.convert(quantity: missingDecimal, from: def.unit, to: item.unit)) ?? missingDecimal
+                                    let missingInTo = (try? UnitDimensions.convert(quantity: missingDecimal, from: def.unit, to: conv.toUnit)) ?? missingDecimal
+                                    let rawNeeded = missingInTo / ExactDecimal(conv.ratio)
+                                    actualIngId = conv.fromIngredientId
+                                    actualUnit = conv.fromUnit
+                                    actualQty = rawNeeded.description
+                                    actualName = rawIngredientNames?[actualIngId] ?? "Nguyên liệu gốc cho \(def.ingredientName)"
+                                }
+
+                                let dimStr = UnitDimensions.dimension(of: actualUnit)?.rawValue ?? "unknown"
+                                let key = "\(actualIngId)|\(dimStr)"
+                                if var item = shoppingItemsMap[key] {
+                                    let missingDecimal = ExactDecimal(actualQty)
+                                    let converted = (try? UnitDimensions.convert(quantity: missingDecimal, from: actualUnit, to: item.unit)) ?? missingDecimal
                                     item.neededQuantity = (ExactDecimal(item.neededQuantity) + converted).description
                                     if !item.dishNames.contains(first.name) {
                                         item.dishNames.append(first.name)
@@ -409,10 +610,10 @@ public enum EasyMealsEngine {
                                     shoppingItemsMap[key] = item
                                 } else {
                                     shoppingItemsMap[key] = ShoppingItem(
-                                        ingredientId: ingId,
-                                        ingredientName: def.ingredientName,
-                                        neededQuantity: def.missingQuantity,
-                                        unit: def.unit,
+                                        ingredientId: actualIngId,
+                                        ingredientName: actualName,
+                                        neededQuantity: actualQty,
+                                        unit: actualUnit,
                                         dishNames: [first.name]
                                     )
                                 }

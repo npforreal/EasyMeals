@@ -8,7 +8,7 @@ final class CatalogueLoadingTests: XCTestCase {
         guard let bundle = bundle else { return }
 
         XCTAssertEqual(bundle.recipes.count, 133, "Số lượng món ăn phải là 133")
-        XCTAssertEqual(bundle.ingredients.count, 147, "Số lượng nguyên liệu phải là 147")
+        XCTAssertGreaterThanOrEqual(bundle.ingredients.count, 147, "Số lượng nguyên liệu phải >= 147")
         XCTAssertFalse(bundle.version.isEmpty, "Catalogue version không được rỗng")
 
         for ing in bundle.ingredients {

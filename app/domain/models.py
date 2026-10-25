@@ -93,11 +93,29 @@ def convert_quantity(
 
 
 @dataclass
+class IngredientCategory:
+    id: str
+    name: str
+    display_order: int = 0
+
+
+@dataclass
+class IngredientConversion:
+    from_ingredient_id: UUID
+    to_ingredient_id: UUID
+    ratio: Decimal
+    from_unit: QuantityUnit = QuantityUnit.GRAM
+    to_unit: QuantityUnit = QuantityUnit.GRAM
+    note: str | None = None
+
+
+@dataclass
 class Ingredient:
     id: UUID
     name: str
     normalized_name: str
-    category: str | None = None
+    category: str | None = "khac"
+    default_unit: QuantityUnit = QuantityUnit.GRAM
     aliases: list[str] = field(default_factory=list)
 
 

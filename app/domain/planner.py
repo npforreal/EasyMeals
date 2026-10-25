@@ -12,6 +12,7 @@ from app.domain.inventory import (
 from app.domain.models import (
     UNIT_DIMENSIONS,
     DishCategory,
+    IngredientConversion,
     MealPeriod,
     MealPlan,
     PantryLot,
@@ -55,6 +56,8 @@ def generate_period_plan(
     current_pantry_lots: list[PantryLot],
     periods: list[MealPeriod] | None = None,
     allow_leftovers: bool = True,
+    conversions: list[IngredientConversion] | None = None,
+    raw_ingredient_names: dict[UUID, str] | None = None,
 ) -> tuple[list[MealPlan], list[ShoppingItem]]:
     """Generate meal plans for the specified period.
 
@@ -149,7 +152,7 @@ def generate_period_plan(
                     # First priority: Recipes that can be cooked with current simulated stock
                     fully_stocked_recipe: Recipe | None = None
                     for r in candidate_recipes:
-                        can_cook, _ = check_recipe_stock(r, usable_lots)
+                        can_cook, _ = check_recipe_stock(r, usable_lots, conversions=conversions)
                         if can_cook:
                             fully_stocked_recipe = r
                             break
@@ -157,36 +160,71 @@ def generate_period_plan(
                     chosen_recipe: Recipe | None = None
                     if fully_stocked_recipe:
                         chosen_recipe = fully_stocked_recipe
-                        # Trừ kho mô phỏng (có quy đổi đơn vị, theo FIFO)
+                        # Trừ kho mô phỏng (có quy đổi đơn vị và nguyên liệu, theo FIFO)
                         for req in aggregate_requirements(chosen_recipe):
                             consume_available(
-                                usable_lots, req.ingredient_id, req.quantity, req.unit
+                                usable_lots,
+                                req.ingredient_id,
+                                req.quantity,
+                                req.unit,
+                                conversions=conversions,
                             )
                     elif candidate_recipes:
                         # Stock is insufficient for any remaining fresh recipe in this category.
                         # Pick the first non-repeating recipe and generate
                         # shopping items for deficits
                         chosen_recipe = candidate_recipes[0]
-                        _, deficits = check_recipe_stock(chosen_recipe, usable_lots)
+                        _, deficits = check_recipe_stock(
+                            chosen_recipe, usable_lots, conversions=conversions
+                        )
                         # Phần đã có trong kho được dùng cho món này, để món sau không đếm lại.
                         for req in aggregate_requirements(chosen_recipe):
                             consume_available(
-                                usable_lots, req.ingredient_id, req.quantity, req.unit
+                                usable_lots,
+                                req.ingredient_id,
+                                req.quantity,
+                                req.unit,
+                                conversions=conversions,
                             )
+
+                        target_conv_map = (
+                            {c.to_ingredient_id: c for c in conversions} if conversions else {}
+                        )
+
                         for ing_id, (ing_name, missing_qty, unit) in deficits.items():
-                            key = (ing_id, UNIT_DIMENSIONS[unit])
+                            # Nếu nguyên liệu thiếu có quy đổi từ nguyên liệu gốc (ví dụ Cơm -> Gạo)
+                            if ing_id in target_conv_map:
+                                conv = target_conv_map[ing_id]
+                                missing_in_to = convert_quantity(missing_qty, unit, conv.to_unit)
+                                raw_needed = missing_in_to / conv.ratio
+                                actual_ing_id = conv.from_ingredient_id
+                                actual_unit = conv.from_unit
+                                actual_qty = raw_needed
+                                raw_name = (
+                                    raw_ingredient_names.get(actual_ing_id)
+                                    if raw_ingredient_names
+                                    else None
+                                ) or f"Nguyên liệu gốc cho {ing_name}"
+                                actual_name = raw_name
+                            else:
+                                actual_ing_id = ing_id
+                                actual_unit = unit
+                                actual_qty = missing_qty
+                                actual_name = ing_name
+
+                            key = (actual_ing_id, UNIT_DIMENSIONS[actual_unit])
                             item = shopping_items_map.get(key)
                             if item is None:
                                 shopping_items_map[key] = ShoppingItem(
-                                    ingredient_id=ing_id,
-                                    ingredient_name=ing_name,
-                                    needed_quantity=missing_qty,
-                                    unit=unit,
+                                    ingredient_id=actual_ing_id,
+                                    ingredient_name=actual_name,
+                                    needed_quantity=actual_qty,
+                                    unit=actual_unit,
                                     dish_names=[chosen_recipe.name],
                                 )
                             else:
                                 item.needed_quantity += convert_quantity(
-                                    missing_qty, unit, item.unit
+                                    actual_qty, actual_unit, item.unit
                                 )
                                 if chosen_recipe.name not in item.dish_names:
                                     item.dish_names.append(chosen_recipe.name)

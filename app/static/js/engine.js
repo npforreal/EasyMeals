@@ -196,11 +196,17 @@ function lotSortKeyFor(lot) {
   return `${exp}_${pur}`;
 }
 
+function _findConversionsForTarget(ingredientId, conversions) {
+  if (!conversions || !Array.isArray(conversions)) return [];
+  return conversions.filter(
+    (c) => c.to_ingredient_id === ingredientId && Decimal.from(c.ratio || 0).gt(0)
+  );
+}
+
 /**
- * Tổng tồn kho của nguyên liệu quy về targetUnit. Lô khác thứ nguyên bị bỏ qua
- * (không thể quy đổi nên không được tính là đủ hàng) thay vì làm hỏng cả phép tính.
+ * Tổng tồn kho của nguyên liệu quy về targetUnit (kèm quy đổi nếu có).
  */
-export function getTotalIngredientStock(pantryLots, ingredientId, targetUnit) {
+export function getTotalIngredientStock(pantryLots, ingredientId, targetUnit, conversions = []) {
   let total = new Decimal(0);
   for (const lot of pantryLots) {
     if (lot.ingredient_id !== ingredientId || !unitsCompatible(lot.unit, targetUnit)) continue;
@@ -209,17 +215,40 @@ export function getTotalIngredientStock(pantryLots, ingredientId, targetUnit) {
       total = total.add(convertQuantity(rem, lot.unit, targetUnit));
     }
   }
+
+  // Thêm tồn kho quy đổi từ nguyên liệu gốc (ví dụ Gạo -> Cơm)
+  const targetConvs = _findConversionsForTarget(ingredientId, conversions);
+  for (const conv of targetConvs) {
+    if (!unitsCompatible(conv.to_unit, targetUnit)) continue;
+    const ratio = Decimal.from(conv.ratio);
+    for (const lot of pantryLots) {
+      if (
+        lot.ingredient_id === conv.from_ingredient_id &&
+        unitsCompatible(lot.unit, conv.from_unit)
+      ) {
+        const rem = Decimal.from(lot.remaining_quantity);
+        if (rem.gt(0)) {
+          const rawInFromUnit = convertQuantity(rem, lot.unit, conv.from_unit);
+          const prodInToUnit = rawInFromUnit.mul(ratio);
+          total = total.add(convertQuantity(prodInToUnit, conv.to_unit, targetUnit));
+        }
+      }
+    }
+  }
+
   return total;
 }
 
 /**
- * Trừ tối đa `quantity` (FIFO, có quy đổi đơn vị) khỏi các lô, sửa trực tiếp
- * `remaining_quantity` của lô truyền vào. Trả về lượng đã trừ (Decimal).
+ * Trừ tối đa `quantity` (FIFO, có quy đổi đơn vị và nguyên liệu) khỏi các lô.
+ * Trả về lượng đã trừ (Decimal).
  */
-export function consumeAvailable(pantryLots, ingredientId, quantity, unit) {
+export function consumeAvailable(pantryLots, ingredientId, quantity, unit, conversions = []) {
   let needed = Decimal.from(quantity);
   let consumed = new Decimal(0);
   const ordered = [...pantryLots].sort((a, b) => lotSortKeyFor(a).localeCompare(lotSortKeyFor(b)));
+
+  // 1. Trừ lô trực tiếp trước
   for (const lot of ordered) {
     if (needed.lte(0)) break;
     if (lot.ingredient_id !== ingredientId || !unitsCompatible(lot.unit, unit)) continue;
@@ -232,14 +261,44 @@ export function consumeAvailable(pantryLots, ingredientId, quantity, unit) {
     needed = needed.sub(take);
     consumed = consumed.add(take);
   }
+
+  // 2. Nếu còn thiếu, trừ lô gốc qua bảng quy đổi (FIFO)
+  if (needed.gt(0)) {
+    const targetConvs = _findConversionsForTarget(ingredientId, conversions);
+    for (const conv of targetConvs) {
+      if (needed.lte(0)) break;
+      if (!unitsCompatible(conv.to_unit, unit)) continue;
+      const ratio = Decimal.from(conv.ratio);
+      for (const lot of ordered) {
+        if (needed.lte(0)) break;
+        if (
+          lot.ingredient_id !== conv.from_ingredient_id ||
+          !unitsCompatible(lot.unit, conv.from_unit)
+        ) continue;
+        const rem = Decimal.from(lot.remaining_quantity);
+        if (rem.lte(0)) continue;
+        const neededInToUnit = convertQuantity(needed, unit, conv.to_unit);
+        const neededRaw = neededInToUnit.div(ratio);
+        const rawAvailable = convertQuantity(rem, lot.unit, conv.from_unit);
+        const takeRaw = rawAvailable.lt(neededRaw) ? rawAvailable : neededRaw;
+        const takeInLotUnit = takeRaw.eq(rawAvailable) ? rem : convertQuantity(takeRaw, conv.from_unit, lot.unit);
+        lot.remaining_quantity = rem.sub(takeInLotUnit).toString();
+        const yieldedInToUnit = takeRaw.mul(ratio);
+        const yieldedUnit = convertQuantity(yieldedInToUnit, conv.to_unit, unit);
+        needed = needed.sub(yieldedUnit);
+        consumed = consumed.add(yieldedUnit);
+      }
+    }
+  }
+
   return consumed;
 }
 
-export function checkRecipeStock(recipe, pantryLots, multiplier = "1") {
+export function checkRecipeStock(recipe, pantryLots, multiplier = "1", conversions = []) {
   const deficits = {};
 
   for (const req of aggregateRequirements(recipe, multiplier)) {
-    const available = getTotalIngredientStock(pantryLots, req.ingredient_id, req.unit);
+    const available = getTotalIngredientStock(pantryLots, req.ingredient_id, req.unit, conversions);
     if (available.lt(req.quantity)) {
       deficits[req.ingredient_id] = {
         ingredient_name: req.name,
@@ -266,61 +325,58 @@ function generateEngineUUID() {
   });
 }
 
-export function deductRecipeStockFifo(
+function _executeStockDeduction(
   pantryLots,
   recipe,
   mealPlanId,
   idempotencyKey,
-  multiplier = "1"
+  multiplier = "1",
+  conversions = [],
+  allowPartial = false
 ) {
-  const { canCook, deficits } = checkRecipeStock(recipe, pantryLots, multiplier);
-  if (!canCook) {
-    throw new InsufficientStockError(
-      `Không đủ nguyên liệu để nấu món '${recipe.name}'`,
-      deficits
-    );
+  if (!allowPartial) {
+    const { canCook, deficits } = checkRecipeStock(recipe, pantryLots, multiplier, conversions);
+    if (!canCook) {
+      throw new InsufficientStockError(
+        `Không đủ nguyên liệu để nấu món '${recipe.name}'`,
+        deficits
+      );
+    }
   }
 
   const requirements = aggregateRequirements(recipe, multiplier);
-
-  // Clone lots so we don't mutate input directly until successful
   const clonedLots = pantryLots.map((lot) => ({
     ...lot,
     remaining_quantity: Decimal.from(lot.remaining_quantity).toString(),
   }));
-
-  // Sort lots by earliest expiration (null last), then earliest purchase
-  const reqIngIds = new Set(requirements.map((r) => r.ingredient_id));
-  const candidateLots = clonedLots.filter((lot) => reqIngIds.has(lot.ingredient_id));
-  candidateLots.sort((x, y) => lotSortKeyFor(x).localeCompare(lotSortKeyFor(y)));
-
   const updatedLotsMap = new Map();
   const movements = [];
+  const deficits = {};
 
   for (const req of requirements) {
     let remainingNeeded = req.quantity;
-    const ingredientLots = candidateLots.filter(
-      (l) =>
-        l.ingredient_id === req.ingredient_id &&
-        unitsCompatible(l.unit, req.unit) &&
-        Decimal.from(l.remaining_quantity).gt(0)
-    );
 
-    for (const lot of ingredientLots) {
+    // 1. Trừ các lô trực tiếp của nguyên liệu theo FIFO
+    const directLots = clonedLots
+      .filter(
+        (l) =>
+          l.ingredient_id === req.ingredient_id &&
+          unitsCompatible(l.unit, req.unit) &&
+          Decimal.from(l.remaining_quantity).gt(0)
+      )
+      .sort((a, b) => lotSortKeyFor(a).localeCompare(lotSortKeyFor(b)));
+
+    for (const lot of directLots) {
       if (remainingNeeded.lte(0)) break;
-
       const lotRem = Decimal.from(lot.remaining_quantity);
       const lotAvailableInReqUnit = convertQuantity(lotRem, lot.unit, req.unit);
 
       let deductedLotUnit;
       if (lotAvailableInReqUnit.lte(remainingNeeded)) {
-        // Deduct all
-        const deductedReqUnit = lotAvailableInReqUnit;
         deductedLotUnit = lotRem;
         lot.remaining_quantity = "0";
-        remainingNeeded = remainingNeeded.sub(deductedReqUnit);
+        remainingNeeded = remainingNeeded.sub(lotAvailableInReqUnit);
       } else {
-        // Partial deduction
         const deductedReqUnit = remainingNeeded;
         deductedLotUnit = convertQuantity(deductedReqUnit, req.unit, lot.unit);
         lot.remaining_quantity = lotRem.sub(deductedLotUnit).toString();
@@ -334,16 +390,116 @@ export function deductRecipeStockFifo(
         quantity_delta: `-${deductedLotUnit.toString()}`,
         reason: "meal_consumption",
         meal_plan_id: mealPlanId,
-        idempotency_key: `${idempotencyKey}_${lot.id}`,
+        idempotency_key: `${idempotencyKey}_${lot.id}_${movements.length}`,
         created_at: new Date().toISOString(),
       });
+    }
+
+    // 2. Nếu còn thiếu, trừ từ nguyên liệu gốc qua bảng quy đổi (FIFO)
+    if (remainingNeeded.gt(0)) {
+      const targetConvs = _findConversionsForTarget(req.ingredient_id, conversions);
+      for (const conv of targetConvs) {
+        if (remainingNeeded.lte(0)) break;
+        if (!unitsCompatible(conv.to_unit, req.unit)) continue;
+        const ratio = Decimal.from(conv.ratio);
+
+        const rawLots = clonedLots
+          .filter(
+            (l) =>
+              l.ingredient_id === conv.from_ingredient_id &&
+              unitsCompatible(l.unit, conv.from_unit) &&
+              Decimal.from(l.remaining_quantity).gt(0)
+          )
+          .sort((a, b) => lotSortKeyFor(a).localeCompare(lotSortKeyFor(b)));
+
+        for (const lot of rawLots) {
+          if (remainingNeeded.lte(0)) break;
+          const lotRem = Decimal.from(lot.remaining_quantity);
+          const neededInToUnit = convertQuantity(remainingNeeded, req.unit, conv.to_unit);
+          const neededRawInFromUnit = neededInToUnit.div(ratio);
+          const lotRawInFromUnit = convertQuantity(lotRem, lot.unit, conv.from_unit);
+          const takeRawInFromUnit = lotRawInFromUnit.lt(neededRawInFromUnit)
+            ? lotRawInFromUnit
+            : neededRawInFromUnit;
+          const takeLotUnit = takeRawInFromUnit.eq(lotRawInFromUnit)
+            ? lotRem
+            : convertQuantity(takeRawInFromUnit, conv.from_unit, lot.unit);
+
+          lot.remaining_quantity = lotRem.sub(takeLotUnit).toString();
+          const yieldedInToUnit = takeRawInFromUnit.mul(ratio);
+          const yieldedReqUnit = convertQuantity(yieldedInToUnit, conv.to_unit, req.unit);
+          remainingNeeded = remainingNeeded.sub(yieldedReqUnit);
+
+          updatedLotsMap.set(lot.id, lot);
+          movements.push({
+            id: generateEngineUUID(),
+            pantry_lot_id: lot.id,
+            quantity_delta: `-${takeLotUnit.toString()}`,
+            reason: "meal_consumption",
+            meal_plan_id: mealPlanId,
+            idempotency_key: `${idempotencyKey}_${lot.id}_${movements.length}`,
+            created_at: new Date().toISOString(),
+          });
+        }
+      }
+    }
+
+    if (remainingNeeded.gt(0)) {
+      deficits[req.ingredient_id] = {
+        ingredient_name: req.name,
+        missing_quantity: remainingNeeded.toString(),
+        unit: req.unit,
+      };
     }
   }
 
   return {
     updatedLots: Array.from(updatedLotsMap.values()),
     movements,
+    deficits,
   };
+}
+
+export function deductRecipeStockFifo(
+  pantryLots,
+  recipe,
+  mealPlanId,
+  idempotencyKey,
+  multiplier = "1",
+  conversions = []
+) {
+  const res = _executeStockDeduction(
+    pantryLots,
+    recipe,
+    mealPlanId,
+    idempotencyKey,
+    multiplier,
+    conversions,
+    false
+  );
+  return {
+    updatedLots: res.updatedLots,
+    movements: res.movements,
+  };
+}
+
+export function deductRecipeStockAvailable(
+  pantryLots,
+  recipe,
+  mealPlanId,
+  idempotencyKey,
+  multiplier = "1",
+  conversions = []
+) {
+  return _executeStockDeduction(
+    pantryLots,
+    recipe,
+    mealPlanId,
+    idempotencyKey,
+    multiplier,
+    conversions,
+    true
+  );
 }
 
 export function reverseStockMovements(pantryLots, movements, mealPlanId) {
@@ -414,6 +570,8 @@ export function generatePeriodPlan(
 
   const periodId = generateEngineUUID();
   const allowLeftovers = options.allow_leftovers !== false && options.allowLeftovers !== false;
+  const conversions = options.conversions || [];
+  const rawIngredientNames = options.raw_ingredient_names || options.rawIngredientNames || {};
 
   const recipesByCat = {
     man: recipes.filter((r) => r.category === "man"),
@@ -478,7 +636,7 @@ export function generatePeriodPlan(
 
           let fullyStockedRecipe = null;
           for (const r of candidateRecipes) {
-            const { canCook } = checkRecipeStock(r, usableLots);
+            const { canCook } = checkRecipeStock(r, usableLots, "1", conversions);
             if (canCook) {
               fullyStockedRecipe = r;
               break;
@@ -488,31 +646,47 @@ export function generatePeriodPlan(
           let chosenRecipe = null;
           if (fullyStockedRecipe) {
             chosenRecipe = fullyStockedRecipe;
-            // Trừ kho mô phỏng (có quy đổi đơn vị, theo FIFO)
+            // Trừ kho mô phỏng (có quy đổi đơn vị và nguyên liệu, theo FIFO)
             for (const req of aggregateRequirements(chosenRecipe)) {
-              consumeAvailable(usableLots, req.ingredient_id, req.quantity, req.unit);
+              consumeAvailable(usableLots, req.ingredient_id, req.quantity, req.unit, conversions);
             }
           } else if (candidateRecipes.length > 0) {
             chosenRecipe = candidateRecipes[0];
-            const { deficits } = checkRecipeStock(chosenRecipe, usableLots);
+            const { deficits } = checkRecipeStock(chosenRecipe, usableLots, "1", conversions);
             // Phần đã có trong kho được dùng cho món này, để món sau không đếm lại.
             for (const req of aggregateRequirements(chosenRecipe)) {
-              consumeAvailable(usableLots, req.ingredient_id, req.quantity, req.unit);
+              consumeAvailable(usableLots, req.ingredient_id, req.quantity, req.unit, conversions);
             }
             for (const [ingId, def] of Object.entries(deficits)) {
-              const key = `${ingId}|${UNIT_DIMENSIONS[def.unit]}`;
+              let actualIngId = ingId;
+              let actualUnit = def.unit;
+              let actualQty = def.missing_quantity;
+              let actualName = def.ingredient_name;
+
+              const targetConvs = _findConversionsForTarget(ingId, conversions);
+              if (targetConvs.length > 0) {
+                const conv = targetConvs[0];
+                const missingInTo = convertQuantity(def.missing_quantity, def.unit, conv.to_unit);
+                const rawNeeded = missingInTo.div(Decimal.from(conv.ratio));
+                actualIngId = conv.from_ingredient_id;
+                actualUnit = conv.from_unit;
+                actualQty = rawNeeded.toString();
+                actualName = rawIngredientNames[actualIngId] || `Nguyên liệu gốc cho ${def.ingredient_name}`;
+              }
+
+              const key = `${actualIngId}|${UNIT_DIMENSIONS[actualUnit]}`;
               const item = shoppingItemsMap.get(key);
               if (!item) {
                 shoppingItemsMap.set(key, {
-                  ingredient_id: ingId,
-                  ingredient_name: def.ingredient_name,
-                  needed_quantity: def.missing_quantity,
-                  unit: def.unit,
+                  ingredient_id: actualIngId,
+                  ingredient_name: actualName,
+                  needed_quantity: actualQty,
+                  unit: actualUnit,
                   dish_names: [chosenRecipe.name],
                 });
               } else {
                 item.needed_quantity = Decimal.from(item.needed_quantity)
-                  .add(convertQuantity(def.missing_quantity, def.unit, item.unit))
+                  .add(convertQuantity(actualQty, actualUnit, item.unit))
                   .toString();
                 if (!item.dish_names.includes(chosenRecipe.name)) {
                   item.dish_names.push(chosenRecipe.name);

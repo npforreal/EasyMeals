@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import {
   checkRecipeStock,
   deductRecipeStockFifo,
+  deductRecipeStockAvailable,
   reverseStockMovements,
   generatePeriodPlan,
   Decimal,
@@ -56,7 +57,8 @@ describe("Ca logic dùng chung Python/JS", () => {
         const { canCook, deficits } = checkRecipeStock(
           toRecipe(c.recipe),
           toLots(c.pantry),
-          c.multiplier
+          c.multiplier,
+          c.conversions
         );
         assert.equal(canCook, c.expect.can_cook);
         const got = Object.fromEntries(
@@ -65,11 +67,41 @@ describe("Ca logic dùng chung Python/JS", () => {
         assert.deepEqual(got, c.expect.deficits);
       } else if (c.op === "fifo") {
         const lots = toLots(c.pantry);
-        const res = deductRecipeStockFifo(lots, toRecipe(c.recipe), "plan-1", "key", c.multiplier);
+        const res = deductRecipeStockFifo(
+          lots,
+          toRecipe(c.recipe),
+          "plan-1",
+          "key",
+          c.multiplier,
+          c.conversions
+        );
         assert.ok(res.movements.length > 0);
         const remaining = Object.fromEntries(lots.map((l) => [l.id, norm(l.remaining_quantity)]));
         for (const u of res.updatedLots) remaining[u.id] = norm(u.remaining_quantity);
         assert.deepEqual(remaining, c.expect.remaining);
+      } else if (c.op === "deduct_available") {
+        const lots = toLots(c.pantry);
+        const res = deductRecipeStockAvailable(
+          lots,
+          toRecipe(c.recipe),
+          "plan-1",
+          "key",
+          c.multiplier,
+          c.conversions
+        );
+        const remaining = Object.fromEntries(lots.map((l) => [l.id, norm(l.remaining_quantity)]));
+        for (const u of res.updatedLots) remaining[u.id] = norm(u.remaining_quantity);
+        assert.deepEqual(remaining, c.expect.remaining);
+
+        const gotDeficits = Object.fromEntries(
+          Object.entries(res.deficits).map(([k, v]) => [k, norm(v.missing_quantity)])
+        );
+        assert.deepEqual(gotDeficits, c.expect.deficits);
+
+        const gotMovements = Object.fromEntries(
+          res.movements.map((m) => [m.pantry_lot_id, norm(m.quantity_delta)])
+        );
+        assert.deepEqual(gotMovements, c.expect.movements);
       } else if (c.op === "undo") {
         const lots = toLots(c.pantry);
         const movements = c.movements.map((m) => ({
@@ -92,7 +124,7 @@ describe("Ca logic dùng chung Python/JS", () => {
           end.toISOString().slice(0, 10),
           c.recipes.map(toRecipe),
           toLots(c.pantry),
-          { allow_leftovers: c.allow_leftovers }
+          { allow_leftovers: c.allow_leftovers, conversions: c.conversions }
         );
         const dishes = plan.meals.flatMap((m) => m.dishes);
         assert.deepEqual(

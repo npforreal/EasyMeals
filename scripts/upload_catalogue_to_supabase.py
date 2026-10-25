@@ -56,12 +56,16 @@ def upload_catalogue(apply: bool = False, clean: bool = False) -> dict[str, Any]
 
     ingredients = bundle.get("ingredients", [])
     recipes = bundle.get("recipes", [])
+    categories = bundle.get("categories", [])
+    conversions = bundle.get("conversions", [])
 
     print("=" * 60)
     print("EasyMeals — Upload Danh Mục Hoàn Chỉnh Lên Supabase")
     print("=" * 60)
     print(f"Chế độ: {'APPLY (ghi DB)' if apply else 'DRY-RUN (chỉ báo cáo)'}")
     print(f"Phiên bản: {bundle.get('catalogue_version')} | ETag: {bundle.get('etag')}")
+    print(f"Tổng nhóm nguyên liệu: {len(categories)}")
+    print(f"Tổng quy đổi: {len(conversions)}")
     print(f"Tổng nguyên liệu: {len(ingredients)}")
     print(f"Tổng công thức: {len(recipes)}")
 
@@ -69,13 +73,32 @@ def upload_catalogue(apply: bool = False, clean: bool = False) -> dict[str, Any]
 
     if clean and apply:
         print("\n--> [LÀM SẠCH]: Đang xoá dữ liệu cũ theo ràng buộc khoá ngoại...")
+        client.table("ingredient_conversions").delete().neq("ratio", -999999).execute()
         client.table("recipe_ingredients").delete().neq("quantity", -999999).execute()
         client.table("ingredient_aliases").delete().neq("alias", "___NON_EXISTENT___").execute()
         client.table("recipes").delete().neq("name", "___NON_EXISTENT___").execute()
         client.table("ingredients").delete().neq("name", "___NON_EXISTENT___").execute()
+        client.table("ingredient_categories").delete().neq("id", "___NON_EXISTENT___").execute()
         print("    Đã xoá sạch các bảng danh mục.")
 
-    # 1. Nạp ingredients và aliases
+    # 1. Nạp ingredient_categories
+    cat_rows = []
+    for cat in categories:
+        cat_rows.append(
+            {
+                "id": cat["id"],
+                "name": cat["name"],
+                "name_vi": cat.get("name_vi", cat["name"]),
+                "display_order": int(cat.get("display_order", 0)),
+            }
+        )
+
+    if apply and cat_rows:
+        print(f"\n--> Đang upload {len(cat_rows)} nhóm nguyên liệu...")
+        for batch in chunked(cat_rows, BATCH_SIZE):
+            client.table("ingredient_categories").upsert(batch, on_conflict="id").execute()
+
+    # 2. Nạp ingredients và aliases
     ing_rows = []
     alias_rows = []
     for ing in ingredients:
@@ -84,7 +107,8 @@ def upload_catalogue(apply: bool = False, clean: bool = False) -> dict[str, Any]
                 "id": ing["id"],
                 "name": ing["name"],
                 "normalized_name": ing["normalized_name"],
-                "category": ing.get("category"),
+                "category": ing.get("category", "khac"),
+                "default_unit": ing.get("default_unit", "g"),
             }
         )
         for alias in ing.get("aliases", []):
@@ -108,7 +132,7 @@ def upload_catalogue(apply: bool = False, clean: bool = False) -> dict[str, Any]
                     batch, on_conflict="normalized_alias"
                 ).execute()
 
-    # 2. Nạp recipes và recipe_ingredients
+    # 3. Nạp recipes và recipe_ingredients
     rec_rows = []
     ri_rows = []
     seen_ri: set[tuple[str, str]] = set()
@@ -153,32 +177,60 @@ def upload_catalogue(apply: bool = False, clean: bool = False) -> dict[str, Any]
                 batch, on_conflict="recipe_id,ingredient_id"
             ).execute()
 
+        # 4. Nạp ingredient_conversions
+        conv_rows = []
+        for conv in conversions:
+            conv_rows.append(
+                {
+                    "from_ingredient_id": conv["from_ingredient_id"],
+                    "to_ingredient_id": conv["to_ingredient_id"],
+                    "ratio": float(conv["ratio"]),
+                    "from_unit": conv["from_unit"],
+                    "to_unit": conv["to_unit"],
+                    "note": conv.get("note", ""),
+                }
+            )
+        if conv_rows:
+            print(f"--> Đang upload {len(conv_rows)} quy đổi nguyên liệu...")
+            for batch in chunked(conv_rows, BATCH_SIZE):
+                client.table("ingredient_conversions").upsert(
+                    batch, on_conflict="from_ingredient_id,to_ingredient_id"
+                ).execute()
+
         # Kiểm tra đếm
+        res_cat = client.table("ingredient_categories").select("id", count="exact").execute()
         res_ing = client.table("ingredients").select("id", count="exact").execute()
         res_rec = client.table("recipes").select("id", count="exact").execute()
         res_ri = client.table("recipe_ingredients").select("recipe_id", count="exact").execute()
+        res_conv = client.table("ingredient_conversions").select("id", count="exact").execute()
 
         print("\n== KẾT QUẢ SUPABASE ==")
+        print(f"  - Nhóm nguyên liệu: {res_cat.count or len(res_cat.data)}")
         print(f"  - Nguyên liệu: {res_ing.count or len(res_ing.data)}")
         print(f"  - Công thức: {res_rec.count or len(res_rec.data)}")
         print(f"  - Liên kết nguyên liệu: {res_ri.count or len(res_ri.data)}")
+        print(f"  - Quy đổi: {res_conv.count or len(res_conv.data)}")
         print("\n[THÀNH CÔNG] Toàn bộ dữ liệu mới đã được cập nhật lên Supabase.")
     else:
         print("\n== BÁO CÁO DỰ KIẾN ==")
+        print(f"  - Nhóm nguyên liệu: {len(cat_rows)}")
         print(f"  - Nguyên liệu: {len(ing_rows)}")
         print(f"  - Aliases: {len(alias_rows)}")
         print(f"  - Công thức: {len(rec_rows)}")
         print(f"  - Liên kết nguyên liệu: {len(ri_rows)}")
+        print(f"  - Quy đổi: {len(conversions)}")
         print("\n--> Để ghi thật vào Supabase, hãy chạy:")
         print("    python scripts/upload_catalogue_to_supabase.py --apply")
         print("--> Hoặc xoá sạch trước rồi nạp mới:")
         print("    python scripts/upload_catalogue_to_supabase.py --apply --clean")
 
     return {
+        "categories": len(cat_rows),
         "ingredients": len(ing_rows),
         "aliases": len(alias_rows),
         "recipes": len(rec_rows),
         "recipe_ingredients": len(ri_rows),
+        "conversions": len(conversions),
     }
 
 

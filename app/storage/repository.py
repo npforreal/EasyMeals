@@ -24,10 +24,157 @@ from app.domain.models import DishCategory, Ingredient, QuantityUnit, Recipe, Re
 
 ROOT = Path(__file__).resolve().parents[2]
 
-CATALOGUE_VERSION = "2026.10.26"
+CATALOGUE_VERSION = "2026.10.27"
 SUPABASE_PAGE_SIZE = 1000
 
 NAMESPACE = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")  # DNS namespace UUID
+
+STANDARD_CATEGORIES: list[dict[str, Any]] = [
+    {"id": "thit", "name": "Thịt", "name_vi": "Thịt", "display_order": 1},
+    {"id": "gia_cam", "name": "Gia cầm", "name_vi": "Gia cầm", "display_order": 2},
+    {"id": "hai_san", "name": "Hải sản", "name_vi": "Hải sản", "display_order": 3},
+    {"id": "trung_sua", "name": "Trứng & Sữa", "name_vi": "Trứng & Sữa", "display_order": 4},
+    {"id": "rau_cu", "name": "Rau củ", "name_vi": "Rau củ", "display_order": 5},
+    {"id": "cu_qua", "name": "Củ quả", "name_vi": "Củ quả", "display_order": 6},
+    {"id": "gao_bot_mi", "name": "Gạo, Bột & Mì", "name_vi": "Gạo, Bột & Mì", "display_order": 7},
+    {"id": "gia_vi", "name": "Gia vị", "name_vi": "Gia vị", "display_order": 8},
+    {
+        "id": "nuoc_cham_dau",
+        "name": "Nước chấm & Dầu",
+        "name_vi": "Nước chấm & Dầu",
+        "display_order": 9,
+    },
+    {"id": "khac", "name": "Khác", "name_vi": "Khác", "display_order": 10},
+]
+
+STANDARD_CONVERSIONS: list[dict[str, Any]] = [
+    {
+        "from_ingredient_id": "0738fdf0-710e-5aed-bbb5-5ba1f0c05f3b",
+        "to_ingredient_id": "412a8c08-4863-5000-aedd-13e2ba3adb69",
+        "ratio": "2.5",
+        "from_unit": "g",
+        "to_unit": "g",
+        "note": "1g gạo nấu ra khoảng 2.5g cơm nóng chín (xấp xỉ)",
+    },
+    {
+        "from_ingredient_id": "0738fdf0-710e-5aed-bbb5-5ba1f0c05f3b",
+        "to_ingredient_id": "16ddda98-781e-5ecf-9778-aedb4d1cd9ef",
+        "ratio": "2.5",
+        "from_unit": "g",
+        "to_unit": "g",
+        "note": "1g gạo nấu ra khoảng 2.5g cơm nguội (xấp xỉ)",
+    },
+]
+
+
+def classify_ingredient(name: str) -> str:
+    n = name.lower()
+    if any(k in n for k in ["gà", "vịt", "lòng gà", "ức gà"]):
+        return "gia_cam"
+    if any(k in n for k in ["cá ", "tôm", "mực", "ngao", "hến", "cua", "thịt ếch", "đầu cá"]):
+        return "hai_san"
+    if any(
+        k in n for k in ["thịt", "sườn", "lạp xưởng", "xúc xích", "tai heo", "huyết heo", "chả lụa"]
+    ):
+        return "thit"
+    if any(k in n for k in ["trứng", "sữa", "phô mai", "bơ", "kem tươi"]):
+        return "trung_sua"
+    if any(
+        k in n
+        for k in [
+            "dầu ",
+            "nước mắm",
+            "nước tương",
+            "giấm",
+            "tương cà",
+            "tương ớt",
+            "tương bần",
+            "sốt bbq",
+            "sốt mayonnaise",
+            "cốt me",
+        ]
+    ):
+        return "nuoc_cham_dau"
+    if any(k in n for k in ["gạo", "cơm", "mì ", "mì ý", "miến", "bánh mì", "bánh tráng", "bột "]):
+        return "gao_bot_mi"
+    if any(
+        k in n
+        for k in [
+            "tỏi",
+            "hành tím",
+            "hành lá",
+            "gừng",
+            "cần tây",
+            "sả",
+            "tiêu",
+            "rau răm",
+            "rau thơm",
+            "rau om",
+            "mùi tàu",
+            "đường",
+            "lá chanh",
+            "thì là",
+            "bột cà ri",
+            "mật ong",
+            "ớt",
+            "ngò gai",
+            "nghệ",
+            "rau mùi",
+            "rau ngò",
+            "chanh",
+            "quả sấu",
+            "mè rang",
+        ]
+    ):
+        return "gia_vi"
+    if any(
+        k in n
+        for k in [
+            "nấm",
+            "rong biển",
+            "rau",
+            "cải",
+            "bắp cải",
+            "xà lách",
+            "măng tây",
+            "bông cải",
+        ]
+    ):
+        return "rau_cu"
+    if any(
+        k in n
+        for k in [
+            "cà chua",
+            "dưa leo",
+            "bí đỏ",
+            "khoai",
+            "cà rốt",
+            "đậu cô ve",
+            "thơm",
+            "đậu bắp",
+            "giá đỗ",
+            "khế",
+            "đu đủ",
+            "măng",
+            "hành tây",
+            "hoa chuối",
+            "hoa thiên lý",
+            "đậu hà lan",
+            "su hào",
+            "bầu",
+            "khổ qua",
+            "bí đao",
+            "mướp",
+            "cà tím",
+            "ngó sen",
+            "bắp ngọt",
+            "su su",
+            "ớt chuông",
+            "bông bí",
+        ]
+    ):
+        return "cu_qua"
+    return "khac"
 
 
 def normalize_text(text: str) -> str:
@@ -146,6 +293,13 @@ class FixtureCatalogueRepository(Repository):
             ("11111111-0001-0000-0000-000000000027", "Hành lá", "hanh la", "herb", []),
             ("11111111-0001-0000-0000-000000000028", "Gừng", "gung", "spice", []),
             ("11111111-0001-0000-0000-000000000029", "Cần tây", "can tay", "vegetable", []),
+            (
+                "0738fdf0-710e-5aed-bbb5-5ba1f0c05f3b",
+                "Gạo",
+                "gao",
+                "gao_bot_mi",
+                ["Gạo tẻ", "Gạo trắng"],
+            ),
         ]
         for ing_id, name, norm, cat, aliases in raw_ingredients:
             uid = UUID(ing_id)
@@ -421,6 +575,23 @@ class FixtureCatalogueRepository(Repository):
                             ingredients=recipe_ings,
                         )
 
+        # Cập nhật category chuẩn và default_unit cho tất cả nguyên liệu dựa trên công thức
+        unit_counts: dict[UUID, dict[QuantityUnit, int]] = {}
+        for rec in self.recipes.values():
+            for ri in rec.ingredients:
+                unit_counts.setdefault(ri.ingredient_id, {})
+                unit_counts[ri.ingredient_id][ri.unit] = (
+                    unit_counts[ri.ingredient_id].get(ri.unit, 0) + 1
+                )
+
+        for ing in self.ingredients.values():
+            ing.category = classify_ingredient(ing.name)
+            counts = unit_counts.get(ing.id)
+            if counts:
+                ing.default_unit = max(counts.keys(), key=lambda u: counts[u])
+            else:
+                ing.default_unit = QuantityUnit.GRAM
+
     def get_ingredients(self, search: str | None = None) -> list[Ingredient]:
         if not search:
             return list(self.ingredients.values())
@@ -452,7 +623,8 @@ class FixtureCatalogueRepository(Repository):
                 "name": i.name,
                 "normalized_name": i.normalized_name,
                 "category": i.category,
-                "aliases": i.aliases,
+                "default_unit": i.default_unit.value,
+                "aliases": sorted(i.aliases),
             }
             for i in self.ingredients.values()
         ]
@@ -477,8 +649,10 @@ class FixtureCatalogueRepository(Repository):
         ]
         bundle = {
             "catalogue_version": CATALOGUE_VERSION,
-            "ingredients": ingredients_data,
-            "recipes": recipes_data,
+            "categories": STANDARD_CATEGORIES,
+            "conversions": STANDARD_CONVERSIONS,
+            "ingredients": sorted(ingredients_data, key=lambda x: x["id"]),
+            "recipes": sorted(recipes_data, key=lambda x: x["id"]),
         }
         raw_json = json.dumps(bundle, sort_keys=True).encode("utf-8")
         bundle_hash = hashlib.sha256(raw_json).hexdigest()[:16]
@@ -508,7 +682,7 @@ class SupabaseRepository(Repository):
 
     def get_ingredients(self, search: str | None = None) -> list[Ingredient]:
         query = self.client.table("ingredients").select(
-            "id, name, normalized_name, category, ingredient_aliases(alias)"
+            "id, name, normalized_name, category, default_unit, ingredient_aliases(alias)"
         )
         if search:
             # PostgREST filter injection protection: remove control characters
@@ -521,12 +695,18 @@ class SupabaseRepository(Repository):
         results: list[Ingredient] = []
         for row in data:
             aliases = [a["alias"] for a in row.get("ingredient_aliases", [])]
+            raw_u = row.get("default_unit") or "g"
+            try:
+                du = QuantityUnit(raw_u)
+            except Exception:
+                du = QuantityUnit.GRAM
             results.append(
                 Ingredient(
                     id=UUID(row["id"]),
                     name=row["name"],
                     normalized_name=row["normalized_name"],
-                    category=row.get("category"),
+                    category=row.get("category") or "khac",
+                    default_unit=du,
                     aliases=aliases,
                 )
             )
@@ -535,7 +715,7 @@ class SupabaseRepository(Repository):
     def get_ingredient_by_id(self, ingredient_id: UUID) -> Ingredient | None:
         response = (
             self.client.table("ingredients")
-            .select("id, name, normalized_name, category, ingredient_aliases(alias)")
+            .select("id, name, normalized_name, category, default_unit, ingredient_aliases(alias)")
             .eq("id", str(ingredient_id))
             .limit(1)
             .execute()
@@ -544,11 +724,17 @@ class SupabaseRepository(Repository):
             return None
         row = response.data[0]
         aliases = [a["alias"] for a in row.get("ingredient_aliases", [])]
+        raw_u = row.get("default_unit") or "g"
+        try:
+            du = QuantityUnit(raw_u)
+        except Exception:
+            du = QuantityUnit.GRAM
         return Ingredient(
             id=UUID(row["id"]),
             name=row["name"],
             normalized_name=row["normalized_name"],
-            category=row.get("category"),
+            category=row.get("category") or "khac",
+            default_unit=du,
             aliases=aliases,
         )
 
@@ -636,7 +822,8 @@ class SupabaseRepository(Repository):
                 "name": i.name,
                 "normalized_name": i.normalized_name,
                 "category": i.category,
-                "aliases": i.aliases,
+                "default_unit": i.default_unit.value,
+                "aliases": sorted(i.aliases),
             }
             for i in ingredients
         ]
@@ -659,10 +846,32 @@ class SupabaseRepository(Repository):
             }
             for r in recipes
         ]
+        categories = STANDARD_CATEGORIES
+        conversions = STANDARD_CONVERSIONS
+        try:
+            res_c = (
+                self.client.table("ingredient_categories")
+                .select("*")
+                .order("display_order")
+                .execute()
+            )
+            if res_c.data:
+                categories = res_c.data
+        except Exception:
+            pass
+        try:
+            res_v = self.client.table("ingredient_conversions").select("*").execute()
+            if res_v.data:
+                conversions = res_v.data
+        except Exception:
+            pass
+
         bundle = {
             "catalogue_version": CATALOGUE_VERSION,
-            "ingredients": ingredients_data,
-            "recipes": recipes_data,
+            "categories": categories,
+            "conversions": conversions,
+            "ingredients": sorted(ingredients_data, key=lambda x: x["id"]),
+            "recipes": sorted(recipes_data, key=lambda x: x["id"]),
         }
         raw_json = json.dumps(bundle, sort_keys=True).encode("utf-8")
         bundle_hash = hashlib.sha256(raw_json).hexdigest()[:16]

@@ -28,8 +28,9 @@ Tài liệu này hướng dẫn chi tiết quy trình triển khai EasyMeals the
                     v
 +--------------------------------------------------------------------+
 |                 SHARED DATABASE (Supabase)                         |
-|  - CHỈ chứa 4 bảng danh mục: ingredients, ingredient_aliases,     |
-|    recipes, recipe_ingredients                                    |
+|  - CHỈ chứa 6 bảng danh mục: ingredient_categories, ingredients,   |
+|    ingredient_aliases, recipes, recipe_ingredients,                |
+|    ingredient_conversions                                          |
 |  - Row Level Security (RLS) bật 100%: chỉ cho phép SELECT           |
 |  - Bị thu hồi toàn bộ quyền INSERT / UPDATE / DELETE cho mọi role  |
 +--------------------------------------------------------------------+
@@ -47,32 +48,35 @@ Tài liệu này hướng dẫn chi tiết quy trình triển khai EasyMeals the
    - **Anon / Publishable Key**: trong mục *Settings* -> *API* (trên Supabase Dashboard có thể dán nhãn là `anon` `public` hoặc `Publishable key`, bắt đầu bằng `eyJ...` hoặc `sb_publishable_...`).
    - **Service Role Key**: dùng duy nhất một lần offline khi nạp dữ liệu danh mục ban đầu (bắt đầu bằng `eyJ...` hoặc `sb_secret_...`).
 
-### Bước 2.2: Chạy Migration Baseline
-Mở mục **SQL Editor** trong Supabase Dashboard, dán toàn bộ nội dung tệp [supabase/migrations/202610240001_catalogue_baseline.sql](supabase/migrations/202610240001_catalogue_baseline.sql) (hoặc tệp tổng hợp `supabase/full_schema.sql`) và nhấn **Run**.
+### Bước 2.2: Chạy Migration Baseline & Cập Nhật Schema
+Mở mục **SQL Editor** trong Supabase Dashboard:
+1. Nếu là dự án mới: dán toàn bộ nội dung tệp [supabase/full_schema.sql](supabase/full_schema.sql) và nhấn **Run**.
+2. Nếu là dự án đã có baseline: chạy tiếp migration [supabase/migrations/202610250001_categories_conversions.sql](supabase/migrations/202610250001_categories_conversions.sql).
 
 Migration này sẽ:
-- Thiết lập schema 4 bảng danh mục chuẩn: `ingredients`, `ingredient_aliases`, `recipes`, `recipe_ingredients`.
-- Kích hoạt RLS (Row Level Security) trên cả 4 bảng.
-- Tạo policy `Allow public read-only access for anon and authenticated`.
-- Thu hồi tường minh quyền `INSERT, UPDATE, DELETE, TRUNCATE` đối với role `anon` và `authenticated`.
+- Thiết lập schema 6 bảng danh mục chuẩn: `ingredient_categories`, `ingredients`, `ingredient_aliases`, `recipes`, `recipe_ingredients`, `ingredient_conversions`.
+- Thêm cột `default_unit` và ràng buộc `category` hợp lệ cho bảng `ingredients`.
+- Kích hoạt RLS (Row Level Security) trên toàn bộ 6 bảng.
+- Tạo policy `Allow public read-only access for anon and authenticated` (chỉ SELECT).
+- Thu hồi tường minh quyền `INSERT, UPDATE, DELETE, TRUNCATE` đối với role `anon`, `authenticated` và `public`.
 
 ### Bước 2.3: Nạp Dữ Liệu Danh Mục (Reset & Upload Catalogue)
-Để nạp hoặc làm mới hoàn toàn danh mục chuẩn lên Supabase, chủ dự án chạy hai lệnh sau từ máy cục bộ với khoá `service_role`:
+Để nạp hoặc làm mới hoàn toàn danh mục chuẩn lên Supabase, chủ dự án tự chạy các lệnh sau từ máy cục bộ bằng khoá `service_role` của mình (chú ý: không chạy tự động trong CI hay do agent tự ý chạy lên Supabase thật):
 
 ```bash
-# 1. Xoá sạch dữ liệu danh mục cũ (yêu cầu --confirm)
+# 1. Tuỳ chọn: Xoá sạch dữ liệu danh mục cũ (yêu cầu --confirm)
 SUPABASE_URL="https://[project-id].supabase.co" \
 SUPABASE_SERVICE_ROLE_KEY="[your-service-role-key]" \
 python scripts/reset_supabase.py --confirm
 
-# 2. Nạp toàn bộ danh mục mới từ data/catalogue.json
+# 2. Nạp toàn bộ danh mục mới từ data/catalogue.json (bao gồm categories và conversions)
 SUPABASE_URL="https://[project-id].supabase.co" \
 SUPABASE_SERVICE_ROLE_KEY="[your-service-role-key]" \
 python scripts/upload_catalogue_to_supabase.py --apply
 ```
 
 > [!CAUTION] **QUY TẮC BẢO MẬT BẮT BUỘC**
-> `SUPABASE_SERVICE_ROLE_KEY` chỉ được truyền qua biến môi trường dòng lệnh trong phiên chạy script seed. **Tuyệt đối không lưu khoá này vào file `.env` hoặc đưa lên Vercel.** Backend FastAPI sẽ từ chối khởi động và báo lỗi ngay lập tức nếu phát hiện biến `SUPABASE_SERVICE_ROLE_KEY` trong môi trường runtime.
+> `SUPABASE_SERVICE_ROLE_KEY` chỉ được truyền qua biến môi trường dòng lệnh trong phiên chạy script seed của chủ dự án. **Tuyệt đối không lưu khoá này vào file `.env` hoặc đưa lên Vercel.** Backend FastAPI sẽ từ chối khởi động và báo lỗi ngay lập tức nếu phát hiện biến `SUPABASE_SERVICE_ROLE_KEY` trong môi trường runtime.
 
 ### Bước 2.4: Kiểm Chứng RLS Thực Tế Trên Supabase
 Sau khi chạy migration và nạp seed, kiểm tra trực tiếp chính sách RLS bằng script `scripts/verify_rls.py` (chạy thủ công, chỉ dùng anon key):
@@ -84,7 +88,7 @@ python scripts/verify_rls.py
 ```
 
 Script sẽ xác minh:
-1. `SELECT` trên cả 4 bảng danh mục thành công.
+1. `SELECT` trên cả 6 bảng danh mục thành công.
 2. `INSERT`, `UPDATE`, `DELETE` bằng anon key bị từ chối 100% bởi RLS.
 3. Từ chối thực thi nếu phát hiện `SUPABASE_SERVICE_ROLE_KEY` trong môi trường.
 

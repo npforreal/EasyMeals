@@ -23,6 +23,8 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from app.storage.repository import STANDARD_CATEGORIES, STANDARD_CONVERSIONS
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -36,37 +38,37 @@ VALID_UNITS = {"g", "kg", "ml", "l", "piece"}
 VALID_CATEGORIES = {"man", "rau", "canh"}
 NAMESPACE = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
-# Bộ danh mục chuẩn Việt Nam khởi tạo
+# Bộ danh mục chuẩn Việt Nam khởi tạo (id, name, norm_name, category, default_unit)
 CANONICAL_INGREDIENTS = [
-    ("11111111-0001-0000-0000-000000000001", "Thịt ba chỉ", "thit ba chi", "meat"),
-    ("11111111-0001-0000-0000-000000000002", "Thịt heo nạc dăm", "thit heo nac dam", "meat"),
-    ("11111111-0001-0000-0000-000000000003", "Sườn non heo", "suon non heo", "meat"),
-    ("11111111-0001-0000-0000-000000000004", "Thịt bò thăn", "thit bo than", "meat"),
-    ("11111111-0001-0000-0000-000000000005", "Thịt gà", "thit ga", "poultry"),
-    ("11111111-0001-0000-0000-000000000006", "Cá lóc", "ca loc", "seafood"),
-    ("11111111-0001-0000-0000-000000000007", "Tôm sú", "tom su", "seafood"),
-    ("11111111-0001-0000-0000-000000000008", "Trứng gà", "trung ga", "egg"),
-    ("11111111-0001-0000-0000-000000000009", "Trứng vịt", "trung vit", "egg"),
-    ("11111111-0001-0000-0000-000000000010", "Đậu hũ trắng", "dau hu trang", "tofu"),
-    ("11111111-0001-0000-0000-000000000011", "Rau muống", "rau muong", "vegetable"),
-    ("11111111-0001-0000-0000-000000000012", "Cải ngọt", "cai ngot", "vegetable"),
-    ("11111111-0001-0000-0000-000000000013", "Rau mồng tơi", "rau mong toi", "vegetable"),
-    ("11111111-0001-0000-0000-000000000014", "Bắp cải", "bap cai", "vegetable"),
-    ("11111111-0001-0000-0000-000000000015", "Cà chua", "ca chua", "vegetable"),
-    ("11111111-0001-0000-0000-000000000016", "Dưa leo", "dua leo", "vegetable"),
-    ("11111111-0001-0000-0000-000000000017", "Bí đỏ", "bi do", "vegetable"),
-    ("11111111-0001-0000-0000-000000000018", "Khoai tây", "khoai tay", "root"),
-    ("11111111-0001-0000-0000-000000000019", "Cà rốt", "ca rot", "root"),
-    ("11111111-0001-0000-0000-000000000020", "Đậu cô ve", "dau co ve", "vegetable"),
-    ("11111111-0001-0000-0000-000000000021", "Thơm (Dứa)", "thom dua", "fruit_vegetable"),
-    ("11111111-0001-0000-0000-000000000022", "Đậu bắp", "dau bap", "vegetable"),
-    ("11111111-0001-0000-0000-000000000023", "Giá đỗ", "gia do", "vegetable"),
-    ("11111111-0001-0000-0000-000000000024", "Nấm rơm", "nam rom", "mushroom"),
-    ("11111111-0001-0000-0000-000000000025", "Tỏi", "toi", "spice"),
-    ("11111111-0001-0000-0000-000000000026", "Hành tím", "hanh tim", "spice"),
-    ("11111111-0001-0000-0000-000000000027", "Hành lá", "hanh la", "herb"),
-    ("11111111-0001-0000-0000-000000000028", "Gừng", "gung", "spice"),
-    ("11111111-0001-0000-0000-000000000029", "Cần tây", "can tay", "vegetable"),
+    ("11111111-0001-0000-0000-000000000001", "Thịt ba chỉ", "thit ba chi", "thit", "g"),
+    ("11111111-0001-0000-0000-000000000002", "Thịt heo nạc dăm", "thit heo nac dam", "thit", "g"),
+    ("11111111-0001-0000-0000-000000000003", "Sườn non heo", "suon non heo", "thit", "g"),
+    ("11111111-0001-0000-0000-000000000004", "Thịt bò thăn", "thit bo than", "thit", "g"),
+    ("11111111-0001-0000-0000-000000000005", "Thịt gà", "thit ga", "gia_cam", "g"),
+    ("11111111-0001-0000-0000-000000000006", "Cá lóc", "ca loc", "hai_san", "g"),
+    ("11111111-0001-0000-0000-000000000007", "Tôm sú", "tom su", "hai_san", "g"),
+    ("11111111-0001-0000-0000-000000000008", "Trứng gà", "trung ga", "trung_sua", "piece"),
+    ("11111111-0001-0000-0000-000000000009", "Trứng vịt", "trung vit", "trung_sua", "piece"),
+    ("11111111-0001-0000-0000-000000000010", "Đậu hũ trắng", "dau hu trang", "khac", "piece"),
+    ("11111111-0001-0000-0000-000000000011", "Rau muống", "rau muong", "rau_cu", "g"),
+    ("11111111-0001-0000-0000-000000000012", "Cải ngọt", "cai ngot", "rau_cu", "g"),
+    ("11111111-0001-0000-0000-000000000013", "Rau mồng tơi", "rau mong toi", "rau_cu", "g"),
+    ("11111111-0001-0000-0000-000000000014", "Bắp cải", "bap cai", "rau_cu", "g"),
+    ("11111111-0001-0000-0000-000000000015", "Cà chua", "ca chua", "cu_qua", "g"),
+    ("11111111-0001-0000-0000-000000000016", "Dưa leo", "dua leo", "cu_qua", "g"),
+    ("11111111-0001-0000-0000-000000000017", "Bí đỏ", "bi do", "cu_qua", "g"),
+    ("11111111-0001-0000-0000-000000000018", "Khoai tây", "khoai tay", "cu_qua", "g"),
+    ("11111111-0001-0000-0000-000000000019", "Cà rốt", "ca rot", "cu_qua", "g"),
+    ("11111111-0001-0000-0000-000000000020", "Đậu cô ve", "dau co ve", "cu_qua", "g"),
+    ("11111111-0001-0000-0000-000000000021", "Thơm (Dứa)", "thom dua", "cu_qua", "g"),
+    ("11111111-0001-0000-0000-000000000022", "Đậu bắp", "dau bap", "cu_qua", "g"),
+    ("11111111-0001-0000-0000-000000000023", "Giá đỗ", "gia do", "rau_cu", "g"),
+    ("11111111-0001-0000-0000-000000000024", "Nấm rơm", "nam rom", "rau_cu", "g"),
+    ("11111111-0001-0000-0000-000000000025", "Tỏi", "toi", "gia_vi", "g"),
+    ("11111111-0001-0000-0000-000000000026", "Hành tím", "hanh tim", "gia_vi", "g"),
+    ("11111111-0001-0000-0000-000000000027", "Hành lá", "hanh la", "gia_vi", "g"),
+    ("11111111-0001-0000-0000-000000000028", "Gừng", "gung", "gia_vi", "g"),
+    ("11111111-0001-0000-0000-000000000029", "Cần tây", "can tay", "rau_cu", "g"),
 ]
 
 CANONICAL_ALIASES = [
@@ -214,18 +216,24 @@ def seed_database(apply: bool = False, with_harvest: bool = False) -> None:
 
     client = get_client(service_role_key, supabase_url)
 
-    # 1. Nạp ingredients
+    # 1. Nạp ingredient_categories
+    print("\n--> Đang nạp bảng ingredient_categories...")
+    for cat in STANDARD_CATEGORIES:
+        client.table("ingredient_categories").upsert(cat, on_conflict="id").execute()
+
+    # 2. Nạp ingredients
     print("\n--> Đang nạp bảng ingredients...")
-    for item_id, name, norm_name, cat in CANONICAL_INGREDIENTS:
+    for item_id, name, norm_name, cat, unit in CANONICAL_INGREDIENTS:
         payload = {
             "id": item_id,
             "name": name,
             "normalized_name": norm_name,
             "category": cat,
+            "default_unit": unit,
         }
         client.table("ingredients").upsert(payload, on_conflict="normalized_name").execute()
 
-    # 2. Nạp aliases
+    # 3. Nạp aliases
     print("--> Đang nạp bảng ingredient_aliases...")
     for item_id, alias, norm_alias in CANONICAL_ALIASES:
         payload = {
@@ -235,7 +243,7 @@ def seed_database(apply: bool = False, with_harvest: bool = False) -> None:
         }
         client.table("ingredient_aliases").upsert(payload, on_conflict="normalized_alias").execute()
 
-    # 3. Nạp recipes & recipe_ingredients
+    # 4. Nạp recipes & recipe_ingredients
     print("--> Đang nạp bảng recipes và recipe_ingredients...")
     for rec_id, name, cat, servings, instructions, ing_list in CANONICAL_RECIPES:
         rec_payload = {
@@ -258,7 +266,14 @@ def seed_database(apply: bool = False, with_harvest: bool = False) -> None:
                 ing_payload, on_conflict="recipe_id,ingredient_id"
             ).execute()
 
-    # 4. Nếu có --with-harvest, nạp tiếp kho mở rộng (món Việt & quốc tế dịch chuẩn)
+    # 5. Nạp ingredient_conversions
+    print("--> Đang nạp bảng ingredient_conversions...")
+    for conv in STANDARD_CONVERSIONS:
+        client.table("ingredient_conversions").upsert(
+            conv, on_conflict="from_ingredient_id,to_ingredient_id"
+        ).execute()
+
+    # 6. Nếu có --with-harvest, nạp tiếp kho mở rộng (món Việt & quốc tế dịch chuẩn)
     if with_harvest:
         print("\n" + "=" * 60)
         print("Đang nạp kho công thức mở rộng (Món Việt & Quốc tế dịch chuẩn)...")

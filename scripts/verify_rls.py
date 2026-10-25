@@ -88,11 +88,18 @@ def run_verification() -> int:
     print("Anon Key: [Đã cung cấp qua biến môi trường]")
     client = create_client(supabase_url, anon_key)
 
-    tables = ["ingredients", "ingredient_aliases", "recipes", "recipe_ingredients"]
+    tables = [
+        "ingredient_categories",
+        "ingredients",
+        "ingredient_aliases",
+        "recipes",
+        "recipe_ingredients",
+        "ingredient_conversions",
+    ]
     for tbl in tables:
         verify_table_rls(client, tbl)
 
-    print("\n===> TẤT CẢ 4 BẢNG ĐÃ ĐƯỢC BẢO VỆ AN TOÀN BỞI RLS. CHỈ ĐỌC (READ-ONLY)!")
+    print(f"\n===> TẤT CẢ {len(tables)} BẢNG ĐÃ ĐƯỢC BẢO VỆ AN TOÀN BỞI RLS. CHỈ ĐỌC (READ-ONLY)!")
     return 0
 
 

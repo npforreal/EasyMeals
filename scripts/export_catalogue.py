@@ -33,6 +33,10 @@ VALID_CATEGORIES = {"man", "rau", "canh"}
 def validate_catalogue_integrity(bundle: dict[str, Any]) -> None:
     ingredients = bundle.get("ingredients", [])
     recipes = bundle.get("recipes", [])
+    conversions = bundle.get("conversions", [])
+    categories = bundle.get("categories", [])
+
+    cat_ids = {c["id"] for c in categories}
 
     ing_ids: set[str] = set()
     ing_norms: set[str] = set()
@@ -46,6 +50,14 @@ def validate_catalogue_integrity(bundle: dict[str, Any]) -> None:
         if norm in ing_norms:
             raise ValueError(f"Trùng lặp normalized_name nguyên liệu: {norm}")
         ing_norms.add(norm)
+
+        cat = ing.get("category")
+        if cat_ids and cat and cat not in cat_ids:
+            raise ValueError(f"Nguyên liệu '{ing.get('name')}' có category lạ: {cat}")
+
+        u = ing.get("default_unit")
+        if u and u not in VALID_UNITS:
+            raise ValueError(f"Nguyên liệu '{ing.get('name')}' có default_unit lạ: {u}")
 
     rec_ids: set[str] = set()
     for rec in recipes:
@@ -81,6 +93,30 @@ def validate_catalogue_integrity(bundle: dict[str, Any]) -> None:
                 msg = f"Công thức '{rec['name']}' có nguyên liệu '{ing_name}' <= 0"
                 raise ValueError(msg)
 
+    # Kiểm tra tính hợp lệ của quy đổi: id tồn tại, ratio > 0, 1 bước không chuỗi/vòng
+    from_ids = set()
+    to_ids = set()
+    for conv in conversions:
+        f_id = conv.get("from_ingredient_id")
+        t_id = conv.get("to_ingredient_id")
+        if f_id not in ing_ids or t_id not in ing_ids:
+            raise ValueError(f"Quy đổi {f_id} -> {t_id} tham chiếu nguyên liệu không tồn tại!")
+        if f_id == t_id:
+            raise ValueError(f"Quy đổi từ và đến cùng nguyên liệu: {f_id}")
+        try:
+            ratio = float(conv.get("ratio") or 0)
+        except (ValueError, TypeError):
+            ratio = 0
+        if ratio <= 0:
+            raise ValueError(f"Quy đổi có tỷ lệ ratio <= 0: {conv}")
+        from_ids.add(f_id)
+        to_ids.add(t_id)
+
+    # Chống chuỗi quy đổi (A -> B -> C): to_ids không được giao với from_ids
+    chains = from_ids.intersection(to_ids)
+    if chains:
+        raise ValueError(f"Phát hiện quy đổi đa bước/vòng liên quan đến ID: {chains}")
+
 
 def export_catalogue(output_path: Path) -> dict[str, Any]:
     from app.storage.repository import (
@@ -112,10 +148,20 @@ def export_catalogue(output_path: Path) -> dict[str, Any]:
     for rec in sorted_recipes:
         rec["ingredients"] = sorted(rec.get("ingredients", []), key=lambda x: x["ingredient_id"])
 
+    categories = bundle.get("categories", [])
+    conversions = bundle.get("conversions", [])
+    sorted_categories = sorted(categories, key=lambda x: x.get("sort_order", 0))
+    sorted_conversions = sorted(
+        conversions,
+        key=lambda x: (x.get("from_ingredient_id", ""), x.get("to_ingredient_id", "")),
+    )
+
     clean_bundle = {
         "catalogue_version": CATALOGUE_VERSION,
+        "categories": sorted_categories,
         "ingredients": sorted_ingredients,
         "recipes": sorted_recipes,
+        "conversions": sorted_conversions,
     }
 
     # Kiểm tra toàn vẹn dữ liệu

@@ -16,11 +16,13 @@ import pytest
 
 from app.domain.inventory import (
     check_recipe_stock,
+    deduct_recipe_stock_available,
     deduct_recipe_stock_fifo,
     reverse_stock_movements,
 )
 from app.domain.models import (
     DishCategory,
+    IngredientConversion,
     PantryLot,
     QuantityUnit,
     Recipe,
@@ -72,6 +74,22 @@ def _lots(items: list[dict]) -> list[PantryLot]:
     ]
 
 
+def _conversions(items: list[dict] | None) -> list[IngredientConversion] | None:
+    if not items:
+        return None
+    return [
+        IngredientConversion(
+            from_ingredient_id=UUID(c["from_ingredient_id"]),
+            to_ingredient_id=UUID(c["to_ingredient_id"]),
+            ratio=Decimal(c["ratio"]),
+            from_unit=QuantityUnit(c.get("from_unit", "g")),
+            to_unit=QuantityUnit(c.get("to_unit", "g")),
+            note=c.get("note"),
+        )
+        for c in items
+    ]
+
+
 def _norm(v: Decimal | str) -> str:
     s = format(Decimal(str(v)), "f")
     return s.rstrip("0").rstrip(".") if "." in s else s
@@ -80,9 +98,13 @@ def _norm(v: Decimal | str) -> str:
 @pytest.mark.parametrize("case", CASES, ids=[c["name"] for c in CASES])
 def test_logic_case(case):
     op = case["op"]
+    convs = _conversions(case.get("conversions"))
     if op == "check":
         ok, deficits = check_recipe_stock(
-            _recipe(case["recipe"]), _lots(case["pantry"]), Decimal(case["multiplier"])
+            _recipe(case["recipe"]),
+            _lots(case["pantry"]),
+            Decimal(case.get("multiplier", "1")),
+            conversions=convs,
         )
         assert ok == case["expect"]["can_cook"]
         assert {str(k): _norm(v[1]) for k, v in deficits.items()} == case["expect"]["deficits"]
@@ -93,12 +115,29 @@ def test_logic_case(case):
             _recipe(case["recipe"]),
             UUID(int=1),
             "key",
-            Decimal(case["multiplier"]),
+            Decimal(case.get("multiplier", "1")),
+            conversions=convs,
         )
         assert res.movements
         assert {str(lot.id): _norm(lot.remaining_quantity) for lot in lots} == case["expect"][
             "remaining"
         ]
+    elif op == "deduct_available":
+        lots = _lots(case["pantry"])
+        res, deficits = deduct_recipe_stock_available(
+            lots,
+            _recipe(case["recipe"]),
+            UUID(int=1),
+            "key",
+            Decimal(case.get("multiplier", "1")),
+            conversions=convs,
+        )
+        assert {str(lot.id): _norm(lot.remaining_quantity) for lot in lots} == case["expect"][
+            "remaining"
+        ]
+        assert {str(k): _norm(v[1]) for k, v in deficits.items()} == case["expect"]["deficits"]
+        actual_movements = {str(m.pantry_lot_id): _norm(m.quantity_delta) for m in res.movements}
+        assert actual_movements == case["expect"]["movements"]
     elif op == "undo":
         lots = _lots(case["pantry"])
         movements = [
@@ -124,6 +163,7 @@ def test_logic_case(case):
             recipes=[_recipe(r) for r in case["recipes"]],
             current_pantry_lots=_lots(case["pantry"]),
             allow_leftovers=case["allow_leftovers"],
+            conversions=convs,
         )
         dishes = [d for p in plans for d in p.dishes]
         assert [d.recipe_name for d in dishes] == case["expect"]["dishes"]
