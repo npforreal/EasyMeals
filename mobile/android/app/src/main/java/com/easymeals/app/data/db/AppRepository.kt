@@ -61,6 +61,10 @@ class AppRepository(private val context: Context) {
         prefs.edit().putString("theme_palette", paletteName).apply()
     }
 
+    // Phải khai báo trước khối init: Kotlin chạy initializer theo thứ tự, khai báo sau sẽ ghi đè giá trị đã nạp.
+    var conversions: List<com.easymeals.app.domain.model.Conversion> = emptyList()
+        private set
+
     private var lastActionPlanId: String? = null
     var catalogueVersion: String = "2026.10.26"
         private set
@@ -73,9 +77,6 @@ class AppRepository(private val context: Context) {
     fun retryLoadCatalogue() {
         loadCatalogue()
     }
-
-    var conversions: List<com.easymeals.app.domain.model.Conversion> = emptyList()
-        private set
 
     private fun loadCatalogue() {
         val bundle = CatalogueLoader.loadBundledCatalogue(context)
