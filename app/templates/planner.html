@@ -32,11 +32,17 @@
           <input type="hidden" id="plan-end">
         </div>
       </div>
-      <div class="form-group" style="display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2);">
+      <div class="form-group" style="display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); flex-wrap: wrap;">
         <input type="checkbox" id="allow-leftovers" checked style="width: auto; min-height: auto;">
         <label for="allow-leftovers" style="margin: 0; font-weight: normal;">
           Cho phép lên lịch ăn lại đồ ăn dư (leftovers) từ bữa trước để tránh lãng phí thực phẩm.
         </label>
+        <span for="leftover-days" style="font-size: var(--text-xs); color: var(--text-muted); margin-left: auto;">Dùng lại đồ dư trong tối đa</span>
+        <select id="leftover-days" style="width: auto; min-height: auto; padding: 2px 6px;">
+          <option value="1">1 ngày</option>
+          <option value="2" selected>2 ngày</option>
+          <option value="3">3 ngày</option>
+        </select>
       </div>
       <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4); flex-wrap: wrap;">
         <button type="submit" class="btn btn-primary" id="btn-generate">Lên thực đơn 3 ngày</button>

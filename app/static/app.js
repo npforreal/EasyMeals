@@ -43,6 +43,9 @@ import {
   formatExpiryStatus,
 } from "./js/formatters.js";
 import {
+  LEFTOVER_DEFAULT_DAYS,
+  LEFTOVER_MAX_DAYS,
+  LEFTOVER_MIN_DAYS,
   PLAN_MIN_DAYS,
   PLAN_MAX_DAYS,
   PLAN_DEFAULT_DAYS,
@@ -1086,7 +1089,9 @@ async function initPlannerPage() {
 
           const dName = document.createElement("span");
           dName.textContent = dish.recipe_name || "Món ăn";
-          if (dish.is_leftover) {
+          // Nhãn "Ăn lại" vẽ một lần duy nhất theo is_leftover; tên món trong
+          // dữ liệu không chứa hậu tố "(Ăn lại)" (sửa lỗi hiện "… (Ăn lại) (Ăn lại)").
+          if (dish.is_leftover && !/\(Ăn lại\)$/.test(dName.textContent)) {
             dName.textContent += " (Ăn lại)";
             dName.style.color = "var(--text-muted)";
           }
@@ -1339,6 +1344,42 @@ async function initPlannerPage() {
     });
   }
 
+  // Tuỳ chọn đồ ăn dư: đọc trạng thái người dùng chọn, lưu lại để lần sau giữ nguyên.
+  function readAndPersistLeftoverPreferences() {
+    const cb = document.getElementById("allow-leftovers");
+    const sel = document.getElementById("leftover-days");
+    if (cb) {
+      localStorage.setItem("easymeals_allow_leftovers", cb.checked ? "1" : "0");
+    }
+    if (sel && sel.value) {
+      const days = parseInt(sel.value, 10);
+      if (Number.isFinite(days) && days >= LEFTOVER_MIN_DAYS && days <= LEFTOVER_MAX_DAYS) {
+        localStorage.setItem("easymeals_leftover_days", String(days));
+      }
+    }
+    const savedAllow = localStorage.getItem("easymeals_allow_leftovers");
+    const savedDays = parseInt(
+      localStorage.getItem("easymeals_leftover_days") || String(LEFTOVER_DEFAULT_DAYS),
+      10
+    );
+    const allowLeftovers = cb ? !!cb.checked : savedAllow !== "0";
+    return {
+      allowLeftovers,
+      leftoverDays: Number.isFinite(savedDays) ? savedDays : LEFTOVER_DEFAULT_DAYS,
+    };
+  }
+
+  // Trước khi mở trang lần đầu (không submit), khôi phục lựa chọn đã lưu.
+  function restoreLeftoverPreferences() {
+    const cb = document.getElementById("allow-leftovers");
+    const sel = document.getElementById("leftover-days");
+    const savedAllow = localStorage.getItem("easymeals_allow_leftovers");
+    const savedDays = localStorage.getItem("easymeals_leftover_days");
+    if (cb && savedAllow !== null) cb.checked = savedAllow === "1";
+    if (sel && savedDays !== null) sel.value = savedDays;
+  }
+  restoreLeftoverPreferences();
+
   if (planForm) {
     planForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -1353,6 +1394,8 @@ async function initPlannerPage() {
         showToast(`Số ngày phải từ ${PLAN_MIN_DAYS} đến ${PLAN_MAX_DAYS} ngày.`, "warning");
         return;
       }
+
+      const leftoverPrefs = readAndPersistLeftoverPreferences();
 
       const submitBtn = planForm.querySelector("button[type='submit']");
       if (submitBtn) {
@@ -1369,7 +1412,10 @@ async function initPlannerPage() {
             throw new Error("Chưa nạp danh mục món ăn.");
           }
 
-          const data = engineGeneratePeriodPlan(s, end, catalogue.recipes, lots, { allowLeftovers: true });
+          const data = engineGeneratePeriodPlan(s, end, catalogue.recipes, lots, {
+            allowLeftovers: leftoverPrefs.allowLeftovers,
+            leftoverDays: leftoverPrefs.leftoverDays,
+          });
           await saveMealPlans(data.meals);
 
           if (data.shopping_list && data.shopping_list.length) {
@@ -1400,7 +1446,10 @@ async function initPlannerPage() {
           pantry: lots,
           start_date: s,
           days,
-          options: { allow_leftovers: true },
+          options: {
+            allow_leftovers: leftoverPrefs.allowLeftovers,
+            leftover_days: leftoverPrefs.leftoverDays,
+          },
         };
 
         const res = await fetch("/api/planner/generate", {

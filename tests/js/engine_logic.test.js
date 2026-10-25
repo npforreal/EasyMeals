@@ -128,7 +128,11 @@ describe("Ca logic dùng chung Python/JS", () => {
                 endStr,
                 c.recipes.map(toRecipe),
                 toLots(c.pantry),
-                { allow_leftovers: c.allow_leftovers, conversions: c.conversions }
+                {
+                  allow_leftovers: c.allow_leftovers,
+                  leftover_days: c.leftover_days,
+                  conversions: c.conversions,
+                }
               );
             },
             Error
@@ -140,7 +144,11 @@ describe("Ca logic dùng chung Python/JS", () => {
           endStr,
           c.recipes.map(toRecipe),
           toLots(c.pantry),
-          { allow_leftovers: c.allow_leftovers, conversions: c.conversions }
+          {
+            allow_leftovers: c.allow_leftovers,
+            leftover_days: c.leftover_days,
+            conversions: c.conversions,
+          }
         );
         const dishes = plan.meals.flatMap((m) => m.dishes);
         assert.deepEqual(

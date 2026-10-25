@@ -8,7 +8,13 @@
  * - Meal plan generation with no-repeat rule, leftover reuse, and shopping list
  */
 
-import { PLAN_MAX_DAYS, PLAN_MIN_DAYS } from "./constants.js";
+import {
+  LEFTOVER_DEFAULT_DAYS,
+  LEFTOVER_MAX_DAYS,
+  LEFTOVER_MIN_DAYS,
+  PLAN_MAX_DAYS,
+  PLAN_MIN_DAYS,
+} from "./constants.js";
 
 const SCALE = 1000000n; // 6 decimal places fixed-point BigInt
 const SCALE_INT = 1000000;
@@ -572,6 +578,21 @@ export function generatePeriodPlan(
 
   const periodId = generateEngineUUID();
   const allowLeftovers = options.allow_leftovers !== false && options.allowLeftovers !== false;
+  const leftoverDaysRaw =
+    options.leftover_days !== undefined ? options.leftover_days : options.leftoverDays;
+  const leftoverDays =
+    leftoverDaysRaw !== undefined && leftoverDaysRaw !== null
+      ? parseInt(leftoverDaysRaw, 10)
+      : LEFTOVER_DEFAULT_DAYS;
+  if (
+    !Number.isFinite(leftoverDays) ||
+    leftoverDays < LEFTOVER_MIN_DAYS ||
+    leftoverDays > LEFTOVER_MAX_DAYS
+  ) {
+    throw new Error(
+      `Số ngày dùng lại đồ dư phải từ ${LEFTOVER_MIN_DAYS} đến ${LEFTOVER_MAX_DAYS} ngày.`
+    );
+  }
   const conversions = options.conversions || [];
   const rawIngredientNames = options.raw_ingredient_names || options.rawIngredientNames || {};
 
@@ -588,7 +609,9 @@ export function generatePeriodPlan(
   }));
 
   const cookedRecipeIds = new Set();
-  const availableLeftovers = [];
+  // Sổ cái phần dư: mỗi mẻ nấu (≥ 4 khẩu phần) dư đúng một phần ăn, dùng lại
+  // một lần trong quá hạn (ngày nấu + leftoverDays). Mô hình khớp planner.py.
+  const availableLeftovers = []; // { dish, portionsRemaining, deadline (Date) }
   const mealPlans = [];
   const shoppingItemsMap = new Map(); // khoá: `${ingredient_id}|${thứ nguyên}`
 
@@ -616,14 +639,17 @@ export function generatePeriodPlan(
 
         // 1. Try to use leftover from earlier meals
         if (allowLeftovers && availableLeftovers.length > 0) {
-          const leftIdx = availableLeftovers.findIndex((l) => l.category === cat);
+          const leftIdx = availableLeftovers.findIndex(
+            (det) => det.portionsRemaining > 0 && curr <= det.deadline && det.dish.category === cat
+          );
           if (leftIdx !== -1) {
-            const leftover = availableLeftovers.splice(leftIdx, 1)[0];
+            const leftover = availableLeftovers[leftIdx].dish;
+            availableLeftovers.splice(leftIdx, 1);
             dishChosen = {
               id: generateEngineUUID(),
               meal_plan_id: mealPlan.id,
               recipe_id: leftover.recipe_id,
-              recipe_name: `${leftover.recipe_name} (Ăn lại)`,
+              recipe_name: leftover.recipe_name,
               category: cat,
               is_leftover: true,
               original_dish_id: leftover.id,
@@ -711,7 +737,10 @@ export function generatePeriodPlan(
 
             // Leftover opportunity if recipe serves >= 4
             if (allowLeftovers && chosenRecipe.servings >= 4) {
-              availableLeftovers.push(dishChosen);
+              // Hạn an toàn: phần dư chỉ dùng được tới (ngày nấu + leftoverDays).
+              const deadline = new Date(curr.getTime());
+              deadline.setUTCDate(deadline.getUTCDate() + leftoverDays);
+              availableLeftovers.push({ dish: dishChosen, portionsRemaining: 1, deadline });
             }
           }
         }

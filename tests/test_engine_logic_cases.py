@@ -14,6 +14,7 @@ from uuid import UUID
 
 import pytest
 
+from app.constants import LEFTOVER_DEFAULT_DAYS
 from app.domain.inventory import (
     check_recipe_stock,
     deduct_recipe_stock_available,
@@ -158,6 +159,7 @@ def test_logic_case(case):
     elif op == "plan":
         start = date.fromisoformat(case["start"])
         end_date = date.fromordinal(start.toordinal() + case["days"] - 1)
+        leftover_days = case.get("leftover_days", LEFTOVER_DEFAULT_DAYS)
         if case["expect"].get("error"):
             with pytest.raises(ValueError):
                 generate_period_plan(
@@ -166,6 +168,7 @@ def test_logic_case(case):
                     recipes=[_recipe(r) for r in case["recipes"]],
                     current_pantry_lots=_lots(case["pantry"]),
                     allow_leftovers=case["allow_leftovers"],
+                    leftover_days=leftover_days,
                     conversions=convs,
                 )
             return
@@ -176,6 +179,7 @@ def test_logic_case(case):
             recipes=[_recipe(r) for r in case["recipes"]],
             current_pantry_lots=_lots(case["pantry"]),
             allow_leftovers=case["allow_leftovers"],
+            leftover_days=leftover_days,
             conversions=convs,
         )
         dishes = [d for p in plans for d in p.dishes]
