@@ -158,6 +158,9 @@ def generate_python(tokens: dict, labels: dict) -> str:
         f"PLAN_MIN_DAYS = {limits['min_days']}",
         f"PLAN_MAX_DAYS = {limits['max_days']}",
         f"PLAN_DEFAULT_DAYS = {limits['default_days']}",
+        f"LEFTOVER_MIN_DAYS = {limits.get('min_leftover_days', 1)}",
+        f"LEFTOVER_MAX_DAYS = {limits.get('max_leftover_days', 3)}",
+        f"LEFTOVER_DEFAULT_DAYS = {limits.get('default_leftover_days', 2)}",
         "",
     ]
     return "\n".join(lines)
@@ -170,6 +173,9 @@ def generate_js(tokens: dict, labels: dict) -> str:
         f"export const PLAN_MIN_DAYS = {limits['min_days']};",
         f"export const PLAN_MAX_DAYS = {limits['max_days']};",
         f"export const PLAN_DEFAULT_DAYS = {limits['default_days']};",
+        f"export const LEFTOVER_MIN_DAYS = {limits.get('min_leftover_days', 1)};",
+        f"export const LEFTOVER_MAX_DAYS = {limits.get('max_leftover_days', 3)};",
+        f"export const LEFTOVER_DEFAULT_DAYS = {limits.get('default_leftover_days', 2)};",
         "",
     ]
     return "\n".join(lines)
@@ -293,6 +299,11 @@ def generate_kotlin(tokens: dict, labels: dict) -> str:
     lines.append(f"        const val MIN_DAYS: Int = {limits['min_days']}")
     lines.append(f"        const val MAX_DAYS: Int = {limits['max_days']}")
     lines.append(f"        const val DEFAULT_DAYS: Int = {limits['default_days']}")
+    lines.append(f"        const val LEFTOVER_MIN_DAYS: Int = {limits.get('min_leftover_days', 1)}")
+    lines.append(f"        const val LEFTOVER_MAX_DAYS: Int = {limits.get('max_leftover_days', 3)}")
+    lines.append(
+        f"        const val LEFTOVER_DEFAULT_DAYS: Int = {limits.get('default_leftover_days', 2)}"
+    )
     lines.append("    }")
     lines.append("}")
     lines.append("")
@@ -416,6 +427,14 @@ def generate_swift(tokens: dict, labels: dict) -> str:
     lines.append(f"        public static let minDays: Int = {limits['min_days']}")
     lines.append(f"        public static let maxDays: Int = {limits['max_days']}")
     lines.append(f"        public static let defaultDays: Int = {limits['default_days']}")
+    lines.append(
+        f"        public static let leftoverMinDays: Int = {limits.get('min_leftover_days', 1)}"
+    )
+    lines.append(
+        f"        public static let leftoverMaxDays: Int = {limits.get('max_leftover_days', 3)}"
+    )
+    default_leftover = limits.get("default_leftover_days", 2)
+    lines.append(f"        public static let leftoverDefaultDays: Int = {default_leftover}")
     lines.append("    }")
     lines.append("}")
     lines.append("")
@@ -424,6 +443,7 @@ def generate_swift(tokens: dict, labels: dict) -> str:
 
 def generate_swift_limits(tokens: dict) -> str:
     limits = tokens.get("plan_limits", {"min_days": 1, "max_days": 7, "default_days": 3})
+    default_leftover = limits.get("default_leftover_days", 2)
     lines = [
         "// TỰ SINH — KHÔNG SỬA TAY (scripts/generate_design_tokens.py)",
         "import Foundation",
@@ -432,6 +452,9 @@ def generate_swift_limits(tokens: dict) -> str:
         f"    public static let minDays: Int = {limits['min_days']}",
         f"    public static let maxDays: Int = {limits['max_days']}",
         f"    public static let defaultDays: Int = {limits['default_days']}",
+        f"    public static let leftoverMinDays: Int = {limits.get('min_leftover_days', 1)}",
+        f"    public static let leftoverMaxDays: Int = {limits.get('max_leftover_days', 3)}",
+        f"    public static let leftoverDefaultDays: Int = {default_leftover}",
         "}",
         "",
     ]

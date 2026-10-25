@@ -224,5 +224,8 @@ object GeneratedTokens {
         const val MIN_DAYS: Int = 1
         const val MAX_DAYS: Int = 7
         const val DEFAULT_DAYS: Int = 3
+        const val LEFTOVER_MIN_DAYS: Int = 1
+        const val LEFTOVER_MAX_DAYS: Int = 3
+        const val LEFTOVER_DEFAULT_DAYS: Int = 2
     }
 }

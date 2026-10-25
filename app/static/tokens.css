@@ -43,6 +43,9 @@
   --plan-min-days: 1;
   --plan-max-days: 7;
   --plan-default-days: 3;
+  --plan-min-leftover-days: 1;
+  --plan-max-leftover-days: 3;
+  --plan-default-leftover-days: 2;
 
   /* Default Palette (Green Light) */
   --primary: #3F6B3A;

@@ -218,5 +218,8 @@ public enum GeneratedTokens {
         public static let minDays: Int = 1
         public static let maxDays: Int = 7
         public static let defaultDays: Int = 3
+        public static let leftoverMinDays: Int = 1
+        public static let leftoverMaxDays: Int = 3
+        public static let leftoverDefaultDays: Int = 2
     }
 }
