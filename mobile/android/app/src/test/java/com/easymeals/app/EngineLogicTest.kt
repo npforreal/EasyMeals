@@ -190,6 +190,23 @@ class EngineLogicTest {
                         assertEquals("[$name] lot $key remaining", norm(expRemaining.getString(key)), actualRemaining[key])
                     }
                 }
+                "merge_plans" -> {
+                    val planListType = object : TypeToken<List<MealPlan>>() {}.type
+                    val existing: List<MealPlan> = gson.fromJson(
+                        c.getJSONArray("existing").toString(), planListType
+                    )
+                    val newPlans: List<MealPlan> = gson.fromJson(
+                        c.getJSONArray("new_plans").toString(), planListType
+                    )
+                    val merged = EasyMealsEngine.mergeNewPlansIntoExisting(
+                        existing, newPlans, if (c.has("mode")) c.getString("mode") else "replace"
+                    )
+                    val expKept = c.getJSONObject("expect").getJSONArray("kept_ids")
+                    assertEquals("[$name] kept ids", expKept.length(), merged.size)
+                    for (k in 0 until expKept.length()) {
+                        assertEquals("[$name] kept $k", expKept.getString(k), merged[k].id)
+                    }
+                }
                 "plan" -> {
                     val recipesArray = c.getJSONArray("recipes")
                     val recipes = mutableListOf<Recipe>()

@@ -15,6 +15,7 @@ import {
   deductRecipeStockAvailable,
   reverseStockMovements,
   generatePeriodPlan,
+  mergeNewPlansIntoExisting,
   Decimal,
 } from "../../app/static/js/engine.js";
 
@@ -116,6 +117,12 @@ describe("Ca logic dùng chung Python/JS", () => {
         const remaining = Object.fromEntries(lots.map((l) => [l.id, norm(l.remaining_quantity)]));
         for (const u of restoredLots) remaining[u.id] = norm(u.remaining_quantity);
         assert.deepEqual(remaining, c.expect.remaining);
+      } else if (c.op === "merge_plans") {
+        const kept = mergeNewPlansIntoExisting(c.existing, c.new_plans, c.mode || "replace");
+        assert.deepEqual(
+          kept.map((p) => String(p.id)),
+          c.expect.kept_ids
+        );
       } else if (c.op === "plan") {
         const end = new Date(`${c.start}T00:00:00Z`);
         end.setUTCDate(end.getUTCDate() + c.days - 1);

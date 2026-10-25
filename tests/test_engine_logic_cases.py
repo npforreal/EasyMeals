@@ -24,6 +24,8 @@ from app.domain.inventory import (
 from app.domain.models import (
     DishCategory,
     IngredientConversion,
+    MealPeriod,
+    MealPlan,
     PantryLot,
     QuantityUnit,
     Recipe,
@@ -31,7 +33,7 @@ from app.domain.models import (
     StockMovement,
     StockMovementReason,
 )
-from app.domain.planner import generate_period_plan
+from app.domain.planner import generate_period_plan, merge_new_plans_into_existing
 
 CASES = json.loads(
     (Path(__file__).parent / "fixtures" / "engine_logic_cases.json").read_text(encoding="utf-8")
@@ -187,5 +189,21 @@ def test_logic_case(case):
         assert [d.servings for d in dishes] == case["expect"]["servings"]
         got = {str(s.ingredient_id): [_norm(s.needed_quantity), s.unit.value] for s in shopping}
         assert got == case["expect"]["shopping"]
+    elif op == "merge_plans":
+
+        def _plan(d: dict) -> MealPlan:
+            return MealPlan(
+                id=UUID(d["id"]),
+                planned_for=date.fromisoformat(d["planned_for"]),
+                meal_period=MealPeriod(d["meal_period"]),
+                eaten_at=(datetime.fromisoformat(d["eaten_at"]) if d.get("eaten_at") else None),
+            )
+
+        merged = merge_new_plans_into_existing(
+            [_plan(p) for p in case["existing"]],
+            [_plan(p) for p in case["new_plans"]],
+            mode=case.get("mode", "replace"),
+        )
+        assert [str(p.id) for p in merged] == case["expect"]["kept_ids"]
     else:  # pragma: no cover
         raise AssertionError(op)

@@ -189,6 +189,26 @@ final class EngineLogicTests: XCTestCase {
                     XCTAssertEqual(actualRemaining[key], norm(expVal), "[\(name)] lot \(key) remaining")
                 }
 
+            case "merge_plans":
+                let toPlans = { (arr: Any) -> [MealPlan] in
+                    (arr as! [[String: Any]]).map { p in
+                        MealPlan(
+                            id: p["id"] as! String,
+                            plannedFor: p["planned_for"] as! String,
+                            mealPeriod: p["meal_period"] as! String,
+                            eatenAt: p["eaten_at"] as? String
+                        )
+                    }
+                }
+                let merged = EasyMealsEngine.mergeNewPlansIntoExisting(
+                    toPlans(c["existing"]),
+                    newPlans: toPlans(c["new_plans"]),
+                    mode: (c["mode"] as? String) ?? "replace"
+                )
+                let expKept = (c["expect"] as! [String: Any])["kept_ids"] as! [String]
+                let actualKept = merged.map(\.id)
+                XCTAssertEqual(actualKept, expKept, "[\(name)] kept ids")
+
             case "plan":
                 let rawRecipes = c["recipes"] as! [[String: Any]]
                 let recipes = rawRecipes.map { toRecipe($0) }

@@ -698,4 +698,47 @@ public enum EasyMealsEngine {
 
         return (periodId, mealPlans, Array(shoppingItemsMap.values))
     }
+
+    /// Gộp đợt thực đơn mới vào thực đơn cũ an toàn (A2 - Vòng 13).
+    /// Quy tắc khớp merge_new_plans_into_existing (planner.py):
+    ///   - Bữa đã ăn luôn được giữ; bữa chưa ăn trong khoảng ngày mới bị thay;
+    ///   - bữa chưa ăn ngoài khoảng ngày giữ nguyên; mọi bữa của đợt mới đều giữ.
+    /// Bản ghi trùng id được khử (idempotency theo mã định danh bữa).
+    public static func mergeNewPlansIntoExisting(
+        _ existing: [MealPlan],
+        newPlans: [MealPlan],
+        mode: String = "replace"
+    ) -> [MealPlan] {
+        guard mode == "replace" || mode == "keep" else {
+            fatalError("Chế độ gộp thực đơn không hợp lệ: \(mode)")
+        }
+        if newPlans.isEmpty { return existing }
+        let rangeStart = newPlans.map(\.plannedFor).min() ?? ""
+        let rangeEnd = newPlans.map(\.plannedFor).max() ?? ""
+
+        var kept: [MealPlan] = []
+        var seenIds = Set<String>()
+        for plan in existing {
+            if !seenIds.insert(plan.id).inserted { continue }
+            if mode == "replace" && plan.eatenAt == nil &&
+                plan.plannedFor >= rangeStart && plan.plannedFor <= rangeEnd {
+                continue
+            }
+            kept.append(plan)
+        }
+        if mode == "keep" {
+            let coveredDates = Set(existing.map(\.plannedFor))
+            for plan in newPlans {
+                if !seenIds.insert(plan.id).inserted { continue }
+                if coveredDates.contains(plan.plannedFor) { continue }
+                kept.append(plan)
+            }
+        } else {
+            for plan in newPlans {
+                if !seenIds.insert(plan.id).inserted { continue }
+                kept.append(plan)
+            }
+        }
+        return kept
+    }
 }

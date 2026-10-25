@@ -663,4 +663,48 @@ object EasyMealsEngine {
 
         return Triple(periodId, mealPlans, shoppingItemsMap.values.toList())
     }
+
+    /**
+     * Gộp đợt thực đơn mới vào thực đơn cũ an toàn (A2 - Vòng 13).
+     * Quy tắc khớp merge_new_plans_into_existing (planner.py) và mergeNewPlansIntoExisting (engine.js):
+     *   - Bữa đã ăn luôn được giữ; bữa chưa ăn trong khoảng ngày mới bị thay;
+     *   - bữa chưa ăn ngoài khoảng ngày giữ nguyên; mọi bữa của đợt mới đều giữ.
+     * Bản ghi trùng id được khử (idempotency theo mã định danh bữa).
+     */
+    fun mergeNewPlansIntoExisting(
+        existing: List<MealPlan>,
+        newPlans: List<MealPlan>,
+        mode: String = "replace"
+    ): List<MealPlan> {
+        require(mode == "replace" || mode == "keep") { "Chế độ gộp thực đơn không hợp lệ: $mode" }
+        if (newPlans.isEmpty()) return existing
+        val rangeStart = newPlans.minOf { it.plannedFor }
+        val rangeEnd = newPlans.maxOf { it.plannedFor }
+
+        val kept = mutableListOf<MealPlan>()
+        val seenIds = mutableSetOf<String>()
+        for (plan in existing) {
+            if (!seenIds.add(plan.id)) continue
+            if (mode == "replace" && plan.eatenAt == null &&
+                plan.plannedFor >= rangeStart && plan.plannedFor <= rangeEnd
+            ) {
+                continue
+            }
+            kept.add(plan)
+        }
+        if (mode == "keep") {
+            val coveredDates = existing.map { it.plannedFor }.toSet()
+            for (plan in newPlans) {
+                if (!seenIds.add(plan.id)) continue
+                if (plan.plannedFor in coveredDates) continue
+                kept.add(plan)
+            }
+        } else {
+            for (plan in newPlans) {
+                if (!seenIds.add(plan.id)) continue
+                kept.add(plan)
+            }
+        }
+        return kept
+    }
 }

@@ -314,3 +314,56 @@ def generate_period_plan(
         current_d += timedelta(days=1)
 
     return meal_plans, list(shopping_items_map.values())
+
+
+def merge_new_plans_into_existing(
+    existing: list[MealPlan],
+    new_plans: list[MealPlan],
+    mode: str = "replace",
+) -> list[MealPlan]:
+    """Gộp đợt thực đơn mới vào thực đơn cũ an toàn (A2 - Vòng 13).
+
+    Quy tắc theo quyết định chủ dự án §0:
+      - mode "replace" (= "Thay các bữa chưa ăn trong khoảng ngày này"):
+        bữa chưa ăn trong khoảng ngày của đợt mới bị thay; bữa đã ăn luôn
+        được giữ; bữa chưa ăn ngoài khoảng ngày giữ nguyên.
+      - mode "keep" (= "Giữ thực đơn cũ, chỉ thêm ngày chưa có"): giữ nguyên
+        toàn bộ thực đơn cũ (kể cả bữa chưa ăn trong khoảng ngày), chỉ thêm
+        các bữa của đợt mới ở ngày chưa từng có trong thực đơn cũ.
+      - Bữa của đợt mới ở ngày đã có trong thực đơn cũ nhưng ở chế độ "keep"
+        bị bỏ qua. Bản ghi trùng id bị khử (idempotency theo mã định danh bữa).
+    """
+    existing = list(existing or [])
+    if not new_plans:
+        return existing
+    if mode not in ("replace", "keep"):
+        raise ValueError(f"Chế độ gộp thực đơn không hợp lệ: {mode!r}")
+
+    if mode == "replace":
+        range_start = min(p.planned_for for p in new_plans)
+        range_end = max(p.planned_for for p in new_plans)
+
+    kept: list[MealPlan] = []
+    seen_ids: set[UUID] = set()
+    for plan in existing:
+        if plan.id in seen_ids:
+            continue
+        seen_ids.add(plan.id)
+        if mode == "replace" and not plan.eaten_at and range_start <= plan.planned_for <= range_end:
+            # Thay bữa chưa ăn trong khoảng ngày này.
+            continue
+        kept.append(plan)
+    if mode == "keep":
+        covered_dates = {p.planned_for for p in existing}
+        for plan in new_plans:
+            if plan.id in seen_ids or plan.planned_for in covered_dates:
+                continue
+            seen_ids.add(plan.id)
+            kept.append(plan)
+    else:
+        for plan in new_plans:
+            if plan.id in seen_ids:
+                continue
+            seen_ids.add(plan.id)
+            kept.append(plan)
+    return kept

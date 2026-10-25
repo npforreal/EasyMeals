@@ -764,3 +764,55 @@ export function generatePeriodPlan(
     shopping_list: Array.from(shoppingItemsMap.values()),
   };
 }
+
+/**
+ * Gộp đợt thực đơn mới vào thực đơn cũ an toàn (A2 - Vòng 13).
+ * Quy tắc khớp merge_new_plans_into_existing (planner.py):
+ *   - mode "replace" = "Thay các bữa chưa ăn trong khoảng ngày này": bữa chưa
+ *     ăn trong khoảng ngày mới bị thay; bữa đã ăn luôn giữ; bữa ngoài khoảng giữ.
+ *   - mode "keep" = "Giữ thực đơn cũ, chỉ thêm ngày chưa có": giữ nguyên thực
+ *     đơn cũ, chỉ thêm bữa của đợt mới ở ngày chưa từng có.
+ * Bản ghi trùng id được khử (idempotency theo mã định danh bữa).
+ */
+export function mergeNewPlansIntoExisting(existingPlans, newPlans, mode = "replace") {
+  if (!newPlans || newPlans.length === 0) return Array.from(existingPlans || []);
+  if (mode !== "replace" && mode !== "keep") {
+    throw new Error(`Chế độ gộp thực đơn không hợp lệ: ${mode}`);
+  }
+  const dates = newPlans.map((p) => String(p.planned_for).slice(0, 10)).sort();
+  const rangeStart = dates[0];
+  const rangeEnd = dates[dates.length - 1];
+
+  const kept = [];
+  const seenIds = new Set();
+  for (const plan of existingPlans || []) {
+    const id = String(plan.id);
+    if (seenIds.has(id)) continue;
+    seenIds.add(id);
+    if (mode === "replace" && !plan.eaten_at) {
+      const d = String(plan.planned_for).slice(0, 10);
+      if (d >= rangeStart && d <= rangeEnd) continue;
+    }
+    kept.push(plan);
+  }
+  if (mode === "keep") {
+    const coveredDates = new Set(
+      (existingPlans || []).map((p) => String(p.planned_for).slice(0, 10))
+    );
+    for (const plan of newPlans) {
+      const id = String(plan.id);
+      if (seenIds.has(id)) continue;
+      if (coveredDates.has(String(plan.planned_for).slice(0, 10))) continue;
+      seenIds.add(id);
+      kept.push(plan);
+    }
+  } else {
+    for (const plan of newPlans) {
+      const id = String(plan.id);
+      if (seenIds.has(id)) continue;
+      seenIds.add(id);
+      kept.push(plan);
+    }
+  }
+  return kept;
+}
