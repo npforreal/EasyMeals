@@ -82,7 +82,7 @@ adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk
 ```bash
 cd mobile/ios
 
-# Chạy bộ test trên máy Mac
+# Chạy bộ test trên máy Mac (XCTest/Swift Test)
 swift test
 
 # Hoặc mở trong Xcode:
@@ -92,6 +92,26 @@ open Package.swift
 
 ---
 
-## 6. Phiên bản Hybrid Cũ (Capacitor)
+## 6. Giao diện & Chủ đề Màu (Design Tokens & Theming)
+
+Cả hai ứng dụng Android và iOS được đồng bộ trực tiếp từ `design-tokens/tokens.json`:
+- **5 bộ màu sắc**: Xanh lá (Mặc định), Cam đất, Xanh biển, Tím mận, Hồng đào.
+- **3 chế độ**: Sáng / Tối / Theo hệ thống (lưu trữ độc lập trên thiết bị qua DataStore/UserDefaults).
+- **Phông chữ Fraunces**: Nhúng sẵn offline (`fraunces.ttf` trong Android `res/font` và iOS `Resources/Fonts`), giấy phép OFL (ghi nhận tại `NOTICE`).
+- **Nút "Xem công thức" trong Thực đơn**: Cho phép xem nguyên liệu (tô màu theo tình trạng tủ lạnh), các bước thực hiện, tuỳ chỉnh khẩu phần và bật chế độ nấu toàn màn hình.
+
+---
+
+## 7. Kiểm thử Bốn Hành trình Người dùng (User Journeys)
+
+Kiểm thử tự động trên Android và iOS bao phủ toàn bộ 4 hành trình cốt lõi:
+1. **Thêm đồ vào tủ (Pantry addition)**: Nhập nguyên liệu, đơn vị mặc định hợp lý, gợi ý không dấu, cảnh báo hạn dùng.
+2. **Lập thực đơn -> Đã ăn -> Hoàn tác**: Trừ kho FIFO (có hỗ trợ quy đổi Gạo ↔ Cơm) và hoàn tác nguyên tử.
+3. **Đi chợ -> Mua hàng -> Cho vào tủ**: Đồng bộ phần thiếu vào danh sách mua sắm, chuyển hàng đã mua sang tủ.
+4. **Duyệt công thức & Chế độ nấu**: Duyệt 133 món ăn, điều chỉnh khẩu phần, xem bước nấu.
+
+---
+
+## 8. Phiên bản Hybrid Cũ (Capacitor)
 
 Dự án vẫn duy trì mã nguồn hybrid cũ trong `android/`, `ios/`, và `www/` cho mục đích tham chiếu và kiểm thử E2E Playwright qua `bash scripts/check.sh`.

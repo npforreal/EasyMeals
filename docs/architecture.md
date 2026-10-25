@@ -367,3 +367,36 @@ Khi loại bỏ dữ liệu người dùng khỏi máy chủ, mô hình rủi ro
 | **Mất dữ liệu do trình duyệt dọn dẹp cache** | Cao | Kích hoạt `navigator.storage.persist()`. Hiển thị banner cảnh báo và nhắc nhở xuất file JSON sao lưu định kỳ trên trang `/settings`. |
 | **Trừ kho hai lần do bấm đúp hoặc mở 2 tab song song** | Trung bình | Sử dụng Transaction nguyên tử của IndexedDB ở chế độ `readwrite`: kiểm tra `meal.eaten_at` ngay bên trong transaction trước khi commit ghi nhận trừ kho. |
 | **Lộ khoá quản trị `service_role`** | Rất cao | Khoá `service_role` bị cấm hoàn toàn trong code máy chủ runtime và client. Server runtime sẽ từ chối khởi động (`sys.exit(1)`) nếu phát hiện `SUPABASE_SERVICE_ROLE_KEY` trong môi trường. |
+
+---
+
+## 6. Kiến trúc Đồng bộ Đa Nền tảng & Điểm Khác biệt Cố ý (Cross-Platform Architecture)
+
+Nhằm đảm bảo trải nghiệm thống nhất giữa Web (FastAPI/Jinja2), Android (Jetpack Compose) và iOS (SwiftUI), hệ thống tuân theo các nguyên tắc đồng bộ sau:
+
+### 6.1 Nguồn Chuẩn Duy nhất (Single Source of Truth)
+- **Design Tokens**: `design-tokens/tokens.json` định nghĩa 5 bảng màu (`green`, `earth_orange`, `ocean_blue`, `plum_purple`, `peach_pink`) cho 2 chế độ Sáng / Tối, chuẩn hoá độ tương phản WCAG AA ($\ge 4.5:1$ cho văn bản thường), khoảng cách (spacing), bán kính góc bo (radii), và phông chữ tiêu đề **Fraunces** kết hợp phông hệ thống.
+- **Nhãn Giao diện**: `design-tokens/labels.json` chuẩn hoá tiếng Việt cho toàn bộ nhóm món (`dish_categories`), nhóm nguyên liệu (`ingredient_categories`), đơn vị đo (`units`), bữa ăn (`meal_types`) và tên bảng màu (`theme_palettes`).
+- **Máy sinh mã**: `scripts/generate_design_tokens.py` tự động chuyển đổi sang:
+  - `app/static/tokens.css` (Web CSS custom properties theo `[data-palette]` và `[data-theme]`)
+  - `mobile/android/.../GeneratedTokens.kt` (Android Kotlin Objects & Compose Color definitions)
+  - `mobile/ios/.../GeneratedTokens.swift` (iOS Swift Enums, Colors & SwiftUI extensions)
+- Chế độ kiểm tra tự động `scripts/generate_design_tokens.py --check` khoá lại trong `scripts/check.sh` và `scripts/check_mobile.sh` chống sửa tay.
+
+### 6.2 Mô hình Bốn Engine Số học & Quy đổi Tương đương
+- Cả 4 nền tảng (Python, JavaScript, Kotlin, Swift) cùng chia sẻ logic nghiệp vụ tính toán:
+  - Trừ kho FIFO ưu tiên hạn dùng sớm, nếu cùng ngày ưu tiên ngày mua sớm.
+  - Quy đổi Gạo ↔ Cơm một bước với tỷ lệ mặc định $2.5$ ($1\text{ g gạo} = 2.5\text{ g cơm}$).
+  - Khấu trừ từng phần khi thiếu hàng (`allow_partial = true`), ghi nhận danh sách thiếu hụt cho danh sách đi chợ.
+  - Hoàn tác nguyên tử khôi phục chính xác từng lô nguyên liệu gốc (bao gồm lô gạo khi nấu món dùng cơm).
+- Được kiểm chứng bởi bộ kiểm thử fixture dùng chung: `tests/fixtures/engine_logic_cases.json`.
+
+### 6.3 Các Điểm Khác biệt Cố ý Theo Đặc thù Nền tảng (Intentional Cross-Platform Differences)
+
+| Thành phần | Web (FastAPI + Vanilla JS) | Android (Kotlin + Compose) | iOS (SwiftUI) | Lý do khác biệt |
+|---|---|---|---|---|
+| **Lưu trữ Cục bộ** | IndexedDB (`easymeals_local_db`) | Tệp JSON sandbox nội bộ (`easymeals_local_state.json`) | Tệp JSON sandbox Documents (`easymeals_local_state.json`) | Tận dụng cơ chế lưu trữ tự nhiên, an toàn, không cần server của từng hệ sinh thái |
+| **Lưu Cài đặt Giao diện** | `localStorage` (chống lỗi khi bị chặn) | `SharedPreferences` / DataStore | `@AppStorage` (UserDefaults) | Tiêu chuẩn lưu cài đặt người dùng (preferences) của từng nền tảng |
+| **Điều hướng & Back Stack** | History API & Modal overlays | `BackHandler` Compose: Chi tiết $\to$ Danh sách, Tab khác $\to$ Hôm nay, Hôm nay $\to$ Thoát app | `NavigationStack` & Sheet binding bản địa | Chuẩn UX hệ thống Android và iOS |
+| **Xem Công thức & Nấu** | Modal overlay trang trí Fraunces & Cooking full-screen banner | Dialog / Sheet toàn màn hình Compose với Stepper | Modal Sheet SwiftUI với Stepper và thẻ bước làm | Theo đúng Human Interface Guidelines (Apple) và Material Design 3 (Google) |
+| **Tránh Bàn phím** | Trình duyệt tự cuộn viewport | `imePadding()` & cuộn mở rộng hết chiều cao BottomSheet | `.keyboardDismissMode` & Safe Area tránh bàn phím tự động | Xử lý triệt để lỗi bàn phím che nút Lưu trên điện thoại màn hình nhỏ |
