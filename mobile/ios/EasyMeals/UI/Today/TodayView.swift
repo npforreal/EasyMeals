@@ -7,6 +7,9 @@ public struct TodayView: View {
     @State private var showingDeficitConfirmation = false
     @State private var deficitPlanId: String?
     @State private var deficits: [DeficitItem] = []
+    // Hộp thoại giữ/thay khi tạo thực đơn trùng ngày bữa chưa ăn (A2 - Vòng 13).
+    @State private var showingPlanConflict = false
+    @State private var planConflictDays = 3
     @AppStorage("selected_plan_days") private var selectedPlanDays: Int = PlanLimits.defaultDays
     @AppStorage("allow_leftovers") private var allowLeftovers: Bool = true
     @AppStorage("leftover_days") private var leftoverDays: Int = PlanLimits.leftoverDefaultDays
@@ -68,6 +71,45 @@ public struct TodayView: View {
                 let list = deficits.map { "• \($0.ingredientName): thiếu \($0.missingQuantity) \($0.unit)" }.joined(separator: "\n")
                 Text("Bữa ăn còn thiếu các nguyên liệu sau trong kho:\n\(list)\n\nBạn muốn xử lý thế nào?")
             }
+            .confirmationDialog(
+                "Thực đơn mới trùng ngày",
+                isPresented: $showingPlanConflict,
+                titleVisibility: .visible
+            ) {
+                Button("Thay các bữa chưa ăn trong khoảng ngày này") {
+                    storage.generateNewPlan(
+                        days: planConflictDays,
+                        mergeMode: "replace",
+                        allowLeftovers: allowLeftovers,
+                        leftoverDays: leftoverDays
+                    )
+                }
+                Button("Giữ thực đơn cũ, chỉ thêm ngày chưa có") {
+                    storage.generateNewPlan(
+                        days: planConflictDays,
+                        mergeMode: "keep",
+                        allowLeftovers: allowLeftovers,
+                        leftoverDays: leftoverDays
+                    )
+                }
+                Button("Huỷ", role: .cancel) { }
+            } message: {
+                Text("Bạn muốn xử lý thế nào? Các bữa đã ăn luôn được giữ cùng lịch sử kho.")
+            }
+        }
+    }
+
+    /// A2: nếu đợt mới trùng bữa CHƯA ăn -> hỏi giữ/thay trước khi tạo; nút luôn dùng đường này.
+    private func requestGeneratePlan(days: Int) {
+        if storage.hasUneatenOverlap(days: days) {
+            planConflictDays = days
+            showingPlanConflict = true
+        } else {
+            storage.generateNewPlan(
+                days: days,
+                allowLeftovers: allowLeftovers,
+                leftoverDays: leftoverDays
+            )
         }
     }
 
@@ -135,11 +177,7 @@ public struct TodayView: View {
             }
             leftoverOptionsView
             Button {
-                storage.generateNewPlan(
-                    days: selectedPlanDays,
-                    allowLeftovers: allowLeftovers,
-                    leftoverDays: leftoverDays
-                )
+                requestGeneratePlan(days: selectedPlanDays)
             } label: {
                 Label("Lên thực đơn \(selectedPlanDays) ngày", systemImage: "sparkles")
                     .font(.headline)
@@ -193,11 +231,7 @@ public struct TodayView: View {
             leftoverOptionsView
 
             Button {
-                storage.generateNewPlan(
-                    days: selectedPlanDays,
-                    allowLeftovers: allowLeftovers,
-                    leftoverDays: leftoverDays
-                )
+                requestGeneratePlan(days: selectedPlanDays)
             } label: {
                 Label("Lên thực đơn \(selectedPlanDays) ngày", systemImage: "sparkles")
                     .font(.headline)

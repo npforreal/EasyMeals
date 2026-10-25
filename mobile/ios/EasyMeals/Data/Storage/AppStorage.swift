@@ -256,8 +256,29 @@ public final class AppStorage: @unchecked Sendable {
     }
 
     // MARK: - Lập thực đơn tự động
+    /// Đợt mới có trùng bữa CHƯA ăn trong khoảng ngày [hôm nay, hôm nay + days - 1]? (A2)
+    public func hasUneatenOverlap(days: Int = 3) -> Bool {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+        guard
+            let end = Calendar.current.date(byAdding: .day, value: days - 1, to: Date())
+        else { return false }
+        let start = formatter.string(from: Date())
+        let endStr = formatter.string(from: end)
+        return mealPlans.contains {
+            $0.eatenAt == nil && $0.plannedFor >= start && $0.plannedFor <= endStr
+        }
+    }
+
+    /**
+     * Tạo đợt thực đơn mới an toàn (A2): gộp qua engine theo mode giữ/thay.
+     * Bữa đã ăn và bữa ngoài khoảng ngày được giữ nguyên, không xoá lịch sử kho.
+     */
     public func generateNewPlan(
         days: Int = 3,
+        mergeMode: String = "replace",
         allowLeftovers: Bool = true,
         leftoverDays: Int = PlanLimits.leftoverDefaultDays
     ) {
@@ -279,7 +300,11 @@ public final class AppStorage: @unchecked Sendable {
             allowLeftovers: allowLeftovers,
             leftoverDays: leftoverDays
         ) {
-            self.mealPlans = result.meals
+            self.mealPlans = EasyMealsEngine.mergeNewPlansIntoExisting(
+                mealPlans,
+                newPlans: result.meals,
+                mode: mergeMode
+            )
             self.shoppingItems = result.shoppingList
             persistState()
         }
