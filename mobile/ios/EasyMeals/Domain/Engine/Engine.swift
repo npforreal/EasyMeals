@@ -554,10 +554,17 @@ public enum EasyMealsEngine {
         let periods = ["lunch", "dinner"]
         var curr = start
 
+        // FIFO tiêu thụ PHẢI giữ qua các ngày lập kế hoạch (fixture
+        // plan_fifo_consumption_persists_across_days): dùng MỘT mảng mutable duy nhất,
+        // mỗi ngày chỉ lọc bớt lô đã hết hạn. Trước đây `usableLots` được filter lại từ
+        // `simulatedLots` mỗi ngày (PantryLot là struct -> bản sao độc lập) làm tiêu thụ
+        // của ngày trước bị mất -> ngày sau "còn đủ hàng" ngẫu nhiên, sai danh sách đi chợ.
+        var carrying = simulatedLots
+
         for _ in 0..<diffDays {
             let dateStr = formatter.string(from: curr)
-            // Lọc các lô còn hạn dùng tại ngày lập
-            var usableLots = simulatedLots.filter { lot in
+            // Lọc tại ngày lập: bỏ các lô đã quá hạn (tiêu thụ vẫn giữ qua ngày).
+            carrying = carrying.filter { lot in
                 guard let exp = lot.expiresAt else { return true }
                 return exp >= dateStr
             }
@@ -597,7 +604,7 @@ public enum EasyMealsEngine {
                         let candidates = (recipesByCat[cat] ?? []).filter { !cookedRecipeIds.contains($0.id) }
                         var fullyStocked: Recipe?
                         for r in candidates {
-                            let (canCook, _) = checkRecipeStock(recipe: r, pantryLots: usableLots, multiplier: "1", conversions: conversions)
+                            let (canCook, _) = checkRecipeStock(recipe: r, pantryLots: carrying, multiplier: "1", conversions: conversions)
                             if canCook {
                                 fullyStocked = r
                                 break
@@ -608,13 +615,13 @@ public enum EasyMealsEngine {
                         if let stocked = fullyStocked {
                             chosen = stocked
                             for req in aggregateRequirements(recipe: stocked) {
-                                _ = consumeAvailable(pantryLots: &usableLots, ingredientId: req.ingredientId, quantity: req.quantity, unit: req.unit, conversions: conversions)
+                                _ = consumeAvailable(pantryLots: &carrying, ingredientId: req.ingredientId, quantity: req.quantity, unit: req.unit, conversions: conversions)
                             }
                         } else if let first = candidates.first {
                             chosen = first
-                            let (_, deficits) = checkRecipeStock(recipe: first, pantryLots: usableLots, multiplier: "1", conversions: conversions)
+                            let (_, deficits) = checkRecipeStock(recipe: first, pantryLots: carrying, multiplier: "1", conversions: conversions)
                             for req in aggregateRequirements(recipe: first) {
-                                _ = consumeAvailable(pantryLots: &usableLots, ingredientId: req.ingredientId, quantity: req.quantity, unit: req.unit, conversions: conversions)
+                                _ = consumeAvailable(pantryLots: &carrying, ingredientId: req.ingredientId, quantity: req.quantity, unit: req.unit, conversions: conversions)
                             }
                             for (ingId, def) in deficits {
                                 var actualIngId = ingId

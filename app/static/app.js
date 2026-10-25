@@ -1053,20 +1053,62 @@ async function initPlannerPage() {
       return;
     }
 
-    // Cảnh báo đồ tươi trong tủ sắp hết hạn trong chu kỳ thực đơn
+    // Cảnh báo tồn theo lô (A5 - Vòng 13): chỉ lô còn lượng; phân biệt
+    // THIẾU HẾT HẠN (nhỏ hơn hôm nay, không thể dùng cho bữa nào trong chu kỳ)
+    // và SẮP HẾT HẠN (còn dùng được, nêu ngày cuối cùng có thể dùng).
+    // Ngưỡng theo từng lô (ngày hết hạn của chính nó), không lấy ngày cuối kế hoạch
+    // làm đại diện cho mọi nguyên liệu như trước.
     const freshnessAlert = document.getElementById("freshness-alert");
     const freshnessAlertText = document.getElementById("freshness-alert-text");
     if (freshnessAlert && freshnessAlertText && plans.length > 0) {
       const lots = await getPantryLots();
       const lastPlan = plans[plans.length - 1];
       const lastDate = lastPlan.planned_for;
-      const expiring = lots.filter((lot) => lot.expires_at && lot.expires_at <= lastDate);
-      if (expiring.length > 0) {
-        const itemNames = expiring
-          .map((l) => `${l.ingredient_name} (${formatDateVN(l.expires_at)})`)
-          .join(", ");
-        freshnessAlertText.textContent = `Nguyên liệu sắp hết hạn trong chu kỳ thực đơn: ${itemNames}. Hãy ưu tiên nấu sớm hoặc sơ chế bảo quản lại trong tủ lạnh.`;
-        freshnessAlert.style.display = "flex";
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const toNum = (v) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : 0;
+      };
+      const activeLots = lots.filter(
+        (l) => l.expires_at && l.expires_at <= lastDate && toNum(l.remaining_quantity) > 0
+      );
+      const expired = activeLots.filter((l) => l.expires_at < todayStr);
+      const expiring = activeLots.filter((l) => l.expires_at >= todayStr);
+      if (activeLots.length > 0) {
+        // Ngày cuối cùng có thể dùng nguyên liệu = ngày hết hạn của chính lô đó
+        // (ngày sớm nhất giữa các lô còn dùng được của nguyên liệu).
+        const lines = [];
+        if (expired.length) {
+          lines.push(
+            "Đã quá hạn, loại khỏi thực đơn hoặc kiểm tra rồi bỏ: " +
+              expired
+                .map((l) => `${l.ingredient_name} (hết hạn ${formatDateVN(l.expires_at)})`)
+                .join(", ") +
+              "."
+        );
+        }
+        if (expiring.length) {
+          const perIngr = {};
+          for (const l of expiring) {
+            if (!perIngr[l.ingredient_name] || l.expires_at < perIngr[l.ingredient_name]) {
+              perIngr[l.ingredient_name] = l.expires_at;
+            }
+          }
+          lines.push(
+            "Sắp hết hạn trong chu kỳ thực đơn, cần dùng trước: " +
+              Object.entries(perIngr)
+                .map(([name, exp]) => `${name} (dùng trước ngày ${formatDateVN(exp)})`)
+                .join(", ") +
+              "."
+          );
+        }
+        if (lines.length) {
+          freshnessAlertText.textContent = lines.join("\n");
+          freshnessAlertText.style.whiteSpace = "pre-line";
+          freshnessAlert.style.display = "flex";
+        } else {
+          freshnessAlert.style.display = "none";
+        }
       } else {
         freshnessAlert.style.display = "none";
       }
