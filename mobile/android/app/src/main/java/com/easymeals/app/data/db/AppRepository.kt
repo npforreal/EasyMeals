@@ -253,7 +253,9 @@ class AppRepository(private val context: Context) {
                     ingredientId = ingId,
                     ingredientName = d.ingredientName,
                     neededQuantity = d.missingQuantity,
-                    unit = d.unit
+                    unit = d.unit,
+                    // Người dùng tự bấm thêm -> giữ khi kế hoạch đổi (A3).
+                    isManuallyAdded = true
                 )
             )
         }
@@ -307,7 +309,9 @@ class AppRepository(private val context: Context) {
             ingredientId = ingId,
             ingredientName = name,
             neededQuantity = quantity,
-            unit = unit
+            unit = unit,
+            // Người dùng tự thêm -> giữ khi kế hoạch đổi (A3).
+            isManuallyAdded = true
         )
         val current = _shoppingItems.value.toMutableList()
         current.add(item)
@@ -359,7 +363,12 @@ class AppRepository(private val context: Context) {
         _mealPlans.value = EasyMealsEngine.mergeNewPlansIntoExisting(
             _mealPlans.value, meals, mergeMode
         )
-        _shoppingItems.value = shopping
+        // A3: thay toàn bộ mục sinh tự của đợt mới nhưng GIỮ mục người dùng tự thêm
+        // (isManuallyAdded) — kể cả khi cùng nguyên liệu+đơn vị trùng mục plan.
+        val manual = _shoppingItems.value.filter { it.isManuallyAdded }
+        val manualKeys = manual.map { it.id }.toSet()
+        val engineItems = shopping.filter { !manualKeys.contains(it.id) }
+        _shoppingItems.value = manual + engineItems
         persistState()
     }
 
@@ -376,6 +385,8 @@ class AppRepository(private val context: Context) {
     }
 
     fun importBackupPayload(payload: BackupPayload, replace: Boolean = true) {
+        // A3: backup cũ có thể thiếu shopping_items (Gson trả null) -> vá trước khi gán.
+        val payload = BackupManager.sanitize(payload)
         if (replace) {
             _pantryLots.value = payload.pantryLots
             _mealPlans.value = payload.mealPlans

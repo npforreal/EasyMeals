@@ -34,4 +34,18 @@ object BackupManager {
     fun encode(payload: BackupPayload): String {
         return gson.toJson(payload)
     }
+
+    /**
+     * A3 - Vòng 13: migration tương thích với backup cũ.
+     * Gson bỏ qua giá trị mặc định Kotlin khi thiếu khoá, nên bản sao lưu cũ
+     * không có `shopping_items` sẽ cho null → phải vá về danh sách rỗng trước khi import.
+     */
+    fun sanitize(payload: BackupPayload): BackupPayload = BackupPayload(
+        appVersion = payload.appVersion,
+        exportedAt = payload.exportedAt,
+        pantryLots = payload.pantryLots ?: emptyList(),
+        mealPlans = payload.mealPlans ?: emptyList(),
+        stockMovements = payload.stockMovements ?: emptyList(),
+        shoppingItems = payload.shoppingItems ?: emptyList()
+    )
 }
