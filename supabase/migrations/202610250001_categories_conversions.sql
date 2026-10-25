@@ -87,11 +87,3 @@ grant select on public.ingredient_conversions to anon, authenticated;
 -- Revoke mutation rights
 revoke insert, update, delete on public.ingredient_categories from anon, authenticated, public;
 revoke insert, update, delete on public.ingredient_conversions from anon, authenticated, public;
-
--- Grant administrative rights to service_role for catalogue seeding
-grant all on public.ingredient_categories to service_role;
-grant all on public.ingredient_conversions to service_role;
-grant all on public.ingredients to service_role;
-grant all on public.ingredient_aliases to service_role;
-grant all on public.recipes to service_role;
-grant all on public.recipe_ingredients to service_role;
