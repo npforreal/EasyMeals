@@ -200,3 +200,36 @@ def test_stateless_planner_generate_eat_and_undo_flow(client):
     restored_lots = undo_result["pantry"]
     thit_restored = next(lot for lot in restored_lots if lot["ingredient_id"] == thit_ba_chi_id)
     assert float(thit_restored["remaining_quantity"]) == 1000.0
+
+
+def test_stateless_generate_converted_ingredient_shows_raw_name_and_ratio(
+    client, repo, monkeypatch
+):
+    """A7 - Vòng 13: đường chạy API /generate phải truyền conversions + tên nguyên
+    liệu gốc xuống engine; món dùng 'Cơm nguội' 500g với pantry rỗng phải gợi ý mua
+    'Gạo' 200g (ratio 2.5), không phải 'Nguyên liệu gốc cho Cơm nguội' hay Cơm nguội."""
+    all_recipes = repo.get_recipes()
+    fried_rice = [r for r in all_recipes if r.name == "Cơm chiên Dương Châu lạp xưởng tôm"]
+    assert fried_rice, "Catalogue phải còn món cơm chiên để test quy đổi gạo -> cơm."
+    monkeypatch.setattr(repo, "get_recipes", lambda: fried_rice)
+
+    res_gen = client.post(
+        "/api/planner/generate",
+        json={
+            "pantry": [],
+            "start_date": "2026-10-25",
+            "days": 1,
+            "options": {"allow_leftovers": False},
+        },
+    )
+    assert res_gen.status_code == 200
+    shopping = res_gen.json()["shopping_list"]
+    gao_id = "0738fdf0-710e-5aed-bbb5-5ba1f0c05f3b"
+    comnguoi_id = "16ddda98-781e-5ecf-9778-aedb4d1cd9ef"
+    gao_items = [s for s in shopping if str(s["ingredient_id"]) == gao_id]
+    assert gao_items, f"Danh sách mua phải quy đổi về 'Gạo', thực tế: {shopping}"
+    item = gao_items[0]
+    assert item["ingredient_name"] == "Gạo"
+    assert float(item["needed_quantity"]) == 200.0
+    assert item["unit"] == "g"
+    assert all(str(s["ingredient_id"]) != comnguoi_id for s in shopping)

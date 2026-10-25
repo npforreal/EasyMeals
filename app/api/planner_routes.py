@@ -77,6 +77,12 @@ def generate_stateless_plan(
     end_date = payload.start_date + timedelta(days=payload.days - 1)
     recipes = repo.get_recipes()
 
+    # A7 - Vòng 13: mọi đường chạy lập thực đơn phải nhận quy đổi đơn vị/nguyên liệu
+    # (gạo -> cơm) kèm tên nguyên liệu gốc để danh sách mua nêu đúng "Gạo" thay vì
+    # "Nguyên liệu gốc cho Cơm".
+    conversions = repo.get_conversions()
+    raw_ingredient_names = {ing.id: ing.name for ing in repo.get_ingredients()}
+
     try:
         meal_plans, shopping_items = generate_period_plan(
             start_date=payload.start_date,
@@ -85,6 +91,8 @@ def generate_stateless_plan(
             current_pantry_lots=domain_lots,
             allow_leftovers=payload.options.allow_leftovers,
             leftover_days=payload.options.leftover_days,
+            conversions=conversions,
+            raw_ingredient_names=raw_ingredient_names,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
