@@ -21,7 +21,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.easymeals.app.data.ShoppingDefaults
 import com.easymeals.app.data.db.AppRepository
+import com.easymeals.app.data.db.PurchaseOverride
+import com.easymeals.app.domain.model.ShoppingItem
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +34,8 @@ fun ShoppingScreen(repository: AppRepository) {
     val shoppingItems by repository.shoppingItems.collectAsState()
     val context = LocalContext.current
     var showAddDialog by remember { mutableStateOf(false) }
+    // A4 - Vòng 13: hộp thoại xác nhận mua vào tủ (lượng thực mua + hạn dùng).
+    var showPurchaseDialog by remember { mutableStateOf(false) }
 
     fun shareList() {
         val sb = StringBuilder("DANH SÁCH ĐI CHỢ - EASYMEALS\n\n")
@@ -136,7 +143,7 @@ fun ShoppingScreen(repository: AppRepository) {
                 val boughtCount = shoppingItems.count { it.isBought }
                 if (boughtCount > 0) {
                     Button(
-                        onClick = { repository.bulkAddBoughtToPantry() },
+                        onClick = { showPurchaseDialog = true },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -146,6 +153,20 @@ fun ShoppingScreen(repository: AppRepository) {
                     }
                 }
             }
+        }
+
+        if (showPurchaseDialog) {
+            PurchaseConfirmDialog(
+                boughtItems = shoppingItems.filter { it.isBought },
+                ingredientCategories = shoppingItems.filter { it.isBought }.associate {
+                    it.id to repository.categoryOf(it.ingredientId)
+                },
+                onConfirm = { overrides ->
+                    repository.bulkAddBoughtToPantry(overrides)
+                    showPurchaseDialog = false
+                },
+                onDismiss = { showPurchaseDialog = false }
+            )
         }
 
         if (showAddDialog) {
@@ -196,4 +217,91 @@ fun ShoppingScreen(repository: AppRepository) {
             )
         }
     }
+}
+
+/**
+ * A4 - Vòng 13: hộp thoại xác nhận "mua vào tủ" cho các món đã tích chọn.
+ * Mỗi mục cho phép nhập LƯỢNG THỰC MUA (mặc định = ước tính) và HẠN DÙNG
+ * (mặc định theo nhóm nguyên liệu, format yyyy-MM-dd).
+ * Tách composable `internal` để instrumented test dựng riêng ở các khổ hẹp dp.
+ */
+@Composable
+internal fun PurchaseConfirmDialog(
+    boughtItems: List<ShoppingItem>,
+    ingredientCategories: Map<String, String?>,
+    onConfirm: (List<PurchaseOverride>) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var quantities by remember { mutableStateOf(boughtItems.associate { it.id to it.neededQuantity }) }
+    var expiries by remember {
+        val today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+        mutableStateOf(
+            boughtItems.associate {
+                it.id to ShoppingDefaults.expiryDate(ingredientCategories[it.id], LocalDate.now())
+            }
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Xác nhận mua vào tủ") },
+        text = {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(boughtItems, key = { it.id }) { item ->
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            "${item.ingredientName}: ước tính ${item.neededQuantity} ${item.unit}",
+                            fontWeight = FontWeight.Medium
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = quantities[item.id] ?: item.neededQuantity,
+                                onValueChange = { v -> quantities = quantities + (item.id to v) },
+                                label = { Text("Thực mua (${item.unit})") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = expiries[item.id] ?: "",
+                                onValueChange = { v -> expiries = expiries + (item.id to v) },
+                                label = { Text("Hạn dùng (yyyy-mm-dd)") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = {
+                        onConfirm(
+                            boughtItems.map { item ->
+                                PurchaseOverride(
+                                    itemId = item.id,
+                                    actualQuantity = quantities[item.id] ?: item.neededQuantity,
+                                    expiresAt = expiries[item.id] ?: ""
+                                )
+                            }
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cho ${boughtItems.size} món vào tủ lạnh")
+                }
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Huỷ")
+                }
+            }
+        },
+        dismissButton = null
+    )
 }

@@ -1,6 +1,7 @@
 package com.easymeals.app.data.db
 
 import android.content.Context
+import com.easymeals.app.data.ShoppingDefaults
 import com.easymeals.app.data.backup.BackupManager
 import com.easymeals.app.data.backup.BackupPayload
 import com.easymeals.app.data.catalogue.CatalogueLoader
@@ -15,6 +16,16 @@ import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
+
+/**
+ * A4 - Vòng 13: lượng thực mua / hạn dùng người dùng nhập cho một mục đã mua
+ * khi "Cho vào tủ lạnh" (khác ước tính); chuỗi rỗng = dùng giá trị mặc định.
+ */
+data class PurchaseOverride(
+    val itemId: String,
+    val actualQuantity: String = "",
+    val expiresAt: String = ""
+)
 
 class AppRepository(private val context: Context) {
 
@@ -302,8 +313,11 @@ class AppRepository(private val context: Context) {
         persistState()
     }
 
-    fun addCustomShoppingItem(name: String, quantity: String, unit: String) {
-        val matching = _ingredients.value.find { it.name.equals(name, ignoreCase = true) }
+    /** Nhóm nguyên liệu trong catalogue (không thấy -> null -> mặc định "khác"). */
+    fun categoryOf(ingredientId: String): String? =
+        _ingredients.value.find { it.id == ingredientId }?.category
+
+    fun addCustomShoppingItem(name: String, quantity: String, unit: String) {        val matching = _ingredients.value.find { it.name.equals(name, ignoreCase = true) }
         val ingId = matching?.id ?: UUID.randomUUID().toString()
         val item = ShoppingItem(
             ingredientId = ingId,
@@ -319,18 +333,38 @@ class AppRepository(private val context: Context) {
         persistState()
     }
 
-    fun bulkAddBoughtToPantry() {
+    fun bulkAddBoughtToPantry(overrides: List<PurchaseOverride> = emptyList()): Int {
+        // A4: mua vào tủ chính xác — lượng thực mua có thể khác ước tính, hạn dùng
+        // mặc định theo nhóm nguyên liệu; chống bấm lặp (idempotent theo id mục).
         val bought = _shoppingItems.value.filter { it.isBought }
+        val ovById = overrides.associateBy { it.itemId }
+        val purchasedAt = LocalDate.now()
+        var added = 0
         for (item in bought) {
+            val ov = ovById[item.id]
+            val qty = ov?.actualQuantity?.trim()?.takeIf { it.isNotEmpty() } ?: item.neededQuantity
+            val parsed = qty.toDoubleOrNull()
+            if (parsed == null || parsed <= 0.0) {
+                continue // lượng vô nghĩa: không tạo lot rác
+            }
+            val category = _ingredients.value.find { it.id == item.ingredientId }?.category
+            val expiresAt =
+                ov?.expiresAt?.trim()?.takeIf { it.isNotEmpty() }
+                    ?: ShoppingDefaults.expiryDate(category, purchasedAt)
             addPantryLot(
                 ingredientId = item.ingredientId,
                 ingredientName = item.ingredientName,
-                quantity = item.neededQuantity,
-                unit = item.unit
+                quantity = qty,
+                unit = item.unit,
+                expiresAt = expiresAt
             )
+            added++
         }
-        _shoppingItems.value = _shoppingItems.value.filter { !it.isBought }
+        // Giao dịch cập nhật danh sách: chỉ xoá những mục vẫn còn trong danh sách.
+        val boughtIds = bought.map { it.id }.toSet()
+        _shoppingItems.value = _shoppingItems.value.filter { !boughtIds.contains(it.id) }
         persistState()
+        return added
     }
 
     /** Đợt mới có trùng bữa CHƯA ăn trong khoảng ngày [hôm nay, hôm nay + days - 1]? (A2) */
