@@ -71,6 +71,29 @@ public final class AppStorage: @unchecked Sendable {
         persistState()
     }
 
+    public func extendPantryLotExpiry(id: String, daysToAdd: Int = 3) {
+        if let idx = pantryLots.firstIndex(where: { $0.id == id }) {
+            let old = pantryLots[idx]
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            let baseDate = (old.expiresAt.flatMap { formatter.date(from: $0) }) ?? Date()
+            if let newDate = Calendar.current.date(byAdding: .day, value: daysToAdd, to: baseDate) {
+                pantryLots[idx] = PantryLot(
+                    id: old.id,
+                    ingredientId: old.ingredientId,
+                    ingredientName: old.ingredientName,
+                    remainingQuantity: old.remainingQuantity,
+                    purchasedQuantity: old.purchasedQuantity,
+                    unit: old.unit,
+                    purchasedAt: old.purchasedAt,
+                    expiresAt: formatter.string(from: newDate),
+                    location: old.location
+                )
+                persistState()
+            }
+        }
+    }
+
     public func updatePantryLotQuantity(id: String, newQuantity: String) {
         if let idx = pantryLots.firstIndex(where: { $0.id == id }) {
             pantryLots[idx].remainingQuantity = newQuantity

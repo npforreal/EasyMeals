@@ -118,6 +118,28 @@ class AppRepository(private val context: Context) {
         persistState()
     }
 
+    /** Gia hạn hạn sử dụng cho lô nguyên liệu đồ tươi trong tủ (mặc định +3 ngày). */
+    fun extendPantryLotExpiry(id: String, daysToAdd: Int = 3) {
+        val current = _pantryLots.value.toMutableList()
+        val index = current.indexOfFirst { it.id == id }
+        if (index != -1) {
+            val old = current[index]
+            val baseDate = if (!old.expiresAt.isNullOrBlank()) {
+                try {
+                    java.time.LocalDate.parse(old.expiresAt)
+                } catch (_: Exception) {
+                    java.time.LocalDate.now()
+                }
+            } else {
+                java.time.LocalDate.now()
+            }
+            val newExp = baseDate.plusDays(daysToAdd.toLong()).toString()
+            current[index] = old.copy(expiresAt = newExp)
+            _pantryLots.value = current
+            persistState()
+        }
+    }
+
     fun checkMealStock(planId: String): Pair<Boolean, Map<String, DeficitItem>> {
         val plan = _mealPlans.value.find { it.id == planId } ?: return Pair(true, emptyMap())
         val allDeficits = mutableMapOf<String, DeficitItem>()

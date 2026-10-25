@@ -115,6 +115,23 @@ public struct AddPantrySheet: View {
             }
             .navigationTitle("Thêm vào tủ")
             .navigationBarTitleDisplayMode(.inline)
+            .safeAreaInset(edge: .bottom) {
+                Button {
+                    save()
+                } label: {
+                    Text("Lưu một chạm")
+                        .font(.headline.bold())
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(selectedIngredient != nil && !quantityText.isEmpty ? AppColors.primary : Color.gray.opacity(0.4))
+                        .cornerRadius(14)
+                }
+                .disabled(selectedIngredient == nil || quantityText.isEmpty)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
+                .background(AppColors.background)
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Hủy") { dismiss() }
@@ -241,14 +258,25 @@ public struct PantryView: View {
                                     Text(lot.ingredientName)
                                         .font(.headline)
                                     if let exp = lot.expiresAt {
-                                        if let status = AppDateFormatter.formatExpiryStatus(exp) {
-                                            Text("Hạn dùng: \(status.text)")
-                                                .font(.caption)
-                                                .foregroundColor(status.isWarning ? AppColors.danger : AppColors.textSecondary)
-                                        } else {
-                                            Text("Hạn dùng: \(AppDateFormatter.formatDateVN(exp))")
-                                                .font(.caption)
-                                                .foregroundColor(AppColors.textSecondary)
+                                        HStack(spacing: 6) {
+                                            if let status = AppDateFormatter.formatExpiryStatus(exp) {
+                                                Text("Hạn dùng: \(status.text)")
+                                                    .font(.caption)
+                                                    .foregroundColor(status.isWarning ? AppColors.danger : AppColors.textSecondary)
+                                            } else {
+                                                Text("Hạn dùng: \(AppDateFormatter.formatDateVN(exp))")
+                                                    .font(.caption)
+                                                    .foregroundColor(AppColors.textSecondary)
+                                            }
+                                            Button("+3 ngày") {
+                                                storage.extendPantryLotExpiry(id: lot.id, daysToAdd: 3)
+                                            }
+                                            .font(.system(size: 11, weight: .bold))
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(AppColors.secondarySurface)
+                                            .foregroundColor(AppColors.primary)
+                                            .cornerRadius(6)
                                         }
                                     }
                                 }
@@ -286,7 +314,7 @@ public struct PantryView: View {
             .navigationTitle("Tủ lạnh")
             .sheet(isPresented: $showingAddSheet) {
                 AddPantrySheet()
-                    .presentationDetents([.medium, .large])
+                    .presentationDetents([.large])
             }
         }
     }

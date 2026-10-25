@@ -126,7 +126,11 @@ fun PantryScreen(repository: AppRepository) {
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(filteredLots, key = { it.id }) { lot ->
-                        PantryLotItem(lot = lot, onDelete = { repository.removePantryLot(lot.id) })
+                        PantryLotItem(
+                            lot = lot,
+                            onDelete = { repository.removePantryLot(lot.id) },
+                            onExtendExpiry = { repository.extendPantryLotExpiry(lot.id, 3) }
+                        )
                     }
                 }
             }
@@ -153,7 +157,11 @@ fun PantryScreen(repository: AppRepository) {
 }
 
 @Composable
-fun PantryLotItem(lot: PantryLot, onDelete: () -> Unit) {
+fun PantryLotItem(
+    lot: PantryLot,
+    onDelete: () -> Unit,
+    onExtendExpiry: (() -> Unit)? = null
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -170,18 +178,31 @@ fun PantryLotItem(lot: PantryLot, onDelete: () -> Unit) {
                 Text(lot.ingredientName, fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
                 lot.expiresAt?.let { exp ->
                     val status = DateFormatter.formatExpiryStatus(exp)
-                    if (status != null) {
-                        Text(
-                            "Hạn dùng: ${status.text}",
-                            fontSize = 12.sp,
-                            color = if (status.isWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else {
-                        Text(
-                            "Hạn dùng: ${DateFormatter.formatDateVN(exp)}",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(top = 2.dp)
+                    ) {
+                        if (status != null) {
+                            Text(
+                                "Hạn dùng: ${status.text}",
+                                fontSize = 12.sp,
+                                color = if (status.isWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            Text(
+                                "Hạn dùng: ${DateFormatter.formatDateVN(exp)}",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (onExtendExpiry != null) {
+                            SuggestionChip(
+                                onClick = onExtendExpiry,
+                                label = { Text("+3 ngày", fontSize = 10.sp) },
+                                modifier = Modifier.height(24.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -246,13 +267,17 @@ fun AddPantryBottomSheet(
         else ingredients.filter { CatalogueLoader.matches(it.name, searchIngText) }.take(20)
     }
 
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        modifier = Modifier.fillMaxHeight(0.9f)
+        sheetState = sheetState,
+        modifier = Modifier.fillMaxHeight(0.95f)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .navigationBarsPadding()
                 .imePadding()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 16.dp)

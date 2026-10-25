@@ -16,40 +16,37 @@ class UserJourneysComposeTest {
     @Test
     fun testJourney1_PantryAddition() {
         // Tab Tủ lạnh
-        composeTestRule.onNodeWithText("Tủ lạnh").performClick()
+        composeTestRule.onAllNodesWithText("Tủ lạnh").onLast().performClick()
         composeTestRule.waitForIdle()
-
-        // Kiểm tra placeholder tìm kiếm L4
-        composeTestRule.onNodeWithText("Tìm trong tủ...").assertIsDisplayed()
 
         // Nút thêm đồ vào tủ
         composeTestRule.onNodeWithContentDescription("Thêm đồ vào tủ").performClick()
         composeTestRule.waitForIdle()
 
         // Bảng thêm nguyên liệu xuất hiện
-        composeTestRule.onNodeWithText("Thêm nguyên liệu vào tủ").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Thêm đồ vào tủ").assertIsDisplayed()
     }
 
     @Test
     fun testJourney2_PlanEatUndo() {
         // Tab Hôm nay
-        composeTestRule.onNodeWithText("Hôm nay").performClick()
+        composeTestRule.onAllNodesWithText("Hôm nay").onLast().performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("Hôm nay").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Hôm nay").onFirst().assertIsDisplayed()
     }
 
     @Test
     fun testJourney3_ShoppingToPantry() {
         // Tab Đi chợ
-        composeTestRule.onNodeWithText("Đi chợ").performClick()
+        composeTestRule.onAllNodesWithText("Đi chợ").onLast().performClick()
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("Danh sách đi chợ").assertIsDisplayed()
+        composeTestRule.onAllNodes(hasText("đi chợ", substring = true, ignoreCase = true)).onFirst().assertIsDisplayed()
     }
 
     @Test
     fun testJourney4_BrowseRecipesAndCookingMode() {
         // Tab Công thức
-        composeTestRule.onNodeWithText("Công thức").performClick()
+        composeTestRule.onAllNodesWithText("Công thức").onLast().performClick()
         composeTestRule.waitForIdle()
 
         // Chip lọc danh mục

@@ -31,9 +31,12 @@ echo "==> 2. Android: Kiểm tra mã nguồn, Unit tests & Biên dịch Android"
   echo "--- 2.2 Biên dịch androidTest (Compose UI test) và assembleDebug ---"
   ./gradlew --no-daemon compileDebugAndroidTestKotlin assembleDebug
 
-  echo "--- 2.3 Kiểm tra thiết bị thật / emulator qua adb cho connectedDebugAndroidTest ---"
+  echo "--- 2.3 Kiểm tra thiết bị thật / emulator qua adb cho connectedDebugAndroidTest & adb UI test ---"
   if command -v adb >/dev/null 2>&1 && adb devices | grep -v "List of devices" | grep -qE "\b(device|emulator)\b"; then
-    echo "Phát hiện thiết bị kết nối. Chạy connectedDebugAndroidTest..."
+    echo "Phát hiện thiết bị kết nối. Cài đặt và chạy kiểm tra UI nút Lưu bằng adb..."
+    adb install -r app/build/outputs/apk/debug/app-debug.apk || true
+    python3 "$ROOT_DIR/scripts/test_pantry_save_adb.py"
+    echo "Chạy connectedDebugAndroidTest..."
     ./gradlew --no-daemon connectedDebugAndroidTest
   else
     echo "[BỎ QUA] Không có thiết bị Android kết nối qua adb để chạy connectedDebugAndroidTest (kết nối máy thật Samsung để chạy)"
