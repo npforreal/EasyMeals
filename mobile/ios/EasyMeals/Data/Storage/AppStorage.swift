@@ -188,7 +188,9 @@ public final class AppStorage: @unchecked Sendable {
                 ingredientId: ingId,
                 ingredientName: d.ingredientName,
                 neededQuantity: d.missingQuantity,
-                unit: d.unit
+                unit: d.unit,
+                // Người dùng tự bấm thêm -> giữ khi kế hoạch đổi (A3).
+                isManuallyAdded: true
             )
             shoppingItems.append(item)
         }
@@ -235,7 +237,9 @@ public final class AppStorage: @unchecked Sendable {
             ingredientId: ingId,
             ingredientName: name,
             neededQuantity: quantity,
-            unit: unit
+            unit: unit,
+            // Người dùng tự thêm -> giữ khi kế hoạch đổi (A3).
+            isManuallyAdded: true
         )
         shoppingItems.append(item)
         persistState()
@@ -305,7 +309,10 @@ public final class AppStorage: @unchecked Sendable {
                 newPlans: result.meals,
                 mode: mergeMode
             )
-            self.shoppingItems = result.shoppingList
+            // A3: thay toàn bộ mục sinh tự của đợt mới nhưng GIỮ mục người dùng tự thêm.
+            let manual = shoppingItems.filter { $0.isManuallyAdded }
+            let manualKeys = Set(manual.map { $0.id })
+            self.shoppingItems = manual + result.shoppingList.filter { !manualKeys.contains($0.id) }
             persistState()
         }
     }

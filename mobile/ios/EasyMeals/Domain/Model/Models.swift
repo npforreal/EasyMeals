@@ -322,6 +322,8 @@ public struct ShoppingItem: Identifiable, Codable, Equatable, Sendable {
     public var neededQuantity: String
     public let unit: String
     public var isBought: Bool
+    // A3 - Vòng 13: nguồn phát sinh — người dùng tự thêm thì giữ khi kế hoạch đổi.
+    public var isManuallyAdded: Bool
     public var dishNames: [String]
 
     public init(
@@ -330,6 +332,7 @@ public struct ShoppingItem: Identifiable, Codable, Equatable, Sendable {
         neededQuantity: String,
         unit: String,
         isBought: Bool = false,
+        isManuallyAdded: Bool = false,
         dishNames: [String] = []
     ) {
         self.ingredientId = ingredientId
@@ -337,6 +340,7 @@ public struct ShoppingItem: Identifiable, Codable, Equatable, Sendable {
         self.neededQuantity = neededQuantity
         self.unit = unit
         self.isBought = isBought
+        self.isManuallyAdded = isManuallyAdded
         self.dishNames = dishNames
     }
 
@@ -346,7 +350,21 @@ public struct ShoppingItem: Identifiable, Codable, Equatable, Sendable {
         case neededQuantity = "needed_quantity"
         case unit
         case isBought = "is_bought"
+        case isManuallyAdded = "is_manually_added"
         case dishNames = "dish_names"
+    }
+
+    /// A3: decode tương thích — bản state/backup cũ thiếu `is_manually_added` (và cả
+    /// `is_bought`/`dish_names`) về giá trị mặc định thay vì văng lỗi giải mã.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        ingredientId = try container.decode(String.self, forKey: .ingredientId)
+        ingredientName = try container.decode(String.self, forKey: .ingredientName)
+        neededQuantity = try container.decode(String.self, forKey: .neededQuantity)
+        unit = try container.decode(String.self, forKey: .unit)
+        isBought = try container.decodeIfPresent(Bool.self, forKey: .isBought) ?? false
+        isManuallyAdded = try container.decodeIfPresent(Bool.self, forKey: .isManuallyAdded) ?? false
+        dishNames = try container.decodeIfPresent([String].self, forKey: .dishNames) ?? []
     }
 }
 

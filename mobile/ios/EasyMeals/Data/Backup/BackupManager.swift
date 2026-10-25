@@ -32,6 +32,18 @@ public struct BackupPayload: Codable, Sendable {
         self.stockMovements = stockMovements
         self.shoppingItems = shoppingItems
     }
+
+    /// A3: decode tương thích — bản sao lưu cũ thiếu `shopping_items`
+    /// (hoặc các khối khác) về danh sách rỗng thay vì văng lỗi khi nhập.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        appVersion = try container.decodeIfPresent(String.self, forKey: .appVersion) ?? "2.0.0"
+        exportedAt = try container.decodeIfPresent(String.self, forKey: .exportedAt) ?? ""
+        pantryLots = try container.decodeIfPresent([PantryLot].self, forKey: .pantryLots) ?? []
+        mealPlans = try container.decodeIfPresent([MealPlan].self, forKey: .mealPlans) ?? []
+        stockMovements = try container.decodeIfPresent([StockMovement].self, forKey: .stockMovements) ?? []
+        shoppingItems = try container.decodeIfPresent([ShoppingItem].self, forKey: .shoppingItems) ?? []
+    }
 }
 
 public enum BackupManager {
