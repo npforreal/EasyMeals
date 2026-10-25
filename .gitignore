@@ -40,6 +40,7 @@ ios/App/Podfile.lock
 .review_work/
 
 # Tài liệu/ghi chú làm việc của agent: chỉ giữ ở máy local, không đưa lên GitHub
+AGENTS.md
 AGENT.md
 PLAN.md
 PROGRESS.md
@@ -50,3 +51,6 @@ design/
 
 # Cấu hình cục bộ của agent (quyền, chặn đọc .env)
 .claude/
+
+# Lưu trữ nhật ký cũ của agent
+archive/
