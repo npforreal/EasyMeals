@@ -16,6 +16,18 @@
     "nuoc_cham_dau": "Nước chấm & dầu ăn",
     "khac": "Khác"
   },
+  "default_expiry_days": {
+    "thit": 3,
+    "gia_cam": 3,
+    "hai_san": 3,
+    "trung_sua": 14,
+    "rau_cu": 5,
+    "cu_qua": 5,
+    "gao_bot_mi": null,
+    "gia_vi": null,
+    "nuoc_cham_dau": null,
+    "khac": null
+  },
   "units": {
     "g": "g",
     "kg": "kg",

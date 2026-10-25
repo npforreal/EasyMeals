@@ -176,6 +176,18 @@ public enum GeneratedTokens {
             "nuoc_cham_dau": "Nước chấm & dầu ăn",
             "khac": "Khác"
         ]
+        public static let default_expiry_days: [String: String] = [
+            "thit": "3",
+            "gia_cam": "3",
+            "hai_san": "3",
+            "trung_sua": "14",
+            "rau_cu": "5",
+            "cu_qua": "5",
+            "gao_bot_mi": "None",
+            "gia_vi": "None",
+            "nuoc_cham_dau": "None",
+            "khac": "None"
+        ]
         public static let units: [String: String] = [
             "g": "g",
             "kg": "kg",

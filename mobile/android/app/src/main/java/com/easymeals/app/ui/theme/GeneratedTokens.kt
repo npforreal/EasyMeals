@@ -182,6 +182,18 @@ object GeneratedTokens {
             "nuoc_cham_dau" to "Nước chấm & dầu ăn",
             "khac" to "Khác"
         )
+        val default_expiry_days: Map<String, String> = mapOf(
+            "thit" to "3",
+            "gia_cam" to "3",
+            "hai_san" to "3",
+            "trung_sua" to "14",
+            "rau_cu" to "5",
+            "cu_qua" to "5",
+            "gao_bot_mi" to "None",
+            "gia_vi" to "None",
+            "nuoc_cham_dau" to "None",
+            "khac" to "None"
+        )
         val units: Map<String, String> = mapOf(
             "g" to "g",
             "kg" to "kg",

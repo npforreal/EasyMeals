@@ -26,11 +26,9 @@ import com.easymeals.app.data.catalogue.CatalogueLoader
 import com.easymeals.app.data.db.AppRepository
 import com.easymeals.app.domain.model.Ingredient
 import com.easymeals.app.domain.model.PantryLot
-import com.easymeals.app.ui.theme.DangerRed
-import com.easymeals.app.ui.theme.ForestGreen
+import com.easymeals.app.ui.theme.GeneratedTokens
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
-import com.easymeals.app.ui.theme.GeneratedTokens
 import com.easymeals.app.util.DateFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,8 +56,8 @@ fun PantryScreen(repository: AppRepository) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddSheet = true },
-                containerColor = ForestGreen,
-                contentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Thêm đồ vào tủ")
             }
@@ -108,7 +106,7 @@ fun PantryScreen(repository: AppRepository) {
                         Icon(
                             Icons.Default.Kitchen,
                             contentDescription = null,
-                            tint = ForestGreen.copy(alpha = 0.6f),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                             modifier = Modifier.size(72.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -191,11 +189,11 @@ fun PantryLotItem(lot: PantryLot, onDelete: () -> Unit) {
                 "${lot.remainingQuantity} ${lot.unit}",
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
-                color = ForestGreen
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(12.dp))
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Xoá", tint = Color.Gray)
+                Icon(Icons.Default.Delete, contentDescription = "Xoá", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -291,6 +289,9 @@ fun AddPantryBottomSheet(
                                         selectedIng = ing
                                         unit = ing.defaultUnit ?: "g"
                                         quantityText = sensibleDefaultQuantity(ing)
+                                        selectedExpiryDays = GeneratedTokens.Labels.default_expiry_days[ing.category ?: "khac"]?.let {
+                                            if (it == "None") null else it.toInt()
+                                        }
                                     },
                                     label = { Text(ing.name) }
                                 )
@@ -313,13 +314,16 @@ fun AddPantryBottomSheet(
                                         selectedIng = ing
                                         unit = ing.defaultUnit ?: "g"
                                         quantityText = sensibleDefaultQuantity(ing)
+                                        selectedExpiryDays = GeneratedTokens.Labels.default_expiry_days[ing.category ?: "khac"]?.let {
+                                            if (it == "None") null else it.toInt()
+                                        }
                                     }
                                     .padding(vertical = 10.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(ing.name, fontWeight = FontWeight.Medium)
-                                Text(categoryLabel(ing.category), fontSize = 12.sp, color = Color.Gray)
+                                Text(categoryLabel(ing.category), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             HorizontalDivider()
                         }

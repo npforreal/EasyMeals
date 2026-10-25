@@ -160,6 +160,13 @@ public struct AddPantrySheet: View {
         self.unit = ingredient.defaultUnit
         self.quantityText = sensibleDefaultQuantity(for: ingredient)
         self.searchText = ingredient.name
+        // Hạn mặc định theo nhóm nguyên liệu (từ GeneratedTokens / design-tokens/labels.json)
+        if let daysStr = GeneratedTokens.Labels.default_expiry_days[ingredient.category ?? "khac"],
+           daysStr != "None", let days = Int(daysStr) {
+            self.selectedExpiryDays = days
+        } else {
+            self.selectedExpiryDays = nil // "Không hạn"
+        }
     }
 
     private func expiryButton(label: String, days: Int?) -> some View {
