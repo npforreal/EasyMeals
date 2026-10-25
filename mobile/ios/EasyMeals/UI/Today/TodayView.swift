@@ -95,14 +95,14 @@ public struct TodayView: View {
             Text("Lên đợt thực đơn mới:")
                 .font(.caption.bold())
                 .foregroundColor(AppColors.textSecondary)
-            HStack(spacing: 8) {
+            HStack(spacing: 4) {
                 ForEach(PlanLimits.minDays...PlanLimits.maxDays, id: \.self) { d in
                     Button {
                         selectedPlanDays = d
                     } label: {
                         Text("\(d)")
                             .font(.subheadline.bold())
-                            .frame(minWidth: 40, minHeight: 44)
+                            .frame(maxWidth: .infinity, minHeight: 44)
                             .background(selectedPlanDays == d ? AppColors.primary : AppColors.secondarySurface)
                             .foregroundColor(selectedPlanDays == d ? .white : AppColors.textPrimary)
                             .cornerRadius(8)
@@ -144,14 +144,14 @@ public struct TodayView: View {
                 Text("Số ngày lập thực đơn (1–7 ngày):")
                     .font(.caption.bold())
                     .foregroundColor(AppColors.textSecondary)
-                HStack(spacing: 8) {
+                HStack(spacing: 4) {
                     ForEach(PlanLimits.minDays...PlanLimits.maxDays, id: \.self) { d in
                         Button {
                             selectedPlanDays = d
                         } label: {
                             Text("\(d)")
                                 .font(.subheadline.bold())
-                                .frame(minWidth: 44, minHeight: 48)
+                                .frame(maxWidth: .infinity, minHeight: 48)
                                 .background(selectedPlanDays == d ? AppColors.primary : AppColors.secondarySurface)
                                 .foregroundColor(selectedPlanDays == d ? .white : AppColors.textPrimary)
                                 .cornerRadius(10)

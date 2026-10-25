@@ -5,7 +5,11 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -18,7 +22,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -145,19 +151,11 @@ fun TodayScreen(repository: AppRepository) {
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        PlanDaysSelector(
+                            selected = selectedPlanDays,
+                            onSelect = onSelectDays,
                             modifier = Modifier.padding(bottom = 16.dp)
-                        ) {
-                            (GeneratedTokens.PlanLimits.MIN_DAYS..GeneratedTokens.PlanLimits.MAX_DAYS).forEach { d ->
-                                FilterChip(
-                                    selected = selectedPlanDays == d,
-                                    onClick = { onSelectDays(d) },
-                                    label = { Text("$d") },
-                                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                                )
-                            }
-                        }
+                        )
                         Button(
                             onClick = { repository.generateNewPlan(selectedPlanDays) },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
@@ -211,19 +209,7 @@ fun TodayScreen(repository: AppRepository) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text("Lên đợt thực đơn mới:", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    (GeneratedTokens.PlanLimits.MIN_DAYS..GeneratedTokens.PlanLimits.MAX_DAYS).forEach { d ->
-                                        FilterChip(
-                                            selected = selectedPlanDays == d,
-                                            onClick = { onSelectDays(d) },
-                                            label = { Text("$d") },
-                                            modifier = Modifier.sizeIn(minWidth = 44.dp, minHeight = 44.dp)
-                                        )
-                                    }
-                                }
+                                PlanDaysSelector(selected = selectedPlanDays, onSelect = onSelectDays)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Button(
                                     onClick = { repository.generateNewPlan(selectedPlanDays) },
@@ -419,6 +405,58 @@ fun MealPlanCard(
                 ) {
                     Text("Hoàn tác bữa ăn này", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
+            }
+        }
+    }
+}
+
+
+/**
+ * Hàng chọn số ngày lập thực đơn (MIN_DAYS..MAX_DAYS). Mỗi nút chia đều chiều ngang (weight) nên
+ * luôn đủ 7 nút trên màn hẹp, thay vì chip rộng cố định bị cắt mất nút cuối.
+ */
+@Composable
+fun PlanDaysSelector(
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        (GeneratedTokens.PlanLimits.MIN_DAYS..GeneratedTokens.PlanLimits.MAX_DAYS).forEach { d ->
+            val isSelected = selected == d
+            val shape = RoundedCornerShape(10.dp)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp)
+                    .clip(shape)
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surface
+                    )
+                    .border(
+                        1.dp,
+                        if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.outline,
+                        shape
+                    )
+                    .selectable(
+                        selected = isSelected,
+                        role = Role.RadioButton,
+                        onClick = { onSelect(d) }
+                    )
+            ) {
+                Text(
+                    "$d",
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurface
+                )
             }
         }
     }
