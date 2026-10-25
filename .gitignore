@@ -47,3 +47,6 @@ REVIEW.md
 skills/
 design/
 .vscode/
+
+# Cấu hình cục bộ của agent (quyền, chặn đọc .env)
+.claude/

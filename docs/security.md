@@ -39,7 +39,7 @@ Trong kiến trúc mới:
    - Chỉ cấp quyền `SELECT` cho role `anon` (và `authenticated`).
    - Huỷ bỏ (`REVOKE`) toàn bộ quyền `INSERT, UPDATE, DELETE` của role `anon` và `authenticated`.
 2. **Nạp dữ liệu Danh mục ban đầu**:
-   - Chạy script nạp danh mục `scripts/seed_catalogue.py` từ máy cục bộ của bạn với tham số `--apply` và các biến `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` trong file `.env` local.
+   - Chạy script nạp danh mục `scripts/seed_catalogue.py` từ máy cục bộ của bạn với tham số `--apply`. `SUPABASE_URL` có thể nằm trong `.env`, nhưng **`SUPABASE_SERVICE_ROLE_KEY` chỉ được truyền qua biến môi trường của dòng lệnh trong phiên chạy đó** (ví dụ `SUPABASE_SERVICE_ROLE_KEY=... python scripts/seed_catalogue.py --apply`), **không lưu vào `.env`** (khớp `docs/deploy.md`). Agent/CI không bao giờ cần và không được đọc `.env`; kiểm tra cấu hình bằng `python scripts/check_supabase_config.py --offline`.
    - Không bao giờ đưa khoá `service_role` lên Vercel.
 
 ### B. Cấu hình Vercel Dashboard
