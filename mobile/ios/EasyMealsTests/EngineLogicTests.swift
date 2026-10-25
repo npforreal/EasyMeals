@@ -204,6 +204,7 @@ final class EngineLogicTests: XCTestCase {
                 let endDate = calendar.date(byAdding: .day, value: days - 1, to: startDate)!
                 let endStr = formatter.string(from: endDate)
                 let allowLeftovers = (c["allow_leftovers"] as? Bool) ?? true
+                let leftoverDays = (c["leftover_days"] as? Int) ?? PlanLimits.leftoverDefaultDays
                 let exp = c["expect"] as! [String: Any]
 
                 if (exp["error"] as? Bool) == true {
@@ -214,7 +215,8 @@ final class EngineLogicTests: XCTestCase {
                             recipes: recipes,
                             currentPantryLots: pantry,
                             allowLeftovers: allowLeftovers,
-                            conversions: convs
+                            conversions: convs,
+                            leftoverDays: leftoverDays
                         ),
                         "[\(name)] Mong đợi lỗi vượt giới hạn số ngày nhưng không ném"
                     )
@@ -227,7 +229,8 @@ final class EngineLogicTests: XCTestCase {
                     recipes: recipes,
                     currentPantryLots: pantry,
                     allowLeftovers: allowLeftovers,
-                    conversions: convs
+                    conversions: convs,
+                    leftoverDays: leftoverDays
                 )
 
                 let expDishes = exp["dishes"] as! [String]

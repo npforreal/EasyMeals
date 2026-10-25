@@ -8,6 +8,8 @@ public struct TodayView: View {
     @State private var deficitPlanId: String?
     @State private var deficits: [DeficitItem] = []
     @AppStorage("selected_plan_days") private var selectedPlanDays: Int = PlanLimits.defaultDays
+    @AppStorage("allow_leftovers") private var allowLeftovers: Bool = true
+    @AppStorage("leftover_days") private var leftoverDays: Int = PlanLimits.leftoverDefaultDays
 
     var todayPlans: [MealPlan] {
         let todayStr = ISO8601DateFormatter().string(from: Date()).prefix(10).description
@@ -90,6 +92,28 @@ public struct TodayView: View {
         .cornerRadius(12)
     }
 
+    /// Tuỳ chọn đồ ăn dư (A1 - Vòng 13): bật/tắt dùng lại đồ dư và số ngày dùng lại (1-3, mặc định 2).
+    private var leftoverOptionsView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle("Cho dùng lại đồ ăn dư", isOn: $allowLeftovers)
+                .font(.subheadline)
+            if allowLeftovers {
+                HStack {
+                    Text("Dùng lại trong tối đa:")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                    Picker("", selection: $leftoverDays) {
+                        ForEach(PlanLimits.leftoverMinDays...PlanLimits.leftoverMaxDays, id: \.self) { d in
+                            Text("\(d) ngày")
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .fixedSize()
+                }
+            }
+        }
+    }
+
     private var replanSectionView: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Lên đợt thực đơn mới:")
@@ -109,8 +133,13 @@ public struct TodayView: View {
                     }
                 }
             }
+            leftoverOptionsView
             Button {
-                storage.generateNewPlan(days: selectedPlanDays)
+                storage.generateNewPlan(
+                    days: selectedPlanDays,
+                    allowLeftovers: allowLeftovers,
+                    leftoverDays: leftoverDays
+                )
             } label: {
                 Label("Lên thực đơn \(selectedPlanDays) ngày", systemImage: "sparkles")
                     .font(.headline)
@@ -161,8 +190,14 @@ public struct TodayView: View {
             }
             .padding(.top, 8)
 
+            leftoverOptionsView
+
             Button {
-                storage.generateNewPlan(days: selectedPlanDays)
+                storage.generateNewPlan(
+                    days: selectedPlanDays,
+                    allowLeftovers: allowLeftovers,
+                    leftoverDays: leftoverDays
+                )
             } label: {
                 Label("Lên thực đơn \(selectedPlanDays) ngày", systemImage: "sparkles")
                     .font(.headline)

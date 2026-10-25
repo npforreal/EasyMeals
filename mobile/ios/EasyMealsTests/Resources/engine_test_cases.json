@@ -261,17 +261,17 @@
       ],
       [
         {
-          "recipe_name": "Thịt kho tàu (Ăn lại)",
+          "recipe_name": "Thịt kho tàu",
           "category": "man",
           "is_leftover": true
         },
         {
-          "recipe_name": "Rau muống xào tỏi (Ăn lại)",
+          "recipe_name": "Rau muống xào tỏi",
           "category": "rau",
           "is_leftover": true
         },
         {
-          "recipe_name": "Canh chua cá lóc (Ăn lại)",
+          "recipe_name": "Canh chua cá lóc",
           "category": "canh",
           "is_leftover": true
         }

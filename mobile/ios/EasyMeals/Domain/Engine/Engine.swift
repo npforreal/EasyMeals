@@ -483,6 +483,31 @@ public enum EasyMealsEngine {
         return (restoredLots, reversalMovements)
     }
 
+    /// Sổ cái phần dư của một mẻ nấu: mỗi mẻ nấu (≥ 4 khẩu phần) dư đúng một phần
+    /// ăn, dùng lại một lần trong quá hạn (ngày nấu + leftoverDays).
+    /// Khớp AvailableLeftover trong app/domain/planner.py và EasyMealsEngine.AvailableLeftover (Kotlin).
+    /// (class — để `portionsRemaining` có thể giảm tại nơi khởi tạo.)
+    public final class AvailableLeftover {
+        public let dish: PlannedDish
+        public var portionsRemaining: Int
+        public let deadline: Date
+
+        public init(dish: PlannedDish, portionsRemaining: Int, deadline: Date) {
+            self.dish = dish
+            self.portionsRemaining = portionsRemaining
+            self.deadline = deadline
+        }
+    }
+
+    /// Đồ dư dùng lại tối đa 2 ngày (mặc định), cấu hình được trong 1-3 ngày.
+    public static func validateLeftoverDays(_ leftoverDays: Int) throws {
+        guard leftoverDays >= PlanLimits.leftoverMinDays && leftoverDays <= PlanLimits.leftoverMaxDays else {
+            throw IncompatibleUnitError(
+                "Số ngày dùng lại đồ dư phải từ \(PlanLimits.leftoverMinDays) đến \(PlanLimits.leftoverMaxDays) ngày."
+            )
+        }
+    }
+
     public static func generatePeriodPlan(
         startDateStr: String,
         endDateStr: String,
@@ -490,8 +515,10 @@ public enum EasyMealsEngine {
         currentPantryLots: [PantryLot],
         allowLeftovers: Bool = true,
         conversions: [Conversion]? = nil,
-        rawIngredientNames: [String: String]? = nil
+        rawIngredientNames: [String: String]? = nil,
+        leftoverDays: Int = PlanLimits.leftoverDefaultDays
     ) throws -> (periodId: String, meals: [MealPlan], shoppingList: [ShoppingItem]) {
+        try validateLeftoverDays(leftoverDays)
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
@@ -518,7 +545,9 @@ public enum EasyMealsEngine {
 
         let simulatedLots = currentPantryLots
         var cookedRecipeIds = Set<String>()
-        var availableLeftovers: [PlannedDish] = []
+        // Sổ cái phần dư: mỗi mẻ nấu (≥ 4 khẩu phần) dư đúng một phần ăn, dùng lại
+        // một lần trong quá hạn (ngày nấu + leftoverDays). Khớp planner.py / Engine.kt.
+        var availableLeftovers: [AvailableLeftover] = []
         var mealPlans: [MealPlan] = []
         var shoppingItemsMap: [String: ShoppingItem] = [:]
 
@@ -540,15 +569,21 @@ public enum EasyMealsEngine {
                 for cat in ["man", "rau", "canh"] {
                     var dishChosen: PlannedDish?
 
-                    // 1. Dùng thức ăn thừa
+                    // 1. Dùng thức ăn thừa (chỉ phần còn hạn và chưa dùng)
                     if allowLeftovers && !availableLeftovers.isEmpty {
-                        if let leftIdx = availableLeftovers.firstIndex(where: { $0.category == cat }) {
-                            let left = availableLeftovers.remove(at: leftIdx)
+                        if let idx = availableLeftovers.firstIndex(where: {
+                            $0.portionsRemaining > 0
+                                && (curr <= $0.deadline)
+                                && $0.dish.category == cat
+                        }) {
+                            let entry = availableLeftovers.remove(at: idx)
+                            entry.portionsRemaining -= 1
+                            let left = entry.dish
                             dishChosen = PlannedDish(
                                 id: UUID().uuidString,
                                 mealPlanId: planId,
                                 recipeId: left.recipeId,
-                                recipeName: "\(left.recipeName) (Ăn lại)",
+                                recipeName: left.recipeName,
                                 category: cat,
                                 isLeftover: true,
                                 originalDishId: left.id,
@@ -634,7 +669,9 @@ public enum EasyMealsEngine {
                             cookedRecipeIds.insert(validChosen.id)
 
                             if allowLeftovers && validChosen.servings >= 4 {
-                                availableLeftovers.append(dish)
+                                if let dead = calendar.date(byAdding: .day, value: leftoverDays, to: curr) {
+                                    availableLeftovers.append(AvailableLeftover(dish: dish, portionsRemaining: 1, deadline: dead))
+                                }
                             }
                         }
                     }

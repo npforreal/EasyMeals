@@ -256,7 +256,11 @@ public final class AppStorage: @unchecked Sendable {
     }
 
     // MARK: - Lập thực đơn tự động
-    public func generateNewPlan(days: Int = 3) {
+    public func generateNewPlan(
+        days: Int = 3,
+        allowLeftovers: Bool = true,
+        leftoverDays: Int = PlanLimits.leftoverDefaultDays
+    ) {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
@@ -272,7 +276,8 @@ public final class AppStorage: @unchecked Sendable {
             endDateStr: endStr,
             recipes: recipes,
             currentPantryLots: pantryLots,
-            allowLeftovers: true
+            allowLeftovers: allowLeftovers,
+            leftoverDays: leftoverDays
         ) {
             self.mealPlans = result.meals
             self.shoppingItems = result.shoppingList

@@ -9,6 +9,8 @@ public struct SettingsView: View {
     @State private var backupData: Data?
     @State private var showingFileImporter = false
     @State private var statusMessage: String?
+    @AppStorage("allow_leftovers") private var allowLeftovers: Bool = true
+    @AppStorage("leftover_days") private var leftoverDays: Int = PlanLimits.leftoverDefaultDays
 
     public var body: some View {
         NavigationStack {
@@ -27,6 +29,21 @@ public struct SettingsView: View {
                         Text("Xanh biển").tag("ocean")
                         Text("Tím mận").tag("plum")
                         Text("Hồng đào").tag("peach")
+                    }
+                }
+
+                // Section: Đồ ăn dư (A1 - Vòng 13)
+                Section("Đồ ăn dư") {
+                    Toggle("Cho dùng lại đồ ăn dư", isOn: $allowLeftovers)
+                    if allowLeftovers {
+                        Picker("Dùng lại trong tối đa", selection: $leftoverDays) {
+                            ForEach(PlanLimits.leftoverMinDays...PlanLimits.leftoverMaxDays, id: \.self) { d in
+                                Text("\(d) ngày").tag(d)
+                            }
+                        }
+                        Text("Bật để thực đơn tận dụng phần dư của mẻ nấu trước, tránh lãng phí thực phẩm. Mỗi phần dư chỉ được dùng lại một lần.")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
                     }
                 }
 
