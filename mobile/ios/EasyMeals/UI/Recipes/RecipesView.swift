@@ -68,10 +68,10 @@ public struct RecipesView: View {
                             if canCook {
                                 Label("Đủ đồ", systemImage: "sparkles")
                                     .font(.caption2.bold())
-                                    .foregroundColor(.green)
+                                    .foregroundColor(AppColors.primary)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
-                                    .background(Color.green.opacity(0.12))
+                                    .background(AppColors.primary.opacity(0.12))
                                     .cornerRadius(8)
                             }
                         }
@@ -156,7 +156,7 @@ public struct RecipeDetailView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack {
                                 Image(systemName: hasEnough ? "checkmark.circle.fill" : "circle")
-                                    .foregroundColor(hasEnough ? .green : (isPartial ? .orange : .red))
+                                    .foregroundColor(hasEnough ? AppColors.primary : (isPartial ? AppColors.warning : AppColors.danger))
 
                                 Text(req.name)
                                     .font(.body)
@@ -170,16 +170,16 @@ public struct RecipeDetailView: View {
                             if hasEnough {
                                 Text("✓ Có sẵn trong tủ")
                                     .font(.caption2)
-                                    .foregroundColor(.green)
+                                    .foregroundColor(AppColors.primary)
                             } else if isPartial {
                                 let missing = req.quantity - stock
                                 Text("⚠ Có \(stock.description), thiếu \(missing.description) \(req.unit)")
                                     .font(.caption2)
-                                    .foregroundColor(.orange)
+                                    .foregroundColor(AppColors.warning)
                             } else {
                                 Text("✗ Chưa có trong tủ")
                                     .font(.caption2)
-                                    .foregroundColor(.red)
+                                    .foregroundColor(AppColors.danger)
                             }
                         }
                         .padding(.vertical, 2)
@@ -294,7 +294,7 @@ public struct CookingModeView: View {
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(Color.green)
+                                .background(AppColors.primary)
                                 .foregroundColor(.white)
                                 .cornerRadius(12)
                         }

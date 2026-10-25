@@ -26,7 +26,7 @@ public struct ShoppingView: View {
                         ForEach(storage.shoppingItems) { item in
                             HStack {
                                 Image(systemName: item.isBought ? "checkmark.circle.fill" : "circle")
-                                    .foregroundColor(item.isBought ? .green : .secondary)
+                                    .foregroundColor(item.isBought ? AppColors.primary : AppColors.textSecondary)
                                     .font(.title3)
 
                                 VStack(alignment: .leading, spacing: 2) {

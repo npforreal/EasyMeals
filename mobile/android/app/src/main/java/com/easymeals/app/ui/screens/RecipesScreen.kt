@@ -33,8 +33,7 @@ import com.easymeals.app.data.catalogue.CatalogueLoader
 import com.easymeals.app.data.db.AppRepository
 import com.easymeals.app.domain.engine.ExactDecimal
 import com.easymeals.app.domain.model.Recipe
-import com.easymeals.app.ui.theme.ForestGreen
-import com.easymeals.app.ui.theme.WarmOrange
+import com.easymeals.app.ui.theme.GeneratedTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -146,8 +145,8 @@ fun RecipesScreen(repository: AppRepository) {
                         onClick = { selectedCategory = cat },
                         label = { Text(label) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = ForestGreen,
-                            selectedLabelColor = Color.White
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                         )
                     )
                 }
@@ -205,8 +204,8 @@ fun RecipeCard(
                 )
                 val catLabel = com.easymeals.app.ui.theme.GeneratedTokens.Labels.dish_categories[recipe.category] ?: recipe.category
                 Badge(
-                    containerColor = ForestGreen.copy(alpha = 0.15f),
-                    contentColor = ForestGreen
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    contentColor = MaterialTheme.colorScheme.primary
                 ) {
                     Text(
                         text = catLabel,
@@ -306,7 +305,7 @@ fun RecipeDetailScreen(
             ) {
                 Button(
                     onClick = onStartCooking,
-                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
@@ -408,7 +407,7 @@ fun RecipeDetailScreen(
                         Text(
                             text = "$scaledQty ${ing.unit}",
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isEnough) ForestGreen else if (available != null) MaterialTheme.colorScheme.error else ForestGreen
+                            color = if (isEnough) MaterialTheme.colorScheme.primary else if (available != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                         )
                     }
                     if (available != null) {
@@ -420,14 +419,14 @@ fun RecipeDetailScreen(
                                 Text(
                                     "✓ Trong tủ có sẵn: $available ${ing.unit}",
                                     fontSize = 12.sp,
-                                    color = Color(0xFF2E7D32)
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             } else if (isPartial) {
                                 val missing = scaledQty - available
                                 Text(
                                     "⚠ Có $available, còn thiếu $missing ${ing.unit}",
                                     fontSize = 12.sp,
-                                    color = Color(0xFFD32F2F)
+                                    color = MaterialTheme.colorScheme.error
                                 )
                             } else {
                                 Text(
@@ -459,13 +458,13 @@ fun RecipeDetailScreen(
                             modifier = Modifier
                                 .size(28.dp)
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(ForestGreen.copy(alpha = 0.15f)),
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 "${index + 1}",
                                 fontWeight = FontWeight.Bold,
-                                color = ForestGreen,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontSize = 13.sp
                             )
                         }
@@ -524,7 +523,7 @@ fun CookingModeScreen(
                     "CHẾ ĐỘ NẤU",
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
-                    color = WarmOrange
+                    color = MaterialTheme.colorScheme.secondary
                 )
                 Text(
                     if (totalSteps > 0) "${currentStep + 1} / $totalSteps" else "1/1",
@@ -544,7 +543,7 @@ fun CookingModeScreen(
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
-                color = ForestGreen
+                color = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -611,7 +610,7 @@ fun CookingModeScreen(
                 if (currentStep < totalSteps - 1) {
                     Button(
                         onClick = { currentStep++ },
-                        colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("Bước tiếp")
@@ -627,7 +626,7 @@ fun CookingModeScreen(
                             }
                             onDone()
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Default.Check, contentDescription = null)

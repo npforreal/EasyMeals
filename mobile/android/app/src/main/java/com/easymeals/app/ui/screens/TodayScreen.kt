@@ -26,7 +26,6 @@ import com.easymeals.app.data.db.AppRepository
 import com.easymeals.app.domain.model.DeficitItem
 import com.easymeals.app.domain.model.MealPlan
 import com.easymeals.app.domain.model.Recipe
-import com.easymeals.app.ui.theme.ForestGreen
 import com.easymeals.app.ui.theme.GeneratedTokens
 import com.easymeals.app.util.DateFormatter
 
@@ -113,7 +112,7 @@ fun TodayScreen(repository: AppRepository) {
                         Icon(
                             Icons.Default.DinnerDining,
                             contentDescription = null,
-                            tint = ForestGreen,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(80.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -127,7 +126,7 @@ fun TodayScreen(repository: AppRepository) {
                         Spacer(modifier = Modifier.height(24.dp))
                         Button(
                             onClick = { repository.generateNewPlan(3) },
-                            colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Default.AutoAwesome, contentDescription = null)
@@ -251,7 +250,7 @@ fun MealPlanCard(
                         periodLabel,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = ForestGreen
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         DateFormatter.formatRelativeDate(plan.plannedFor),
@@ -261,9 +260,9 @@ fun MealPlanCard(
                 }
                 if (plan.eatenAt != null) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF388E3C), modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Đã ăn", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF388E3C))
+                        Text("Đã ăn", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -312,7 +311,7 @@ fun MealPlanCard(
             if (plan.eatenAt == null) {
                 Button(
                     onClick = onEat,
-                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Đã ăn (Trừ kho)", fontWeight = FontWeight.Bold)
@@ -322,7 +321,7 @@ fun MealPlanCard(
                     onClick = onUndo,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Hoàn tác bữa ăn này", color = ForestGreen, fontWeight = FontWeight.Bold)
+                    Text("Hoàn tác bữa ăn này", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
             }
         }

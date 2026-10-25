@@ -22,7 +22,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.easymeals.app.data.db.AppRepository
-import com.easymeals.app.ui.theme.ForestGreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +77,7 @@ fun ShoppingScreen(repository: AppRepository) {
                         Icon(
                             Icons.Default.ShoppingCart,
                             contentDescription = null,
-                            tint = ForestGreen.copy(alpha = 0.6f),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                             modifier = Modifier.size(72.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -106,7 +105,7 @@ fun ShoppingScreen(repository: AppRepository) {
                             Icon(
                                 if (item.isBought) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
                                 contentDescription = null,
-                                tint = if (item.isBought) ForestGreen else Color.Gray
+                                tint = if (item.isBought) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
@@ -114,20 +113,20 @@ fun ShoppingScreen(repository: AppRepository) {
                                     item.ingredientName,
                                     fontSize = 16.sp,
                                     textDecoration = if (item.isBought) TextDecoration.LineThrough else null,
-                                    color = if (item.isBought) Color.Gray else MaterialTheme.colorScheme.onSurface
+                                    color = if (item.isBought) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                                 )
                                 if (item.dishNames.isNotEmpty()) {
                                     Text(
                                         "Cho món: ${item.dishNames.joinToString(", ")}",
                                         fontSize = 12.sp,
-                                        color = Color.Gray
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
                             Text(
                                 "${item.neededQuantity} ${item.unit}",
                                 fontWeight = FontWeight.Bold,
-                                color = ForestGreen
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                         HorizontalDivider()
@@ -138,7 +137,7 @@ fun ShoppingScreen(repository: AppRepository) {
                 if (boughtCount > 0) {
                     Button(
                         onClick = { repository.bulkAddBoughtToPantry() },
-                        colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)

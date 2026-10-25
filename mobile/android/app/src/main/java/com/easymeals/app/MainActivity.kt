@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import com.easymeals.app.data.db.AppRepository
 import com.easymeals.app.ui.screens.*
 import com.easymeals.app.ui.theme.EasyMealsTheme
-import com.easymeals.app.ui.theme.ForestGreen
 
 enum class AppTab(val title: String, val icon: ImageVector) {
     TODAY("Hôm nay", Icons.Default.DinnerDining),
@@ -75,6 +74,7 @@ fun MainContent(repository: AppRepository) {
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 tonalElevation = 8.dp
             ) {
                 AppTab.entries.forEach { tab ->

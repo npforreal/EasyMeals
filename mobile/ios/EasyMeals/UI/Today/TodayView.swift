@@ -102,7 +102,7 @@ public struct TodayView: View {
                 if plan.eatenAt != nil {
                     Label("Đã ăn", systemImage: "checkmark.circle.fill")
                         .font(.caption.bold())
-                        .foregroundColor(.green)
+                        .foregroundColor(AppColors.primary)
                 }
             }
 
@@ -123,8 +123,8 @@ public struct TodayView: View {
                                 .font(.caption2)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(Color.orange.opacity(0.15))
-                                .foregroundColor(.orange)
+                                .background(AppColors.warning.opacity(0.15))
+                                .foregroundColor(AppColors.warning)
                                 .cornerRadius(6)
                         }
                         Button {

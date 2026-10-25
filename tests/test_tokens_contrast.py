@@ -87,3 +87,31 @@ def test_neutrals_wcag_aa_contrast():
         assert contrast_ratio(danger, surface) >= 4.5, (
             f"Danger trên surface ({mode}) không đạt 4.5:1"
         )
+
+
+def test_no_hardcoded_colors_in_mobile_code():
+    import os
+    import re
+
+    patterns = [r"ForestGreen", r"Color\(0x", r"Color\(red:"]
+    # Bỏ qua các file định nghĩa token hệ thống
+    token_files = {"GeneratedTokens.kt", "GeneratedTokens.swift", "Color.kt", "Theme.swift"}
+
+    violations = []
+    mobile_dir = ROOT / "mobile"
+    for root, _, files in os.walk(mobile_dir):
+        for f in files:
+            if f.endswith((".kt", ".swift")) and f not in token_files:
+                path = Path(root) / f
+                with open(path, encoding="utf-8") as fp:
+                    for line_no, line in enumerate(fp, 1):
+                        for p in patterns:
+                            if re.search(p, line):
+                                violations.append(
+                                    f"{path.relative_to(ROOT)}:{line_no}: {line.strip()}"
+                                )
+
+    assert not violations, (
+        "Phát hiện hardcode màu trong UI mobile (phải dùng design tokens):\n"
+        + "\n".join(violations)
+    )

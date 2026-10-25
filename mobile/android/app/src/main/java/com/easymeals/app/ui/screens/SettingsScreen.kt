@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.easymeals.app.data.backup.BackupManager
 import com.easymeals.app.data.db.AppRepository
-import com.easymeals.app.ui.theme.ForestGreen
+import com.easymeals.app.ui.theme.GeneratedTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +57,7 @@ fun SettingsScreen(repository: AppRepository) {
             // Privacy Banner
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = ForestGreen.copy(alpha = 0.1f)
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -68,12 +68,12 @@ fun SettingsScreen(repository: AppRepository) {
                     Icon(
                         Icons.Default.Security,
                         contentDescription = null,
-                        tint = ForestGreen,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(32.dp)
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text("100% Ngoại tuyến & Riêng tư", fontWeight = FontWeight.Bold, color = ForestGreen)
+                        Text("100% Ngoại tuyến & Riêng tư", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             "EasyMeals không yêu cầu quyền Internet. Dữ liệu của bạn được lưu hoàn toàn trên thiết bị.",
@@ -135,9 +135,9 @@ fun SettingsScreen(repository: AppRepository) {
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             listOf(
-                                Triple("green", "Xanh lá", Color(0xFF3F6B3A)),
-                                Triple("terracotta", "Cam đất", Color(0xFFA04A26)),
-                                Triple("ocean", "Xanh biển", Color(0xFF285E86))
+                                Triple("green", "Xanh lá", GeneratedTokens.Palettes.Green.light.primary),
+                                Triple("terracotta", "Cam đất", GeneratedTokens.Palettes.Terracotta.light.primary),
+                                Triple("ocean", "Xanh biển", GeneratedTokens.Palettes.Ocean.light.primary)
                             ).forEach { (id, label, color) ->
                                 FilterChip(
                                     selected = currentPalette == id,
@@ -162,8 +162,8 @@ fun SettingsScreen(repository: AppRepository) {
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             listOf(
-                                Triple("plum", "Tím mận", Color(0xFF6E396E)),
-                                Triple("peach", "Hồng đào", Color(0xFF9C435A))
+                                Triple("plum", "Tím mận", GeneratedTokens.Palettes.Plum.light.primary),
+                                Triple("peach", "Hồng đào", GeneratedTokens.Palettes.Peach.light.primary)
                             ).forEach { (id, label, color) ->
                                 FilterChip(
                                     selected = currentPalette == id,
@@ -356,7 +356,7 @@ fun SettingsScreen(repository: AppRepository) {
                             importError = "Dữ liệu JSON không hợp lệ: ${e.message}"
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text("Nhập")
                 }
@@ -375,7 +375,7 @@ fun SettingsRow(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    iconTint: Color = ForestGreen,
+    iconTint: Color = MaterialTheme.colorScheme.primary,
     onClick: () -> Unit
 ) {
     Surface(

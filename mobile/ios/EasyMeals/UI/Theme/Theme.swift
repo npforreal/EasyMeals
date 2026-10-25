@@ -47,14 +47,26 @@ public enum AppColors {
         return ThemeManager.shared.paletteColors(isDark: isDark).primarySoft
     }
 
-    public static let accent = Color(red: 0.96, green: 0.50, blue: 0.09) // Warm orange
-    public static let surface = Color(UIColor.systemBackground)
+    public static var accent: Color {
+        let isDark = (UserDefaults.standard.string(forKey: "theme_mode") == "dark")
+        return isDark ? GeneratedTokens.Neutrals.dark.accent : GeneratedTokens.Neutrals.light.accent
+    }
+
+    public static var surface = Color(UIColor.systemBackground)
     public static let secondarySurface = Color(UIColor.secondarySystemBackground)
     public static let tertiarySurface = Color(UIColor.tertiarySystemBackground)
     public static let textPrimary = Color(UIColor.label)
     public static let textSecondary = Color(UIColor.secondaryLabel)
-    public static let danger = Color(red: 0.85, green: 0.20, blue: 0.18)
-    public static let warning = Color(red: 0.95, green: 0.65, blue: 0.15)
+
+    public static var danger: Color {
+        let isDark = (UserDefaults.standard.string(forKey: "theme_mode") == "dark")
+        return isDark ? GeneratedTokens.Neutrals.dark.danger : GeneratedTokens.Neutrals.light.danger
+    }
+
+    public static var warning: Color {
+        let isDark = (UserDefaults.standard.string(forKey: "theme_mode") == "dark")
+        return isDark ? GeneratedTokens.Neutrals.dark.honey : GeneratedTokens.Neutrals.light.honey
+    }
 }
 
 public struct CardModifier: ViewModifier {
