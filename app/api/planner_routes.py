@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 from decimal import Decimal
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -23,10 +24,15 @@ from app.domain.models import (
 )
 from app.domain.planner import (
     MealAlreadyEatenError,
+    add_dish_to_meal,
     calculate_shopping_budget,
     generate_period_plan,
+    merge_compatible_shopping_items,
     recompute_shopping_list,
     regenerate_single_meal,
+    remove_dish_from_meal,
+    reschedule_meal,
+    swap_dish_in_meal,
 )
 from app.schemas import (
     MealPlanInput,
@@ -34,14 +40,19 @@ from app.schemas import (
     PantryLotInput,
     PlannedDishResponse,
     ShoppingItemResponse,
+    StatelessAddDishRequest,
     StatelessEatRequest,
     StatelessEatResponse,
     StatelessGeneratePlanRequest,
     StatelessGeneratePlanResponse,
+    StatelessMergeShoppingRequest,
     StatelessRecomputeShoppingRequest,
     StatelessRecomputeShoppingResponse,
     StatelessRegenerateMealRequest,
     StatelessRegenerateMealResponse,
+    StatelessRemoveDishRequest,
+    StatelessRescheduleMealRequest,
+    StatelessSwapDishRequest,
     StatelessUndoEatRequest,
     StatelessUndoEatResponse,
     StockMovementResponse,
@@ -426,3 +437,148 @@ def recompute_stateless_shopping(
         items_with_price_count=budget["items_with_price_count"],
         total_items_count=budget["total_items_count"],
     )
+
+
+def _to_plan_response(plan: MealPlan) -> MealPlanResponse:
+    return MealPlanResponse(
+        id=plan.id,
+        planned_for=plan.planned_for,
+        meal_period=plan.meal_period,
+        period_id=plan.period_id,
+        eaten_at=plan.eaten_at,
+        notes=plan.notes,
+        dishes=[
+            PlannedDishResponse(
+                id=d.id,
+                meal_plan_id=d.meal_plan_id,
+                recipe_id=d.recipe_id,
+                recipe_name=d.recipe_name,
+                category=d.category,
+                is_leftover=d.is_leftover,
+                servings=d.servings,
+            )
+            for d in plan.dishes
+        ],
+    )
+
+
+@router.post("/swap-dish", response_model=MealPlanResponse)
+def swap_dish(
+    payload: StatelessSwapDishRequest,
+    repo: Repository = Depends(get_repo),
+) -> MealPlanResponse:
+    """Đổi 1 món cụ thể trong bữa (B1 & B2)."""
+    meal_plan = _to_domain_meal_plan(payload.meal_plan)
+    new_recipe = repo.get_recipe_by_id(payload.new_recipe_id)
+    if not new_recipe:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy công thức món ăn (ID: {payload.new_recipe_id})",
+        )
+    all_plans = [_to_domain_meal_plan(p) for p in payload.all_plans_in_period]
+    try:
+        updated = swap_dish_in_meal(meal_plan, payload.old_dish_id, new_recipe, all_plans)
+    except MealAlreadyEatenError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+
+    return _to_plan_response(updated)
+
+
+@router.post("/add-dish", response_model=MealPlanResponse)
+def add_dish(
+    payload: StatelessAddDishRequest,
+    repo: Repository = Depends(get_repo),
+) -> MealPlanResponse:
+    """Thêm 1 món vào bữa ăn (B1 & B2)."""
+    meal_plan = _to_domain_meal_plan(payload.meal_plan)
+    recipe = repo.get_recipe_by_id(payload.recipe_id)
+    if not recipe:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy công thức món ăn (ID: {payload.recipe_id})",
+        )
+    try:
+        updated = add_dish_to_meal(meal_plan, recipe, payload.servings)
+    except MealAlreadyEatenError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+
+    return _to_plan_response(updated)
+
+
+@router.post("/remove-dish", response_model=MealPlanResponse)
+def remove_dish(
+    payload: StatelessRemoveDishRequest,
+) -> MealPlanResponse:
+    """Bỏ 1 món khỏi bữa ăn (B1 & B2)."""
+    meal_plan = _to_domain_meal_plan(payload.meal_plan)
+    try:
+        updated = remove_dish_from_meal(meal_plan, payload.dish_id)
+    except MealAlreadyEatenError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+
+    return _to_plan_response(updated)
+
+
+@router.post("/reschedule-meal", response_model=MealPlanResponse)
+def reschedule(
+    payload: StatelessRescheduleMealRequest,
+) -> MealPlanResponse:
+    """Chuyển ngày/bữa của một bữa ăn (B1 & B2)."""
+    meal_plan = _to_domain_meal_plan(payload.meal_plan)
+    all_plans = [_to_domain_meal_plan(p) for p in payload.all_meal_plans]
+    try:
+        updated = reschedule_meal(meal_plan, payload.new_date, payload.new_period, all_plans)
+    except MealAlreadyEatenError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+
+    return _to_plan_response(updated)
+
+
+@router.post("/merge-shopping", response_model=list[ShoppingItemResponse])
+def merge_shopping(
+    payload: StatelessMergeShoppingRequest,
+) -> list[ShoppingItemResponse]:
+    """Gộp các món đi chợ cùng nguyên liệu và cùng thứ nguyên (B3)."""
+    from app.domain.models import ShoppingItem
+
+    domain_items = [
+        ShoppingItem(
+            id=it.id or UUID("00000000-0000-0000-0000-000000000000"),
+            ingredient_id=it.ingredient_id,
+            ingredient_name=it.ingredient_name,
+            needed_quantity=it.needed_quantity,
+            unit=it.unit,
+            is_bought=it.is_bought,
+            dish_names=it.dish_names,
+            category=it.category,
+            price=it.price,
+            bought_quantity=it.bought_quantity,
+            source=it.source,
+        )
+        for it in payload.items
+    ]
+    merged = merge_compatible_shopping_items(domain_items)
+    return [
+        ShoppingItemResponse(
+            id=item.id,
+            ingredient_id=item.ingredient_id,
+            ingredient_name=item.ingredient_name,
+            needed_quantity=item.needed_quantity,
+            unit=item.unit,
+            dish_names=item.dish_names,
+            category=item.category,
+            price=item.price,
+            is_bought=item.is_bought,
+            bought_quantity=item.bought_quantity,
+            source=item.source,
+        )
+        for item in merged
+    ]

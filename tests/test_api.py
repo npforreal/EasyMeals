@@ -295,3 +295,117 @@ def test_stateless_regenerate_meal_and_recompute_shopping_api(client, repo):
     assert len(recomp_data["shopping_list"]) > 0
     assert "total_estimated_budget" in recomp_data
     assert "total_spent" in recomp_data
+
+
+def test_stateless_dish_editing_and_reschedule_api(client, repo):
+    """B1 & B2: Test API đổi món, thêm món, bỏ món, chuyển ngày bữa và gộp shopping list."""
+    res_gen = client.post(
+        "/api/planner/generate",
+        json={
+            "pantry": [],
+            "start_date": "2026-10-25",
+            "days": 2,
+            "options": {"allow_leftovers": False},
+        },
+    )
+    meals = res_gen.json()["meals"]
+    meal = meals[0]
+    dish_to_swap = meal["dishes"][0]
+    recipes = repo.get_recipes()
+
+    # Tìm một món mới chưa có
+    used_ids = {d["recipe_id"] for p in meals for d in p["dishes"]}
+    new_recipe = [r for r in recipes if str(r.id) not in used_ids][0]
+
+    # 1. Đổi món
+    res_swap = client.post(
+        "/api/planner/swap-dish",
+        json={
+            "meal_plan": meal,
+            "old_dish_id": dish_to_swap["id"],
+            "new_recipe_id": str(new_recipe.id),
+            "all_plans_in_period": meals,
+        },
+    )
+    assert res_swap.status_code == 200
+    swapped_meal = res_swap.json()
+    assert any(d["recipe_id"] == str(new_recipe.id) for d in swapped_meal["dishes"])
+
+    # 2. Thêm món
+    another_recipe = [
+        r
+        for r in recipes
+        if str(r.id) not in {d["recipe_id"] for d in swapped_meal["dishes"]}
+        and r.category.value == "canh"
+    ][0]
+    res_add = client.post(
+        "/api/planner/add-dish",
+        json={
+            "meal_plan": swapped_meal,
+            "recipe_id": str(another_recipe.id),
+            "servings": 2,
+        },
+    )
+    assert res_add.status_code == 200
+    meal_with_added = res_add.json()
+    assert len(meal_with_added["dishes"]) == len(swapped_meal["dishes"]) + 1
+
+    # 3. Bỏ món vừa thêm
+    dish_added = next(
+        d for d in meal_with_added["dishes"] if d["recipe_id"] == str(another_recipe.id)
+    )
+    res_remove = client.post(
+        "/api/planner/remove-dish",
+        json={
+            "meal_plan": meal_with_added,
+            "dish_id": dish_added["id"],
+        },
+    )
+    assert res_remove.status_code == 200
+    meal_after_remove = res_remove.json()
+    assert len(meal_after_remove["dishes"]) == len(swapped_meal["dishes"])
+
+    # 4. Chuyển ngày/bữa
+    res_resched = client.post(
+        "/api/planner/reschedule-meal",
+        json={
+            "meal_plan": meal_after_remove,
+            "new_date": "2026-10-28",
+            "new_period": "lunch",
+            "all_meal_plans": meals,
+        },
+    )
+    assert res_resched.status_code == 200
+    assert res_resched.json()["planned_for"] == "2026-10-28"
+
+    # 5. Gộp danh sách mua
+    ing = repo.get_ingredients()[0]
+    res_merge = client.post(
+        "/api/planner/merge-shopping",
+        json={
+            "items": [
+                {
+                    "ingredient_id": str(ing.id),
+                    "ingredient_name": ing.name,
+                    "needed_quantity": "200",
+                    "unit": "g",
+                    "dish_names": ["Món 1"],
+                    "price": "20000",
+                },
+                {
+                    "ingredient_id": str(ing.id),
+                    "ingredient_name": ing.name,
+                    "needed_quantity": "0.3",
+                    "unit": "kg",
+                    "dish_names": ["Món 2"],
+                    "price": "30000",
+                },
+            ]
+        },
+    )
+    assert res_merge.status_code == 200
+    merged_items = res_merge.json()
+    assert len(merged_items) == 1
+    assert float(merged_items[0]["needed_quantity"]) == 500.0  # 200g + 300g
+    assert merged_items[0]["unit"] == "g"
+    assert float(merged_items[0]["price"]) == 50000.0

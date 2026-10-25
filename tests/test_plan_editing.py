@@ -17,11 +17,16 @@ from app.domain.models import (
 )
 from app.domain.planner import (
     MealAlreadyEatenError,
+    add_dish_to_meal,
     calculate_shopping_budget,
     generate_period_plan,
     group_shopping_items_by_category,
+    merge_compatible_shopping_items,
     recompute_shopping_list,
     regenerate_single_meal,
+    remove_dish_from_meal,
+    reschedule_meal,
+    swap_dish_in_meal,
 )
 from app.storage.repository import InMemoryRepository
 
@@ -207,3 +212,141 @@ def test_group_shopping_items_by_category():
     assert "khac" in grouped
     assert len(grouped["thit"]) == 1
     assert grouped["thit"][0].ingredient_name == "Thịt bò"
+
+
+def test_swap_dish_in_meal_success_and_protection():
+    """B1 & B2 - Đổi 1 món cụ thể trong bữa và kiểm tra bảo vệ bữa đã ăn."""
+    repo = InMemoryRepository()
+    recipes = repo.get_recipes()
+    plans, _ = generate_period_plan(
+        start_date=date(2026, 10, 26),
+        end_date=date(2026, 10, 26),
+        recipes=recipes,
+        current_pantry_lots=[],
+        periods=[MealPeriod.LUNCH],
+        allow_leftovers=False,
+    )
+    plan = plans[0]
+    old_dish = plan.dishes[0]
+
+    # Tìm một món mới chưa có trong bữa
+    existing_recipe_ids = {d.recipe_id for d in plan.dishes}
+    new_recipe = [r for r in recipes if r.id not in existing_recipe_ids][0]
+
+    # Đổi món thành công
+    updated = swap_dish_in_meal(plan, old_dish.id, new_recipe, all_plans_in_period=plans)
+    assert any(d.recipe_id == new_recipe.id for d in updated.dishes)
+    assert not any(d.id == old_dish.id for d in updated.dishes)
+
+    # Đánh dấu đã ăn -> đổi món phải ném MealAlreadyEatenError
+    updated.eaten_at = datetime.now()
+    another_recipe = [r for r in recipes if r.id not in {d.recipe_id for d in updated.dishes}][0]
+    with pytest.raises(MealAlreadyEatenError):
+        swap_dish_in_meal(updated, updated.dishes[0].id, another_recipe)
+
+
+def test_add_and_remove_dish_in_meal():
+    """B1 & B2 - Thêm món, kiểm tra giới hạn nhóm (<=2 món/nhóm), bỏ món và bảo vệ bữa đã ăn."""
+    repo = InMemoryRepository()
+    recipes = repo.get_recipes()
+    plans, _ = generate_period_plan(
+        start_date=date(2026, 10, 26),
+        end_date=date(2026, 10, 26),
+        recipes=recipes,
+        current_pantry_lots=[],
+        periods=[MealPeriod.LUNCH],
+        allow_leftovers=False,
+    )
+    plan = plans[0]
+
+    # Tìm một món mặn chưa có
+    man_recipe = [
+        r
+        for r in recipes
+        if r.category == DishCategory.MAN and r.id not in {d.recipe_id for d in plan.dishes}
+    ][0]
+
+    # Thêm món mặn thứ 2 (hợp lệ)
+    initial_count = len(plan.dishes)
+    add_dish_to_meal(plan, man_recipe)
+    assert len(plan.dishes) == initial_count + 1
+
+    # Thử thêm món mặn thứ 3 -> phải ném ValueError vì vượt trần 2 món/nhóm
+    extra_man = [
+        r
+        for r in recipes
+        if r.category == DishCategory.MAN and r.id not in {d.recipe_id for d in plan.dishes}
+    ][0]
+    with pytest.raises(ValueError, match="giới hạn tối đa 2 món"):
+        add_dish_to_meal(plan, extra_man)
+
+    # Bỏ món vừa thêm
+    dish_to_remove = next(d for d in plan.dishes if d.recipe_id == man_recipe.id)
+    remove_dish_from_meal(plan, dish_to_remove.id)
+    assert len(plan.dishes) == initial_count
+
+    # Bỏ đến khi chỉ còn 1 món thì không được bỏ tiếp
+    while len(plan.dishes) > 1:
+        plan.dishes.pop()
+    with pytest.raises(ValueError, match="Không thể bỏ món duy nhất"):
+        remove_dish_from_meal(plan, plan.dishes[0].id)
+
+
+def test_reschedule_meal_and_conflict_check():
+    """B1 & B2 - Chuyển ngày/bữa, kiểm tra trùng lặp và bảo vệ bữa đã ăn."""
+    repo = InMemoryRepository()
+    recipes = repo.get_recipes()
+    plans, _ = generate_period_plan(
+        start_date=date(2026, 10, 26),
+        end_date=date(2026, 10, 27),
+        recipes=recipes,
+        current_pantry_lots=[],
+        allow_leftovers=False,
+    )
+    # plans có 4 bữa: (26 trưa, 26 tối, 27 trưa, 27 tối)
+    target = plans[0]  # 26 trưa
+
+    # Chuyển tới 28 trưa (chưa có bữa nào) -> thành công
+    reschedule_meal(target, date(2026, 10, 28), MealPeriod.LUNCH, plans)
+    assert target.planned_for == date(2026, 10, 28)
+
+    # Chuyển tới 27 tối (đã có bữa tối ngày 27) -> phải báo lỗi xung đột
+    with pytest.raises(ValueError, match="Đã có bữa ăn khác"):
+        reschedule_meal(target, date(2026, 10, 27), MealPeriod.DINNER, plans)
+
+    # Đã ăn thì không được chuyển
+    target.eaten_at = datetime.now()
+    with pytest.raises(MealAlreadyEatenError):
+        reschedule_meal(target, date(2026, 10, 29), MealPeriod.LUNCH, plans)
+
+
+def test_merge_compatible_shopping_items():
+    """B3 - Gộp các món đi chợ cùng nguyên liệu và cùng thứ nguyên (g + kg, ml + l)."""
+    ing_id = uuid4()
+    items = [
+        ShoppingItem(
+            ingredient_id=ing_id,
+            ingredient_name="Thịt ba chỉ",
+            needed_quantity=Decimal("300"),
+            unit=QuantityUnit.GRAM,
+            dish_names=["Thịt kho"],
+            price=Decimal("45000"),
+        ),
+        ShoppingItem(
+            ingredient_id=ing_id,
+            ingredient_name="Thịt ba chỉ",
+            needed_quantity=Decimal("0.5"),
+            unit=QuantityUnit.KILOGRAM,
+            dish_names=["Thịt luộc"],
+            price=Decimal("75000"),
+        ),
+    ]
+
+    merged = merge_compatible_shopping_items(items)
+    assert len(merged) == 1
+    # 300g + 0.5kg (500g) = 800g
+    assert merged[0].needed_quantity == Decimal("800")
+    assert merged[0].unit == QuantityUnit.GRAM
+    assert "Thịt kho" in merged[0].dish_names
+    assert "Thịt luộc" in merged[0].dish_names
+    assert merged[0].price == Decimal("120000")

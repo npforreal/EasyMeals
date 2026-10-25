@@ -256,3 +256,42 @@ class StatelessRecomputeShoppingResponse(BaseModel):
     total_spent: Decimal
     items_with_price_count: int
     total_items_count: int
+
+
+class StatelessSwapDishRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    meal_plan: MealPlanInput
+    old_dish_id: UUID
+    new_recipe_id: UUID
+    all_plans_in_period: list[MealPlanInput] = Field(default_factory=list, max_length=50)
+
+
+class StatelessAddDishRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    meal_plan: MealPlanInput
+    recipe_id: UUID
+    servings: int | None = Field(default=None, ge=1, le=20)
+
+
+class StatelessRemoveDishRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    meal_plan: MealPlanInput
+    dish_id: UUID
+
+
+class StatelessRescheduleMealRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    meal_plan: MealPlanInput
+    new_date: date
+    new_period: MealPeriod
+    all_meal_plans: list[MealPlanInput] = Field(max_length=50)
+
+
+class StatelessMergeShoppingRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    items: list[ShoppingItemResponse] = Field(max_length=200)

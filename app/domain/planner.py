@@ -652,3 +652,166 @@ def group_shopping_items_by_category(
         grouped[cat].append(it)
 
     return {cat: items_list for cat, items_list in grouped.items() if items_list}
+
+
+def swap_dish_in_meal(
+    meal_plan: MealPlan,
+    old_dish_id: UUID,
+    new_recipe: Recipe,
+    all_plans_in_period: list[MealPlan] | None = None,
+) -> MealPlan:
+    """B1 & B2: Đổi 1 món cụ thể trong bữa sang món mới."""
+    if meal_plan.eaten_at is not None:
+        raise MealAlreadyEatenError(
+            "Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. "
+            "Hãy hoàn tác bữa ăn trước nếu bạn muốn đổi món."
+        )
+
+    dish_idx = next((i for i, d in enumerate(meal_plan.dishes) if d.id == old_dish_id), None)
+    if dish_idx is None:
+        raise ValueError(f"Không tìm thấy món có ID {old_dish_id} trong bữa ăn.")
+
+    if all_plans_in_period:
+        other_recipe_ids = {
+            d.recipe_id
+            for p in all_plans_in_period
+            for d in p.dishes
+            if not d.is_leftover and (p.id != meal_plan.id or d.id != old_dish_id)
+        }
+        if new_recipe.id in other_recipe_ids:
+            raise ValueError(f"Món '{new_recipe.name}' đã được lên lịch trong chu kỳ thực đơn này.")
+
+    new_dish = PlannedDish(
+        id=uuid4(),
+        meal_plan_id=meal_plan.id,
+        recipe_id=new_recipe.id,
+        recipe_name=new_recipe.name,
+        category=new_recipe.category,
+        servings=new_recipe.servings,
+        is_leftover=False,
+    )
+    meal_plan.dishes[dish_idx] = new_dish
+    return meal_plan
+
+
+def add_dish_to_meal(
+    meal_plan: MealPlan,
+    recipe: Recipe,
+    servings: int | None = None,
+) -> MealPlan:
+    """B1 & B2: Thêm 1 món vào bữa ăn."""
+    if meal_plan.eaten_at is not None:
+        raise MealAlreadyEatenError(
+            "Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. "
+            "Hãy hoàn tác bữa ăn trước nếu bạn muốn thêm món."
+        )
+
+    if any(d.recipe_id == recipe.id for d in meal_plan.dishes):
+        raise ValueError(f"Món '{recipe.name}' đã có trong bữa ăn này.")
+
+    cat_count = sum(1 for d in meal_plan.dishes if d.category == recipe.category)
+    if cat_count >= MAX_DISHES_PER_CATEGORY:
+        cat_val = recipe.category.value
+        raise ValueError(
+            f"Bữa ăn đã đạt giới hạn tối đa {MAX_DISHES_PER_CATEGORY} món cho nhóm {cat_val}."
+        )
+
+    new_dish = PlannedDish(
+        id=uuid4(),
+        meal_plan_id=meal_plan.id,
+        recipe_id=recipe.id,
+        recipe_name=recipe.name,
+        category=recipe.category,
+        servings=servings or recipe.servings,
+        is_leftover=False,
+    )
+    meal_plan.dishes.append(new_dish)
+    return meal_plan
+
+
+def remove_dish_from_meal(
+    meal_plan: MealPlan,
+    dish_id: UUID,
+) -> MealPlan:
+    """B1 & B2: Bỏ 1 món khỏi bữa ăn."""
+    if meal_plan.eaten_at is not None:
+        raise MealAlreadyEatenError(
+            "Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. "
+            "Hãy hoàn tác bữa ăn trước nếu bạn muốn bỏ món."
+        )
+
+    dish_idx = next((i for i, d in enumerate(meal_plan.dishes) if d.id == dish_id), None)
+    if dish_idx is None:
+        raise ValueError(f"Không tìm thấy món có ID {dish_id} trong bữa ăn.")
+
+    if len(meal_plan.dishes) <= 1:
+        raise ValueError("Không thể bỏ món duy nhất còn lại trong bữa ăn.")
+
+    meal_plan.dishes.pop(dish_idx)
+    return meal_plan
+
+
+def reschedule_meal(
+    meal_plan: MealPlan,
+    new_date: date,
+    new_period: MealPeriod,
+    all_meal_plans: list[MealPlan],
+) -> MealPlan:
+    """B1 & B2: Chuyển ngày/bữa của một bữa ăn."""
+    if meal_plan.eaten_at is not None:
+        raise MealAlreadyEatenError(
+            "Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. "
+            "Hãy hoàn tác bữa ăn trước nếu bạn muốn chuyển ngày/bữa."
+        )
+
+    conflict = any(
+        p.id != meal_plan.id and p.planned_for == new_date and p.meal_period == new_period
+        for p in all_meal_plans
+    )
+    if conflict:
+        period_vn = "trưa" if new_period == MealPeriod.LUNCH else "tối"
+        raise ValueError(f"Đã có bữa ăn khác được lên lịch vào bữa {period_vn} ngày {new_date}.")
+
+    meal_plan.planned_for = new_date
+    meal_plan.meal_period = new_period
+    return meal_plan
+
+
+def merge_compatible_shopping_items(
+    items: list[ShoppingItem],
+) -> list[ShoppingItem]:
+    """B3: Gộp các món đi chợ cùng nguyên liệu và cùng thứ nguyên."""
+    merged_map: dict[tuple[UUID, str], ShoppingItem] = {}
+
+    for it in items:
+        dim = UNIT_DIMENSIONS.get(it.unit)
+        key = (it.ingredient_id, str(dim) if dim else str(it.unit))
+
+        existing = merged_map.get(key)
+        if existing is None:
+            merged_map[key] = ShoppingItem(
+                id=it.id,
+                ingredient_id=it.ingredient_id,
+                ingredient_name=it.ingredient_name,
+                needed_quantity=it.needed_quantity,
+                unit=it.unit,
+                is_bought=it.is_bought,
+                dish_names=list(it.dish_names),
+                category=it.category,
+                price=it.price,
+                bought_quantity=it.bought_quantity,
+                source=it.source,
+            )
+        else:
+            qty_converted = convert_quantity(it.needed_quantity, it.unit, existing.unit)
+            existing.needed_quantity += qty_converted
+            for dn in it.dish_names:
+                if dn not in existing.dish_names:
+                    existing.dish_names.append(dn)
+            if it.price and not existing.price:
+                existing.price = it.price
+            elif it.price and existing.price:
+                existing.price += it.price
+            existing.is_bought = existing.is_bought and it.is_bought
+
+    return list(merged_map.values())
