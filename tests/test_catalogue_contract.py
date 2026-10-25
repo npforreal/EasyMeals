@@ -105,6 +105,7 @@ def test_catalogue_json_structure() -> None:
     # 4. Hợp đồng quy đổi nguyên liệu (Conversions)
     from_ids = set()
     to_ids = set()
+    seen_pairs = set()
     for conv in conversions:
         assert isinstance(conv, dict)
         f_id = conv.get("from_ingredient_id")
@@ -112,9 +113,49 @@ def test_catalogue_json_structure() -> None:
         assert f_id in ing_ids, f"from_ingredient_id {f_id} không tồn tại!"
         assert t_id in ing_ids, f"to_ingredient_id {t_id} không tồn tại!"
         assert f_id != t_id, f"Quy đổi từ và đến cùng nguyên liệu: {f_id}"
+
+        pair = (f_id, t_id)
+        assert pair not in seen_pairs, f"Trùng lặp cặp quy đổi: {pair}"
+        seen_pairs.add(pair)
+
+        assert "note" in conv and conv["note"].strip(), f"Note quy đổi rỗng: {conv}"
+        assert conv.get("from_unit") and conv.get("to_unit"), f"Thiếu đơn vị trong quy đổi: {conv}"
+
         ratio = float(conv.get("ratio") or 0)
         assert ratio > 0, f"Ratio quy đổi <= 0: {conv}"
         from_ids.add(f_id)
         to_ids.add(t_id)
 
     assert not from_ids.intersection(to_ids), "Phát hiện chuỗi quy đổi đa bước hoặc vòng lặp!"
+
+
+def test_rice_conversion_coverage() -> None:
+    with open(CATALOGUE_PATH, encoding="utf-8") as f:
+        data = json.load(f)
+
+    conversions = data.get("conversions", [])
+    target_ids = {c["to_ingredient_id"] for c in conversions}
+    source_ids = {c["from_ingredient_id"] for c in conversions}
+
+    # ID Gạo phải nằm trong các nguồn quy đổi
+    gao_ids = [ing["id"] for ing in data["ingredients"] if ing["name"].lower() == "gạo"]
+    assert any(gid in source_ids for gid in gao_ids), (
+        "Phải có ít nhất một nguồn Gạo trong conversions"
+    )
+
+    # Mọi nguyên liệu bắt đầu bằng 'Cơm' hoặc chứa 'cơm chín', 'xôi'
+    # đều phải có ít nhất 1 nguồn quy đổi
+    for ing in data["ingredients"]:
+        n = ing["name"].lower()
+        if n.startswith("cơm") or "cơm chín" in n or "xôi" in n:
+            assert ing["id"] in target_ids, (
+                f"Nguyên liệu chế biến '{ing['name']}' ({ing['id']}) phải có quy đổi từ gạo!"
+            )
+
+
+def test_conversion_coverage_report_script() -> None:
+    from scripts.report_conversion_coverage import analyze_coverage
+
+    report = analyze_coverage()
+    assert len(report["orphans"]) == 0, f"Có nguyên liệu chế biến mồ côi: {report['orphans']}"
+    assert report["total_conversions"] >= 2
