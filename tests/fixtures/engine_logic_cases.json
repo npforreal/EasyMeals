@@ -185,7 +185,7 @@
    ],
    "movements": [
     {
-     "id": "00000000-0000-0000-0000-000000000902",
+     "id": "ffffffffffffffffffffffffffff0001",
      "pantry_lot_id": "00000000-0000-0000-0000-000000000007",
      "delta": "-600",
      "reason": "meal_consumption",
@@ -603,7 +603,7 @@
    ],
    "movements": [
     {
-     "id": "00000000-0000-0000-0000-000000000031",
+     "id": "ffffffffffffffffffffffffffff0001",
      "pantry_lot_id": "00000000-0000-0000-0000-000000000021",
      "delta": "-250",
      "reason": "meal_consumption",
@@ -611,7 +611,7 @@
      "idempotency_key": "k1"
     },
     {
-     "id": "00000000-0000-0000-0000-000000000032",
+     "id": "ffffffffffffffffffffffffffff0002",
      "pantry_lot_id": "00000000-0000-0000-0000-000000000022",
      "delta": "-100",
      "reason": "meal_consumption",
@@ -1497,6 +1497,115 @@
       "200",
       "g"
      ]
+    }
+   }
+  },
+  {
+   "name": "undo_deleted_lot_skipped_other_lots_restored",
+   "op": "undo",
+   "meal_plan_id": "00000000-0000-0000-0000-0000000000aa",
+   "pantry": [
+    {
+     "id": "00000000-0000-0000-0000-000000000040",
+     "ingredient_id": "00000000-0000-0000-0000-000000000105",
+     "name": "Đậu hũ",
+     "purchased": "1000",
+     "remaining": "700",
+     "unit": "g",
+     "expires_at": null
+    }
+   ],
+   "movements": [
+    {
+     "id": "00000000-0000-0000-0000-000000000700",
+     "pantry_lot_id": "00000000-0000-0000-0000-000000000099",
+     "delta": "-200",
+     "reason": "meal_consumption",
+     "meal_plan_id": "00000000-0000-0000-0000-0000000000aa",
+     "idempotency_key": "eat_a_1"
+    },
+    {
+     "id": "00000000-0000-0000-0000-000000000701",
+     "pantry_lot_id": "00000000-0000-0000-0000-000000000040",
+     "delta": "-100",
+     "reason": "meal_consumption",
+     "meal_plan_id": "00000000-0000-0000-0000-0000000000aa",
+     "idempotency_key": "eat_a_2"
+    }
+   ],
+   "expect": {
+    "remaining": {
+     "00000000-0000-0000-0000-000000000040": "800"
+    }
+   }
+  },
+  {
+   "name": "undo_restores_only_that_meal_delta",
+   "op": "undo",
+   "meal_plan_id": "00000000-0000-0000-0000-0000000000aa",
+   "pantry": [
+    {
+     "id": "00000000-0000-0000-0000-000000000040",
+     "ingredient_id": "00000000-0000-0000-0000-000000000105",
+     "name": "Cá lóc",
+     "purchased": "1000",
+     "remaining": "550",
+     "unit": "g",
+     "expires_at": null
+    }
+   ],
+   "movements": [
+    {
+     "id": "00000000-0000-0000-0000-000000000700",
+     "pantry_lot_id": "00000000-0000-0000-0000-000000000040",
+     "delta": "-300",
+     "reason": "meal_consumption",
+     "meal_plan_id": "00000000-0000-0000-0000-0000000000aa",
+     "idempotency_key": "eat_a_1"
+    },
+    {
+     "id": "00000000-0000-0000-0000-000000000701",
+     "pantry_lot_id": "00000000-0000-0000-0000-000000000040",
+     "delta": "-150",
+     "reason": "meal_consumption",
+     "meal_plan_id": "00000000-0000-0000-0000-0000000000bb",
+     "idempotency_key": "eat_b_1"
+    }
+   ],
+   "expect": {
+    "remaining": {
+     "00000000-0000-0000-0000-000000000040": "850"
+    }
+   }
+  },
+  {
+   "name": "undo_partial_deduction_restores_exact_delta",
+   "op": "undo",
+   "meal_plan_id": "00000000-0000-0000-0000-0000000000aa",
+   "pantry": [
+    {
+     "id": "00000000-0000-0000-0000-000000000040",
+     "ingredient_id": "00000000-0000-0000-0000-000000000105",
+     "name": "Sườn non heo",
+     "purchased": "2000",
+     "remaining": "1900",
+     "unit": "g",
+     "expires_at": null
+    }
+   ],
+   "movements": [
+    {
+     "id": "00000000-0000-0000-0000-000000000700",
+     "pantry_lot_id": "00000000-0000-0000-0000-000000000040",
+     "delta": "-100",
+     "reason": "meal_consumption",
+     "meal_plan_id": "00000000-0000-0000-0000-0000000000aa",
+     "idempotency_key": "eat_a_partial"
+    }
+   ],
+   "expect": {
+    "remaining": {
+     "00000000-0000-0000-0000-000000000040": "2000"
     }
    }
   }
