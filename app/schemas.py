@@ -8,7 +8,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from app.constants import PLAN_DEFAULT_DAYS, PLAN_MAX_DAYS, PLAN_MIN_DAYS
+from app.constants import (
+    LEFTOVER_DEFAULT_DAYS,
+    LEFTOVER_MAX_DAYS,
+    LEFTOVER_MIN_DAYS,
+    PLAN_DEFAULT_DAYS,
+    PLAN_MAX_DAYS,
+    PLAN_MIN_DAYS,
+)
 from app.domain.models import DishCategory, MealPeriod, QuantityUnit, StockMovementReason
 
 
@@ -68,6 +75,10 @@ class PlanOptions(BaseModel):
     model_config = {"extra": "forbid"}
 
     allow_leftovers: bool = True
+    # Đồ dư dùng lại tối đa 2 ngày sau ngày nấu (quyết định chủ dự án), cấu hình 1-3.
+    leftover_days: int = Field(
+        default=LEFTOVER_DEFAULT_DAYS, ge=LEFTOVER_MIN_DAYS, le=LEFTOVER_MAX_DAYS
+    )
 
 
 class StatelessGeneratePlanRequest(BaseModel):

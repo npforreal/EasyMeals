@@ -84,6 +84,7 @@ def generate_stateless_plan(
             recipes=recipes,
             current_pantry_lots=domain_lots,
             allow_leftovers=payload.options.allow_leftovers,
+            leftover_days=payload.options.leftover_days,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))

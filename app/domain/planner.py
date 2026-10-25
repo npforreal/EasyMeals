@@ -4,7 +4,13 @@ from collections import defaultdict
 from datetime import date, timedelta
 from uuid import UUID, uuid4
 
-from app.constants import PLAN_MAX_DAYS, PLAN_MIN_DAYS
+from app.constants import (
+    LEFTOVER_DEFAULT_DAYS,
+    LEFTOVER_MAX_DAYS,
+    LEFTOVER_MIN_DAYS,
+    PLAN_MAX_DAYS,
+    PLAN_MIN_DAYS,
+)
 from app.domain.inventory import (
     aggregate_requirements,
     check_recipe_stock,
@@ -24,6 +30,43 @@ from app.domain.models import (
 )
 
 MAX_DISHES_PER_CATEGORY = 2
+
+
+class LeftoverDaysOutOfRangeError(ValueError):
+    """Raised when the leftover reuse window is outside the allowed 1-3 days."""
+
+    pass
+
+
+def _validate_leftover_days(leftover_days: int) -> int:
+    """Đồ dư dùng lại trong tối đa 2 ngày (mặc định), cấu hình được trong 1-3 ngày."""
+    if not LEFTOVER_MIN_DAYS <= leftover_days <= LEFTOVER_MAX_DAYS:
+        raise LeftoverDaysOutOfRangeError(
+            f"Số ngày dùng lại đồ dư phải từ {LEFTOVER_MIN_DAYS} đến {LEFTOVER_MAX_DAYS} ngày."
+        )
+    return leftover_days
+
+
+class AvailableLeftover:
+    """Sổ cái phần dư của một mẻ nấu.
+
+    Mô hình hoá nhất quán:
+      - số khẩu phần nấu: ``leftover``(PlannedDish).servings
+      - đã dùng: ``portions_remaining`` giảm 1 sau mỗi lần phần dư được lên lịch
+      - còn lại: ``portions_remaining`` (không bao giờ > số phần dư ban đầu,
+        nên một mẻ không được dùng vô hạn lần)
+      - ngày có thể dùng: từ ngày nấu tới ``deadline`` = ngày nấu + số ngày cấu hình
+        (mặc định 2, cấu hình 1-3) - hết hạn định nghĩa theo ngày, tiện so sánh múi giờ.
+    """
+
+    __slots__ = ("leftover", "portions_remaining", "deadline")
+
+    def __init__(self, leftover: PlannedDish, cook_date: date, leftover_days: int) -> None:
+        self.leftover = leftover
+        # Mỗi mẻ nấu (≥ 4 khẩu phần) chỉ dư đúng một phần ăn dùng lại một lần.
+        # (Khẩu phần thực tế theo hộ gia đình sẽ hoàn thiện ở Giai đoạn C1.)
+        self.portions_remaining = 1
+        self.deadline = cook_date + timedelta(days=leftover_days)
 
 
 class DishLimitExceededError(ValueError):
@@ -59,6 +102,7 @@ def generate_period_plan(
     allow_leftovers: bool = True,
     conversions: list[IngredientConversion] | None = None,
     raw_ingredient_names: dict[UUID, str] | None = None,
+    leftover_days: int = LEFTOVER_DEFAULT_DAYS,
 ) -> tuple[list[MealPlan], list[ShoppingItem]]:
     """Generate meal plans for the specified period.
 
@@ -68,11 +112,13 @@ def generate_period_plan(
       2. NO REPEAT RULE: A recipe cannot be newly cooked (is_leftover=False)
       more than once in the period.
       3. LEFTOVER UTILIZATION: Leftovers from earlier meals in the period can
-      be scheduled in later meals.
+      be scheduled in later meals. Mỗi phần dư dùng lại đúng một lần và chỉ
+      trong `leftover_days` ngày kể từ ngày nấu (mặc định 2, cấu hình 1-3).
       4. SHOPPING LIST: If pantry stock runs out of non-repeating dishes,
       pick suitable unique recipes
          and aggregate missing ingredients into a shopping list.
     """
+    _validate_leftover_days(leftover_days)
     if periods is None:
         periods = [MealPeriod.LUNCH, MealPeriod.DINNER]
 
@@ -129,18 +175,24 @@ def generate_period_plan(
 
                 # 1. Try to use an available leftover dish from a previous meal
                 if allow_leftovers and available_leftovers:
-                    for idx, leftover in enumerate(available_leftovers):
+                    for idx, entry in enumerate(available_leftovers):
+                        leftover = entry.leftover
+                        # Hạn an toàn: phần dư chỉ dùng được tới deadline của mẻ nấu.
+                        if entry.portions_remaining <= 0 or current_d > entry.deadline:
+                            continue
                         if leftover.category == cat:
                             dish_chosen = PlannedDish(
                                 id=uuid4(),
                                 meal_plan_id=meal_plan.id,
                                 recipe_id=leftover.recipe_id,
-                                recipe_name=f"{leftover.recipe_name} (Ăn lại)",
+                                recipe_name=leftover.recipe_name,
                                 category=cat,
                                 is_leftover=True,
                                 original_dish_id=leftover.id,
                                 servings=leftover.servings,
                             )
+                            # Trừ lượng đã dùng trong sổ cái: mỗi phần dư dùng lại một lần.
+                            entry.portions_remaining -= 1
                             available_leftovers.pop(idx)
                             break
 
@@ -249,7 +301,9 @@ def generate_period_plan(
                         # Example: Thịt kho tàu or Canh chua can yield 1
                         # leftover for dinner/next day lunch
                         if allow_leftovers and chosen_recipe.servings >= 4:
-                            available_leftovers.append(cooked_dish)
+                            available_leftovers.append(
+                                AvailableLeftover(cooked_dish, current_d, leftover_days)
+                            )
 
                 if dish_chosen:
                     meal_plan.dishes.append(dish_chosen)
