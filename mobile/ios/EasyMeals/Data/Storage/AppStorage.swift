@@ -230,8 +230,12 @@ public final class AppStorage: @unchecked Sendable {
         }
     }
 
-    public func addCustomShoppingItem(name: String, quantity: String, unit: String) {
-        let matchingIng = ingredients.first { $0.name.lowercased() == name.lowercased() }
+    /// Nhóm nguyên liệu trong catalogue (không thấy -> nil -> mặc định "khác").
+    public func categoryOf(ingredientId: String) -> String? {
+        return ingredients.first { $0.id == ingredientId }?.category
+    }
+
+    public func addCustomShoppingItem(name: String, quantity: String, unit: String) {        let matchingIng = ingredients.first { $0.name.lowercased() == name.lowercased() }
         let ingId = matchingIng?.id ?? UUID().uuidString
         let item = ShoppingItem(
             ingredientId: ingId,
@@ -245,17 +249,44 @@ public final class AppStorage: @unchecked Sendable {
         persistState()
     }
 
-    public func bulkAddBoughtToPantry() {
+    public func bulkAddBoughtToPantry(overrides: [PurchaseOverride] = []) {
+        // A4: mua vào tủ chính xác — lượng thực mua có thể khác ước tính, hạn dùng
+        // mặc định theo nhóm nguyên liệu; idempotent theo id mục (chống bấm lặp).
         let boughtItems = shoppingItems.filter { $0.isBought }
+        let ovById = Dictionary(uniqueKeysWithValues: overrides.map { ($0.itemId, $0) })
+        let purchasedAt = Date()
+
+        func dateOnly(_ iso: String) -> String {
+            return String(iso.prefix(10))
+        }
+
         for item in boughtItems {
+            let ov = ovById[item.id]
+            let qty = ov?.actualQuantity.trimmingCharacters(in: .whitespaces).isEmpty == false
+                ? ov!.actualQuantity.trimmingCharacters(in: .whitespaces) : item.neededQuantity
+            guard let parsed = Double(qty.replacingOccurrences(of: ",", with: ".")), parsed > 0 else {
+                continue // lượng vô nghĩa: không tạo lot rác
+            }
+            let category = ingredients.first { $0.id == item.ingredientId }?.category
+            let expiresAt: String
+            let ovExpiry = ov?.expiresAt.trimmingCharacters(in: .whitespaces) ?? ""
+            if !ovExpiry.isEmpty {
+                expiresAt = ovExpiry
+            } else {
+                let named = dateOnly(ShoppingDefaults.expiryDate(category: category, purchasedAt: purchasedAt))
+                expiresAt = named
+            }
             addPantryLot(
                 ingredientId: item.ingredientId,
                 ingredientName: item.ingredientName,
-                quantity: item.neededQuantity,
-                unit: item.unit
+                quantity: qty,
+                unit: item.unit,
+                expiresAt: expiresAt
             )
         }
-        shoppingItems.removeAll { $0.isBought }
+        // Giao dịch cập nhật danh sách: chỉ xoá các mục vẫn còn trong danh sách.
+        let boughtIds = Set(boughtItems.map { $0.id })
+        shoppingItems.removeAll { boughtIds.contains($0.id) }
         persistState()
     }
 

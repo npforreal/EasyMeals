@@ -6,6 +6,10 @@ public struct ShoppingView: View {
     @State private var newItemQty = "200"
     @State private var newItemUnit = "g"
     @State private var showingAddSheet = false
+    // A4 - Vòng 13: hộp thoại xác nhận mua vào tủ (lượng thực mua + hạn dùng).
+    @State private var showingPurchaseSheet = false
+    @State private var purchaseQuantities: [String: String] = [:]
+    @State private var purchaseExpiries: [String: Date] = [:]
 
     var shareText: String {
         var lines = ["DANH SÁCH ĐI CHỢ - EASYMEALS"]
@@ -60,7 +64,7 @@ public struct ShoppingView: View {
                         let boughtCount = storage.shoppingItems.filter { $0.isBought }.count
                         if boughtCount > 0 {
                             Button {
-                                storage.bulkAddBoughtToPantry()
+                                showingPurchaseSheet = true
                             } label: {
                                 Label("Cho \(boughtCount) món đã mua vào tủ lạnh", systemImage: "refrigerator")
                                     .font(.headline)
@@ -95,6 +99,10 @@ public struct ShoppingView: View {
             .sheet(isPresented: $showingAddSheet) {
                 addCustomItemSheet
                     .presentationDetents([.medium])
+            }
+            // A4 - Vòng 13: xác nhận mua vào tủ — chỉnh lượng thực mua & hạn dùng từng món.
+            .sheet(isPresented: $showingPurchaseSheet) {
+                purchaseConfirmSheet
             }
         }
     }
@@ -157,5 +165,92 @@ public struct ShoppingView: View {
                 }
             }
         }
+    }
+
+    /// A4 - Vòng 13: sheet xác nhận mua vào tủ — cho phép nhập LƯỢNG THỰC MUA khác
+    /// ước tính và HẠN DÙNG (mặc định theo nhóm nguyên liệu) cho từng món đã tích chọn.
+    private var purchaseConfirmSheet: some View {
+        let boughtItems = storage.shoppingItems.filter { $0.isBought }
+        return NavigationStack {
+            Form {
+                if boughtItems.isEmpty {
+                    Text("Chưa chọn món nào đã mua.")
+                }
+                ForEach(boughtItems) { item in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("\(item.ingredientName): ước tính \(item.neededQuantity) \(item.unit)")
+                            .font(.subheadline.bold())
+                        TextField("Thực mua (\(item.unit))", text: bindingOrCompute(purchaseQuantities, key: item.id, default: item.neededQuantity))
+                            .keyboardType(.decimalPad)
+                        DatePicker(
+                            "Hạn dùng",
+                            selection: bindingOrComputeDate(
+                                purchaseExpiries,
+                                key: item.id,
+                                default: defaultDate(for: item)
+                            ),
+                            displayedComponents: .date
+                        )
+                    }
+                }
+            }
+            .navigationTitle("Xác nhận mua vào tủ")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Huỷ") { showingPurchaseSheet = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Cho \(boughtItems.count) món vào tủ lạnh") {
+                        let overrides = boughtItems.map { item -> PurchaseOverride in
+                            let qty = purchaseQuantities[item.id] ?? item.neededQuantity
+                            let expDate = purchaseExpiries[item.id] ?? defaultDate(for: item)
+                            let formatter = ISO8601DateFormatter()
+                            formatter.formatOptions = [.withFullDate]
+                            return PurchaseOverride(
+                                itemId: item.id,
+                                actualQuantity: qty,
+                                expiresAt: formatter.string(from: expDate)
+                            )
+                        }
+                        storage.bulkAddBoughtToPantry(overrides: overrides)
+                        purchaseQuantities = [:]
+                        purchaseExpiries = [:]
+                        showingPurchaseSheet = false
+                    }
+                    .disabled(boughtItems.isEmpty)
+                }
+            }
+        }
+    }
+
+    private func defaultDate(for item: ShoppingItem) -> Date {
+        let category = storage.categoryOf(ingredientId: item.ingredientId)
+        let named = ShoppingDefaults.expiryDate(category: category)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate]
+        formatter.timeZone = .current
+        return formatter.date(from: named) ?? Date()
+    }
+
+    private func bindingOrCompute(
+        _ dict: [String: String],
+        key: String,
+        default defaultValue: String
+    ) -> Binding<String> {
+        Binding(
+            get: { dict[key] ?? defaultValue },
+            set: { purchaseQuantities[key] = $0 }
+        )
+    }
+
+    private func bindingOrComputeDate(
+        _ dict: [String: Date],
+        key: String,
+        default defaultValue: Date
+    ) -> Binding<Date> {
+        Binding(
+            get: { dict[key] ?? defaultValue },
+            set: { purchaseExpiries[key] = $0 }
+        )
     }
 }
