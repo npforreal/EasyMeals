@@ -204,6 +204,22 @@ final class EngineLogicTests: XCTestCase {
                 let endDate = calendar.date(byAdding: .day, value: days - 1, to: startDate)!
                 let endStr = formatter.string(from: endDate)
                 let allowLeftovers = (c["allow_leftovers"] as? Bool) ?? true
+                let exp = c["expect"] as! [String: Any]
+
+                if (exp["error"] as? Bool) == true {
+                    XCTAssertThrowsError(
+                        try EasyMealsEngine.generatePeriodPlan(
+                            startDateStr: startStr,
+                            endDateStr: endStr,
+                            recipes: recipes,
+                            currentPantryLots: pantry,
+                            allowLeftovers: allowLeftovers,
+                            conversions: convs
+                        ),
+                        "[\(name)] Mong đợi lỗi vượt giới hạn số ngày nhưng không ném"
+                    )
+                    continue
+                }
 
                 let (_, plans, shopping) = try EasyMealsEngine.generatePeriodPlan(
                     startDateStr: startStr,
@@ -214,7 +230,6 @@ final class EngineLogicTests: XCTestCase {
                     conversions: convs
                 )
 
-                let exp = c["expect"] as! [String: Any]
                 let expDishes = exp["dishes"] as! [String]
                 let actualDishes = plans.flatMap { $0.dishes }.map { $0.recipeName }
                 XCTAssertEqual(actualDishes, expDishes, "[\(name)] dishes")

@@ -157,9 +157,22 @@ def test_logic_case(case):
         ]
     elif op == "plan":
         start = date.fromisoformat(case["start"])
+        end_date = date.fromordinal(start.toordinal() + case["days"] - 1)
+        if case["expect"].get("error"):
+            with pytest.raises(ValueError):
+                generate_period_plan(
+                    start_date=start,
+                    end_date=end_date,
+                    recipes=[_recipe(r) for r in case["recipes"]],
+                    current_pantry_lots=_lots(case["pantry"]),
+                    allow_leftovers=case["allow_leftovers"],
+                    conversions=convs,
+                )
+            return
+
         plans, shopping = generate_period_plan(
             start_date=start,
-            end_date=date.fromordinal(start.toordinal() + case["days"] - 1),
+            end_date=end_date,
             recipes=[_recipe(r) for r in case["recipes"]],
             current_pantry_lots=_lots(case["pantry"]),
             allow_leftovers=case["allow_leftovers"],

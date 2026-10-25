@@ -162,13 +162,17 @@ def main():
     # Khẳng định nút nằm trọn trong màn hình
     if x1 < 0 or y1 < 0 or x2 > width or y2 > height:
         print(
-            f"❌ THẤT BẠI: Nút 'Lưu một chạm' bị tràn ngoài màn hình: bounds={bounds_str}, screen={width}x{height}",
+            f"❌ THẤT BẠI: Nút 'Lưu một chạm' bị tràn ngoài màn hình: "
+            f"bounds={bounds_str}, screen={width}x{height}",
             file=sys.stderr,
         )
         return 1
 
     if not clickable:
-        print("❌ THẤT BẠI: Nút 'Lưu một chạm' không có thuộc tính clickable=true!", file=sys.stderr)
+        print(
+            "❌ THẤT BẠI: Nút 'Lưu một chạm' không có thuộc tính clickable=true!",
+            file=sys.stderr,
+        )
         return 1
 
     cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
@@ -185,9 +189,7 @@ def main():
             break
 
     if not found_gao:
-        print(
-            "❌ THẤT BẠI: Không thấy 'Gạo' trong danh sách tủ lạnh sau khi lưu!", file=sys.stderr
-        )
+        print("❌ THẤT BẠI: Không thấy 'Gạo' trong danh sách tủ lạnh sau khi lưu!", file=sys.stderr)
         return 1
 
     print("✅ THÀNH CÔNG: Hành trình thêm gạo và nút Lưu hiển thị chuẩn xác trên máy thật!")

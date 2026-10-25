@@ -201,6 +201,26 @@ class EngineLogicTest {
                     val end = start.plusDays(c.getLong("days") - 1)
                     val allowLeftovers = c.optBoolean("allow_leftovers", true)
 
+                    val exp = c.getJSONObject("expect")
+                    if (exp.optBoolean("error", false)) {
+                        try {
+                            EasyMealsEngine.generatePeriodPlan(
+                                startDateStr = start.toString(),
+                                endDateStr = end.toString(),
+                                recipes = recipes,
+                                currentPantryLots = pantry,
+                                allowLeftovers = allowLeftovers,
+                                conversions = convs
+                            )
+                            org.junit.Assert.fail("[$name] Mong đợi IncompatibleUnitException nhưng không ném")
+                        } catch (_: IncompatibleUnitException) {
+                            // Passed
+                        } catch (_: IllegalArgumentException) {
+                            // Passed
+                        }
+                        continue
+                    }
+
                     val (_, plans, shopping) = EasyMealsEngine.generatePeriodPlan(
                         startDateStr = start.toString(),
                         endDateStr = end.toString(),
@@ -210,7 +230,6 @@ class EngineLogicTest {
                         conversions = convs
                     )
 
-                    val exp = c.getJSONObject("expect")
                     val expDishes = exp.getJSONArray("dishes")
                     val actualDishes = plans.flatMap { it.dishes }.map { it.recipeName }
                     assertEquals("[$name] dishes count", expDishes.length(), actualDishes.size)

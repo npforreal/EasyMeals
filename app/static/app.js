@@ -16,6 +16,7 @@ import {
 import {
   getPantryLots,
   addPantryLot,
+  updatePantryLot,
   deletePantryLot,
   getMealPlans,
   saveMealPlans,
@@ -41,6 +42,11 @@ import {
   formatRelativeDate,
   formatExpiryStatus,
 } from "./js/formatters.js";
+import {
+  PLAN_MIN_DAYS,
+  PLAN_MAX_DAYS,
+  PLAN_DEFAULT_DAYS,
+} from "./js/constants.js";
 
 // ==========================================
 // Toast & Utility Helpers
@@ -753,6 +759,30 @@ async function initPantryPage() {
       info.appendChild(name);
       info.appendChild(sub);
 
+      const actions = document.createElement("div");
+      actions.style.display = "flex";
+      actions.style.gap = "var(--space-1)";
+      actions.style.alignItems = "center";
+
+      if (lot.expires_at) {
+        const extBtn = document.createElement("button");
+        extBtn.type = "button";
+        extBtn.className = "btn btn-outline btn-sm";
+        extBtn.style.fontSize = "var(--text-xs)";
+        extBtn.style.padding = "2px 8px";
+        extBtn.textContent = "+3 ngày";
+        extBtn.title = "Gia hạn thêm 3 ngày khi sơ chế / bảo quản lại";
+        extBtn.addEventListener("click", async () => {
+          const d = new Date(lot.expires_at);
+          d.setDate(d.getDate() + 3);
+          lot.expires_at = d.toISOString().slice(0, 10);
+          await updatePantryLot(lot);
+          showToast(`Đã gia hạn +3 ngày cho ${lot.ingredient_name}`, "success");
+          loadAndRender();
+        });
+        actions.appendChild(extBtn);
+      }
+
       const delBtn = document.createElement("button");
       delBtn.type = "button";
       delBtn.className = "btn btn-outline btn-sm";
@@ -765,9 +795,10 @@ async function initPantryPage() {
           loadAndRender();
         }
       });
+      actions.appendChild(delBtn);
 
       card.appendChild(info);
-      card.appendChild(delBtn);
+      card.appendChild(actions);
       grid.appendChild(card);
     });
 
@@ -875,13 +906,54 @@ async function initPlannerPage() {
   const container = document.getElementById("plans-container");
   const alertBox = document.getElementById("shopping-alert");
 
-  // Set default dates: today -> +6 days (7 days total)
-  if (startInput && endInput && !startInput.value) {
-    const today = new Date();
-    const nextWeek = new Date();
-    nextWeek.setDate(today.getDate() + 6);
-    startInput.value = today.toISOString().split("T")[0];
-    endInput.value = nextWeek.toISOString().split("T")[0];
+  // Set default dates & day selector
+  const daysSelector = document.getElementById("days-selector");
+  const planDaysInput = document.getElementById("plan-days");
+
+  if (startInput && !startInput.value) {
+    startInput.value = new Date().toISOString().split("T")[0];
+  }
+
+  const updatePlanDates = (days) => {
+    if (planDaysInput) planDaysInput.value = days;
+    const s = startInput ? startInput.value : "";
+    if (s && endInput) {
+      const d = new Date(s);
+      d.setDate(d.getDate() + parseInt(days) - 1);
+      endInput.value = d.toISOString().split("T")[0];
+    }
+    const submitBtn = planForm?.querySelector("button[type='submit']");
+    if (submitBtn) {
+      submitBtn.textContent = `Lên thực đơn ${days} ngày`;
+    }
+  };
+
+  if (daysSelector && planDaysInput) {
+    daysSelector.querySelectorAll(".day-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        daysSelector.querySelectorAll(".day-chip").forEach((c) => c.classList.remove("active"));
+        chip.classList.add("active");
+        const days = parseInt(chip.getAttribute("data-days"));
+        localStorage.setItem("easymeals_selected_plan_days", days);
+        updatePlanDates(days);
+      });
+    });
+
+    const savedDays = parseInt(localStorage.getItem("easymeals_selected_plan_days") || PLAN_DEFAULT_DAYS);
+    const initialDays = Math.max(PLAN_MIN_DAYS, Math.min(PLAN_MAX_DAYS, savedDays));
+    const activeChip = daysSelector.querySelector(`[data-days="${initialDays}"]`);
+    if (activeChip) {
+      daysSelector.querySelectorAll(".day-chip").forEach((c) => c.classList.remove("active"));
+      activeChip.classList.add("active");
+    }
+    updatePlanDates(initialDays);
+  }
+
+  if (startInput) {
+    startInput.addEventListener("change", () => {
+      const days = planDaysInput ? parseInt(planDaysInput.value) : PLAN_DEFAULT_DAYS;
+      updatePlanDates(days);
+    });
   }
 
   async function loadAndRenderPlans() {
@@ -898,7 +970,28 @@ async function initPlannerPage() {
         </div>
       `;
       if (alertBox) alertBox.style.display = "none";
+      const freshnessAlert = document.getElementById("freshness-alert");
+      if (freshnessAlert) freshnessAlert.style.display = "none";
       return;
+    }
+
+    // Cảnh báo đồ tươi trong tủ sắp hết hạn trong chu kỳ thực đơn
+    const freshnessAlert = document.getElementById("freshness-alert");
+    const freshnessAlertText = document.getElementById("freshness-alert-text");
+    if (freshnessAlert && freshnessAlertText && plans.length > 0) {
+      const lots = await getPantryLots();
+      const lastPlan = plans[plans.length - 1];
+      const lastDate = lastPlan.planned_for;
+      const expiring = lots.filter((lot) => lot.expires_at && lot.expires_at <= lastDate);
+      if (expiring.length > 0) {
+        const itemNames = expiring
+          .map((l) => `${l.ingredient_name} (${formatDateVN(l.expires_at)})`)
+          .join(", ");
+        freshnessAlertText.textContent = `Nguyên liệu sắp hết hạn trong chu kỳ thực đơn: ${itemNames}. Hãy ưu tiên nấu sớm hoặc sơ chế bảo quản lại trong tủ lạnh.`;
+        freshnessAlert.style.display = "flex";
+      } else {
+        freshnessAlert.style.display = "none";
+      }
     }
 
     // Render grouped by planned_for date
@@ -1252,14 +1345,12 @@ async function initPlannerPage() {
 
       const s = startInput.value;
       const end = endInput.value;
+      const days = planDaysInput ? parseInt(planDaysInput.value) : PLAN_DEFAULT_DAYS;
+
       if (!s || !end) return;
 
-      const startDate = new Date(s);
-      const endDate = new Date(end);
-      const days = Math.round((endDate - startDate) / (1000 * 3600 * 24)) + 1;
-
-      if (days <= 0 || days > 31) {
-        showToast("Số ngày phải từ 1 đến 31 ngày.", "warning");
+      if (days < PLAN_MIN_DAYS || days > PLAN_MAX_DAYS) {
+        showToast(`Số ngày phải từ ${PLAN_MIN_DAYS} đến ${PLAN_MAX_DAYS} ngày.`, "warning");
         return;
       }
 

@@ -505,8 +505,8 @@ public enum EasyMealsEngine {
         let diff = calendar.dateComponents([.day], from: start, to: end).day ?? -1
         let diffDays = diff + 1
 
-        guard diffDays > 0 else {
-            throw IncompatibleUnitError("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.")
+        guard diffDays >= PlanLimits.minDays && diffDays <= PlanLimits.maxDays else {
+            throw IncompatibleUnitError("Số ngày lập thực đơn phải từ \(PlanLimits.minDays) đến \(PlanLimits.maxDays) ngày.")
         }
 
         let periodId = UUID().uuidString

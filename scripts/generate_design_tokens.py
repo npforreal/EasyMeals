@@ -20,6 +20,8 @@ TOKENS_FILE = ROOT / "design-tokens" / "tokens.json"
 LABELS_FILE = ROOT / "design-tokens" / "labels.json"
 
 TARGET_CSS = ROOT / "app" / "static" / "tokens.css"
+TARGET_PYTHON = ROOT / "app" / "constants.py"
+TARGET_JS = ROOT / "app" / "static" / "js" / "constants.js"
 TARGET_KOTLIN = (
     ROOT
     / "mobile"
@@ -36,6 +38,9 @@ TARGET_KOTLIN = (
     / "GeneratedTokens.kt"
 )
 TARGET_SWIFT = ROOT / "mobile" / "ios" / "EasyMeals" / "UI" / "Theme" / "GeneratedTokens.swift"
+TARGET_SWIFT_LIMITS = (
+    ROOT / "mobile" / "ios" / "EasyMeals" / "Domain" / "Common" / "PlanLimits.swift"
+)
 
 
 def load_inputs() -> tuple[dict, dict]:
@@ -73,6 +78,12 @@ def generate_css(tokens: dict, labels: dict) -> str:
     lines.append("  /* Light Neutrals (default) */")
     for k, v in tokens["neutrals"]["light"].items():
         lines.append(f"  --{k.replace('_', '-')}: {v};")
+
+    if "plan_limits" in tokens:
+        lines.append("")
+        lines.append("  /* Plan Limits */")
+        for k, v in tokens["plan_limits"].items():
+            lines.append(f"  --plan-{k.replace('_', '-')}: {v};")
 
     # Default palette (green light)
     default_pal = tokens["palettes"]["green"]["light"]
@@ -135,6 +146,32 @@ def generate_css(tokens: dict, labels: dict) -> str:
         lines.append("}")
         lines.append("")
 
+    return "\n".join(lines)
+
+
+def generate_python(tokens: dict, labels: dict) -> str:
+    limits = tokens.get("plan_limits", {"min_days": 1, "max_days": 7, "default_days": 3})
+    lines = [
+        "# TỰ SINH — KHÔNG SỬA TAY (scripts/generate_design_tokens.py)",
+        '"""Hằng số dùng chung toàn hệ thống sinh từ design-tokens/tokens.json."""',
+        "",
+        f"PLAN_MIN_DAYS = {limits['min_days']}",
+        f"PLAN_MAX_DAYS = {limits['max_days']}",
+        f"PLAN_DEFAULT_DAYS = {limits['default_days']}",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def generate_js(tokens: dict, labels: dict) -> str:
+    limits = tokens.get("plan_limits", {"min_days": 1, "max_days": 7, "default_days": 3})
+    lines = [
+        "// TỰ SINH — KHÔNG SỬA TAY (scripts/generate_design_tokens.py)",
+        f"export const PLAN_MIN_DAYS = {limits['min_days']};",
+        f"export const PLAN_MAX_DAYS = {limits['max_days']};",
+        f"export const PLAN_DEFAULT_DAYS = {limits['default_days']};",
+        "",
+    ]
     return "\n".join(lines)
 
 
@@ -248,6 +285,14 @@ def generate_kotlin(tokens: dict, labels: dict) -> str:
             sep = "," if idx < len(items) - 1 else ""
             lines.append(f'            "{k}" to "{v}"{sep}')
         lines.append("        )")
+    lines.append("    }")
+    lines.append("")
+
+    limits = tokens.get("plan_limits", {"min_days": 1, "max_days": 7, "default_days": 3})
+    lines.append("    object PlanLimits {")
+    lines.append(f"        const val MIN_DAYS: Int = {limits['min_days']}")
+    lines.append(f"        const val MAX_DAYS: Int = {limits['max_days']}")
+    lines.append(f"        const val DEFAULT_DAYS: Int = {limits['default_days']}")
     lines.append("    }")
     lines.append("}")
     lines.append("")
@@ -364,8 +409,32 @@ def generate_swift(tokens: dict, labels: dict) -> str:
             lines.append(f'            "{k}": "{v}"{sep}')
         lines.append("        ]")
     lines.append("    }")
+    lines.append("")
+
+    limits = tokens.get("plan_limits", {"min_days": 1, "max_days": 7, "default_days": 3})
+    lines.append("    public enum PlanLimits {")
+    lines.append(f"        public static let minDays: Int = {limits['min_days']}")
+    lines.append(f"        public static let maxDays: Int = {limits['max_days']}")
+    lines.append(f"        public static let defaultDays: Int = {limits['default_days']}")
+    lines.append("    }")
     lines.append("}")
     lines.append("")
+    return "\n".join(lines)
+
+
+def generate_swift_limits(tokens: dict) -> str:
+    limits = tokens.get("plan_limits", {"min_days": 1, "max_days": 7, "default_days": 3})
+    lines = [
+        "// TỰ SINH — KHÔNG SỬA TAY (scripts/generate_design_tokens.py)",
+        "import Foundation",
+        "",
+        "public enum PlanLimits {",
+        f"    public static let minDays: Int = {limits['min_days']}",
+        f"    public static let maxDays: Int = {limits['max_days']}",
+        f"    public static let defaultDays: Int = {limits['default_days']}",
+        "}",
+        "",
+    ]
     return "\n".join(lines)
 
 
@@ -378,13 +447,19 @@ def main():
 
     tokens, labels = load_inputs()
     css_content = generate_css(tokens, labels)
+    python_content = generate_python(tokens, labels)
+    js_content = generate_js(tokens, labels)
     kotlin_content = generate_kotlin(tokens, labels)
     swift_content = generate_swift(tokens, labels)
+    swift_limits_content = generate_swift_limits(tokens)
 
     pairs = [
         (TARGET_CSS, css_content),
+        (TARGET_PYTHON, python_content),
+        (TARGET_JS, js_content),
         (TARGET_KOTLIN, kotlin_content),
         (TARGET_SWIFT, swift_content),
+        (TARGET_SWIFT_LIMITS, swift_limits_content),
     ]
 
     if args.check:

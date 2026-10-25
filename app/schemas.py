@@ -8,6 +8,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.constants import PLAN_DEFAULT_DAYS, PLAN_MAX_DAYS, PLAN_MIN_DAYS
 from app.domain.models import DishCategory, MealPeriod, QuantityUnit, StockMovementReason
 
 
@@ -79,10 +80,10 @@ class StatelessGeneratePlanRequest(BaseModel):
     )
     start_date: date
     days: int = Field(
-        default=7,
-        ge=1,
-        le=31,
-        description="Số ngày lập thực đơn (từ 1 đến 31 ngày)",
+        default=PLAN_DEFAULT_DAYS,
+        ge=PLAN_MIN_DAYS,
+        le=PLAN_MAX_DAYS,
+        description=f"Số ngày lập thực đơn (từ {PLAN_MIN_DAYS} đến {PLAN_MAX_DAYS} ngày)",
     )
     options: PlanOptions = Field(default_factory=PlanOptions)
 

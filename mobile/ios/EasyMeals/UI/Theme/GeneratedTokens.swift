@@ -213,4 +213,10 @@ public enum GeneratedTokens {
             "system": "Theo hệ thống"
         ]
     }
+
+    public enum PlanLimits {
+        public static let minDays: Int = 1
+        public static let maxDays: Int = 7
+        public static let defaultDays: Int = 3
+    }
 }

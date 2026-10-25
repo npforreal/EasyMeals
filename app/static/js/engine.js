@@ -8,6 +8,8 @@
  * - Meal plan generation with no-repeat rule, leftover reuse, and shopping list
  */
 
+import { PLAN_MAX_DAYS, PLAN_MIN_DAYS } from "./constants.js";
+
 const SCALE = 1000000n; // 6 decimal places fixed-point BigInt
 const SCALE_INT = 1000000;
 
@@ -564,8 +566,8 @@ export function generatePeriodPlan(
   const end = new Date(`${endDateStr}T00:00:00Z`);
   const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
-  if (diffDays <= 0) {
-    throw new Error("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.");
+  if (diffDays < PLAN_MIN_DAYS || diffDays > PLAN_MAX_DAYS) {
+    throw new Error(`Số ngày lập thực đơn phải từ ${PLAN_MIN_DAYS} đến ${PLAN_MAX_DAYS} ngày.`);
   }
 
   const periodId = generateEngineUUID();

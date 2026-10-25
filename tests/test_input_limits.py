@@ -10,6 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from app.constants import PLAN_MAX_DAYS, PLAN_MIN_DAYS
 from app.domain.models import QuantityUnit
 from app.main import app
 from app.schemas import (
@@ -20,25 +21,32 @@ from app.schemas import (
 
 def test_stateless_generate_plan_period_limits():
     today = date.today()
-    # 31 days is allowed
+    # PLAN_MAX_DAYS (7) is allowed
     req_valid = StatelessGeneratePlanRequest(
         start_date=today,
-        days=31,
+        days=PLAN_MAX_DAYS,
     )
-    assert req_valid.days == 31
+    assert req_valid.days == PLAN_MAX_DAYS
 
-    # 32 days exceeds 31-day limit
+    # PLAN_MIN_DAYS (1) is allowed
+    req_min = StatelessGeneratePlanRequest(
+        start_date=today,
+        days=PLAN_MIN_DAYS,
+    )
+    assert req_min.days == PLAN_MIN_DAYS
+
+    # Exceeding PLAN_MAX_DAYS is rejected (e.g. 8 days)
     with pytest.raises(ValidationError):
         StatelessGeneratePlanRequest(
             start_date=today,
-            days=32,
+            days=PLAN_MAX_DAYS + 1,
         )
 
-    # 0 days rejected
+    # Below PLAN_MIN_DAYS is rejected (e.g. 0 days)
     with pytest.raises(ValidationError):
         StatelessGeneratePlanRequest(
             start_date=today,
-            days=0,
+            days=PLAN_MIN_DAYS - 1,
         )
 
 

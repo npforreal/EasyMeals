@@ -7,10 +7,19 @@ public struct TodayView: View {
     @State private var showingDeficitConfirmation = false
     @State private var deficitPlanId: String?
     @State private var deficits: [DeficitItem] = []
+    @AppStorage("selected_plan_days") private var selectedPlanDays: Int = PlanLimits.defaultDays
 
     var todayPlans: [MealPlan] {
         let todayStr = ISO8601DateFormatter().string(from: Date()).prefix(10).description
         return storage.mealPlans.filter { $0.plannedFor == todayStr }
+    }
+
+    var expiringFreshLots: [PantryLot] {
+        guard let lastPlan = storage.mealPlans.max(by: { $0.plannedFor < $1.plannedFor }) else { return [] }
+        return storage.pantryLots.filter { lot in
+            guard let exp = lot.expiresAt else { return false }
+            return exp <= lastPlan.plannedFor
+        }
     }
 
     public var body: some View {
@@ -20,8 +29,12 @@ public struct TodayView: View {
                     if storage.mealPlans.isEmpty {
                         emptyPlanView
                     } else {
-                        // Thẻ các bữa ăn hôm nay
-                        ForEach(storage.mealPlans.prefix(4)) { plan in
+                        if !expiringFreshLots.isEmpty {
+                            freshnessAlertView
+                        }
+                        replanSectionView
+
+                        ForEach(storage.mealPlans) { plan in
                             mealPlanCard(plan: plan)
                         }
                     }
@@ -56,6 +69,62 @@ public struct TodayView: View {
         }
     }
 
+    private var freshnessAlertView: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(AppColors.danger)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Cảnh báo đồ tươi trong tủ")
+                    .font(.subheadline.bold())
+                    .foregroundColor(AppColors.danger)
+                let names = expiringFreshLots.map { "\($0.ingredientName) (\(AppDateFormatter.formatDateVN($0.expiresAt!)))" }.joined(separator: ", ")
+                Text("Nguyên liệu sắp hết hạn trong chu kỳ: \(names). Hãy ưu tiên nấu sớm hoặc gia hạn trong tủ lạnh.")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            Spacer()
+        }
+        .padding()
+        .background(AppColors.danger.opacity(0.1))
+        .cornerRadius(12)
+    }
+
+    private var replanSectionView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Lên đợt thực đơn mới:")
+                .font(.caption.bold())
+                .foregroundColor(AppColors.textSecondary)
+            HStack(spacing: 8) {
+                ForEach(PlanLimits.minDays...PlanLimits.maxDays, id: \.self) { d in
+                    Button {
+                        selectedPlanDays = d
+                    } label: {
+                        Text("\(d)")
+                            .font(.subheadline.bold())
+                            .frame(minWidth: 40, minHeight: 44)
+                            .background(selectedPlanDays == d ? AppColors.primary : AppColors.secondarySurface)
+                            .foregroundColor(selectedPlanDays == d ? .white : AppColors.textPrimary)
+                            .cornerRadius(8)
+                    }
+                }
+            }
+            Button {
+                storage.generateNewPlan(days: selectedPlanDays)
+            } label: {
+                Label("Lên thực đơn \(selectedPlanDays) ngày", systemImage: "sparkles")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .background(AppColors.primary)
+                    .cornerRadius(12)
+            }
+        }
+        .padding()
+        .background(AppColors.secondarySurface.opacity(0.5))
+        .cornerRadius(14)
+    }
+
     private var emptyPlanView: some View {
         VStack(spacing: 20) {
             Image(systemName: "fork.knife.circle.fill")
@@ -71,20 +140,40 @@ public struct TodayView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
+            VStack(spacing: 8) {
+                Text("Số ngày lập thực đơn (1–7 ngày):")
+                    .font(.caption.bold())
+                    .foregroundColor(AppColors.textSecondary)
+                HStack(spacing: 8) {
+                    ForEach(PlanLimits.minDays...PlanLimits.maxDays, id: \.self) { d in
+                        Button {
+                            selectedPlanDays = d
+                        } label: {
+                            Text("\(d)")
+                                .font(.subheadline.bold())
+                                .frame(minWidth: 44, minHeight: 48)
+                                .background(selectedPlanDays == d ? AppColors.primary : AppColors.secondarySurface)
+                                .foregroundColor(selectedPlanDays == d ? .white : AppColors.textPrimary)
+                                .cornerRadius(10)
+                        }
+                    }
+                }
+            }
+            .padding(.top, 8)
+
             Button {
-                storage.generateNewPlan(days: 3)
+                storage.generateNewPlan(days: selectedPlanDays)
             } label: {
-                Label("Lên thực đơn 3 ngày ngay", systemImage: "sparkles")
+                Label("Lên thực đơn \(selectedPlanDays) ngày", systemImage: "sparkles")
                     .font(.headline)
                     .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                    .frame(maxWidth: .infinity, minHeight: 48)
                     .background(AppColors.primary)
                     .cornerRadius(14)
             }
             .padding(.horizontal)
         }
-        .padding(.vertical, 40)
+        .padding(.vertical, 30)
     }
 
     private func mealPlanCard(plan: MealPlan) -> some View {

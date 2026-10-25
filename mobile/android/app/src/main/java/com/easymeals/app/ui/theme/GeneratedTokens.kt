@@ -219,4 +219,10 @@ object GeneratedTokens {
             "system" to "Theo hệ thống"
         )
     }
+
+    object PlanLimits {
+        const val MIN_DAYS: Int = 1
+        const val MAX_DAYS: Int = 7
+        const val DEFAULT_DAYS: Int = 3
+    }
 }

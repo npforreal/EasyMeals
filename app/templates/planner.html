@@ -18,8 +18,18 @@
           <input type="date" id="plan-start" required>
         </div>
         <div class="form-group">
-          <label for="plan-end">Đến ngày <span style="color: var(--danger);">*</span></label>
-          <input type="date" id="plan-end" required>
+          <label id="plan-days-label">Số ngày lập thực đơn (1–7 ngày) <span style="color: var(--danger);">*</span></label>
+          <div class="days-selector" id="days-selector" style="display: flex; gap: var(--space-1); align-items: center; flex-wrap: wrap; margin-top: var(--space-1);" role="group" aria-labelledby="plan-days-label">
+            <button type="button" class="btn btn-outline day-chip" data-days="1" style="min-width: 44px; padding: 6px 10px;">1</button>
+            <button type="button" class="btn btn-outline day-chip" data-days="2" style="min-width: 44px; padding: 6px 10px;">2</button>
+            <button type="button" class="btn btn-outline day-chip active" data-days="3" style="min-width: 44px; padding: 6px 10px;">3</button>
+            <button type="button" class="btn btn-outline day-chip" data-days="4" style="min-width: 44px; padding: 6px 10px;">4</button>
+            <button type="button" class="btn btn-outline day-chip" data-days="5" style="min-width: 44px; padding: 6px 10px;">5</button>
+            <button type="button" class="btn btn-outline day-chip" data-days="6" style="min-width: 44px; padding: 6px 10px;">6</button>
+            <button type="button" class="btn btn-outline day-chip" data-days="7" style="min-width: 44px; padding: 6px 10px;">7</button>
+          </div>
+          <input type="hidden" id="plan-days" value="3">
+          <input type="hidden" id="plan-end">
         </div>
       </div>
       <div class="form-group" style="display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2);">
@@ -29,9 +39,19 @@
         </label>
       </div>
       <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4); flex-wrap: wrap;">
-        <button type="submit" class="btn btn-primary" id="btn-generate">Tạo thực đơn tự động (không lặp món)</button>
+        <button type="submit" class="btn btn-primary" id="btn-generate">Lên thực đơn 3 ngày</button>
       </div>
     </form>
+  </div>
+
+  <!-- Cảnh báo đồ tươi sắp hết hạn -->
+  <div id="freshness-alert" class="card" style="display: none; border-left: 4px solid var(--honey); align-items: center; gap: var(--space-3); margin-top: var(--space-3);">
+    <svg class="ico" aria-hidden="true" style="width:20px;height:20px; color: var(--honey);"><use href="/static/icons.svg#i-warning"></use></svg>
+    <div style="flex: 1;">
+      <h3 style="margin: 0 0 var(--space-1) 0; font-size: var(--text-sm);">Cảnh báo đồ tươi trong tủ</h3>
+      <p id="freshness-alert-text" style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);"></p>
+    </div>
+    <a href="/pantry" class="btn btn-outline btn-sm">Xem tủ lạnh</a>
   </div>
 
   <!-- Cảnh báo cần mua -->

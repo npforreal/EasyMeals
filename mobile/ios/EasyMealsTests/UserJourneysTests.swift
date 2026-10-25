@@ -134,4 +134,61 @@ final class UserJourneysTests: XCTestCase {
             XCTAssertGreaterThan(scaledQty, ExactDecimal(0), "Lượng nguyên liệu sau tỉ lệ phải > 0")
         }
     }
+
+    // Kiểm tra tính năng gia hạn đồ tươi (+3 ngày)
+    func testPantryLotExtendExpiry() {
+        storage.addPantryLot(
+            ingredientId: "rau_muong",
+            ingredientName: "Rau muống",
+            quantity: "1",
+            unit: "bó",
+            expiresAt: "2026-10-25"
+        )
+        let lotId = storage.pantryLots[0].id
+        XCTAssertEqual(storage.pantryLots[0].expiresAt, "2026-10-25")
+
+        // Gia hạn thêm 3 ngày
+        storage.extendPantryLotExpiry(id: lotId, daysToAdd: 3)
+        XCTAssertEqual(storage.pantryLots[0].expiresAt, "2026-10-28")
+    }
+
+    // Kiểm tra giới hạn thực đơn 1-7 ngày
+    func testPlanDaysBoundariesAndCounts() throws {
+        let start = "2026-10-25"
+
+        // 1 ngày -> 2 bữa
+        let (_, meals1, _) = try EasyMealsEngine.generatePeriodPlan(
+            startDateStr: start,
+            endDateStr: start,
+            recipes: storage.recipes,
+            currentPantryLots: []
+        )
+        XCTAssertEqual(meals1.count, 2)
+
+        // 3 ngày -> 6 bữa
+        let (_, meals3, _) = try EasyMealsEngine.generatePeriodPlan(
+            startDateStr: start,
+            endDateStr: "2026-10-27",
+            recipes: storage.recipes,
+            currentPantryLots: []
+        )
+        XCTAssertEqual(meals3.count, 6)
+
+        // 7 ngày -> 14 bữa
+        let (_, meals7, _) = try EasyMealsEngine.generatePeriodPlan(
+            startDateStr: start,
+            endDateStr: "2026-10-31",
+            recipes: storage.recipes,
+            currentPantryLots: []
+        )
+        XCTAssertEqual(meals7.count, 14)
+
+        // 8 ngày -> Ném IncompatibleUnitError
+        XCTAssertThrowsError(try EasyMealsEngine.generatePeriodPlan(
+            startDateStr: start,
+            endDateStr: "2026-11-01",
+            recipes: storage.recipes,
+            currentPantryLots: []
+        ))
+    }
 }

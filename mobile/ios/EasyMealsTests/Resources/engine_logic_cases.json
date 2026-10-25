@@ -829,6 +829,130 @@
      "00000000-0000-0000-0000-000000000029": "-2"
     }
    }
+  },
+  {
+   "name": "plan_boundary_days_0",
+   "op": "plan",
+   "start": "2026-01-02",
+   "days": 0,
+   "allow_leftovers": false,
+   "recipes": [],
+   "pantry": [],
+   "expect": {
+    "error": true
+   }
+  },
+  {
+   "name": "plan_boundary_days_1",
+   "op": "plan",
+   "start": "2026-01-02",
+   "days": 1,
+   "allow_leftovers": false,
+   "recipes": [
+    {
+     "id": "00000000-0000-0000-0000-000000000011",
+     "name": "A",
+     "category": "man",
+     "servings": 4,
+     "ingredients": [
+      {
+       "ingredient_id": "00000000-0000-0000-0000-000000000102",
+       "name": "Thịt",
+       "quantity": "200",
+       "unit": "g"
+      }
+     ]
+    }
+   ],
+   "pantry": [
+    {
+     "id": "00000000-0000-0000-0000-000000000008",
+     "ingredient_id": "00000000-0000-0000-0000-000000000102",
+     "name": "Thịt",
+     "purchased": "1",
+     "remaining": "1",
+     "unit": "kg",
+     "expires_at": null
+    }
+   ],
+   "expect": {
+    "error": false,
+    "dishes": [
+     "A"
+    ],
+    "servings": [
+     4
+    ],
+    "shopping": {}
+   }
+  },
+  {
+   "name": "plan_boundary_days_7",
+   "op": "plan",
+   "start": "2026-01-02",
+   "days": 7,
+   "allow_leftovers": false,
+   "recipes": [
+    {
+     "id": "00000000-0000-0000-0000-000000000011",
+     "name": "A",
+     "category": "man",
+     "servings": 4,
+     "ingredients": [
+      {
+       "ingredient_id": "00000000-0000-0000-0000-000000000102",
+       "name": "Thịt",
+       "quantity": "200",
+       "unit": "g"
+      }
+     ]
+    }
+   ],
+   "pantry": [
+    {
+     "id": "00000000-0000-0000-0000-000000000008",
+     "ingredient_id": "00000000-0000-0000-0000-000000000102",
+     "name": "Thịt",
+     "purchased": "1",
+     "remaining": "1",
+     "unit": "kg",
+     "expires_at": null
+    }
+   ],
+   "expect": {
+    "error": false,
+    "dishes": [
+     "A"
+    ],
+    "servings": [
+     4
+    ],
+    "shopping": {}
+   }
+  },
+  {
+   "name": "plan_boundary_days_8",
+   "op": "plan",
+   "start": "2026-01-02",
+   "days": 8,
+   "allow_leftovers": false,
+   "recipes": [],
+   "pantry": [],
+   "expect": {
+    "error": true
+   }
+  },
+  {
+   "name": "plan_boundary_days_31",
+   "op": "plan",
+   "start": "2026-01-02",
+   "days": 31,
+   "allow_leftovers": false,
+   "recipes": [],
+   "pantry": [],
+   "expect": {
+    "error": true
+   }
   }
  ]
 }

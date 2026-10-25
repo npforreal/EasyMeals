@@ -4,6 +4,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 from uuid import UUID, uuid4
 
+from app.constants import PLAN_MAX_DAYS, PLAN_MIN_DAYS
 from app.domain.inventory import (
     aggregate_requirements,
     check_recipe_stock,
@@ -76,8 +77,8 @@ def generate_period_plan(
         periods = [MealPeriod.LUNCH, MealPeriod.DINNER]
 
     total_days = (end_date - start_date).days + 1
-    if total_days <= 0:
-        raise ValueError("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.")
+    if total_days < PLAN_MIN_DAYS or total_days > PLAN_MAX_DAYS:
+        raise ValueError(f"Số ngày lập thực đơn phải từ {PLAN_MIN_DAYS} đến {PLAN_MAX_DAYS} ngày.")
 
     period_id = uuid4()
     recipes_by_cat: dict[DishCategory, list[Recipe]] = {

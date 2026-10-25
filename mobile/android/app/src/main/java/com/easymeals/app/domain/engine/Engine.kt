@@ -1,6 +1,7 @@
 package com.easymeals.app.domain.engine
 
 import com.easymeals.app.domain.model.*
+import com.easymeals.app.ui.theme.GeneratedTokens
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -473,8 +474,8 @@ object EasyMealsEngine {
         val end = LocalDate.parse(endDateStr, formatter)
 
         val diffDays = ChronoUnit.DAYS.between(start, end).toInt() + 1
-        if (diffDays <= 0) {
-            throw IncompatibleUnitException("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.")
+        if (diffDays < GeneratedTokens.PlanLimits.MIN_DAYS || diffDays > GeneratedTokens.PlanLimits.MAX_DAYS) {
+            throw IncompatibleUnitException("Số ngày lập thực đơn phải từ ${GeneratedTokens.PlanLimits.MIN_DAYS} đến ${GeneratedTokens.PlanLimits.MAX_DAYS} ngày.")
         }
 
         val periodId = UUID.randomUUID().toString()

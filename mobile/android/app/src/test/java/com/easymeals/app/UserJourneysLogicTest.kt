@@ -3,6 +3,7 @@ package com.easymeals.app
 import com.easymeals.app.data.catalogue.CatalogueLoader
 import com.easymeals.app.domain.engine.EasyMealsEngine
 import com.easymeals.app.domain.engine.ExactDecimal
+import com.easymeals.app.domain.engine.IncompatibleUnitException
 import com.easymeals.app.domain.model.*
 import org.junit.Assert.*
 import org.junit.Before
@@ -146,5 +147,53 @@ class UserJourneysLogicTest {
             val scaledQuantity = (ExactDecimal(ing.quantity) * ExactDecimal(multiplier)).toString()
             assertTrue("Lượng nguyên liệu sau điều chỉnh khẩu phần phải > 0", ExactDecimal(scaledQuantity) > ExactDecimal("0"))
         }
+    }
+
+    @Test
+    fun testPlanDaysBoundariesAndCounts() {
+        val start = "2026-10-25"
+
+        // 1 ngày -> 2 bữa
+        val (_, meals1, _) = EasyMealsEngine.generatePeriodPlan(
+            startDateStr = start,
+            endDateStr = start,
+            recipes = catalogue.recipes,
+            currentPantryLots = emptyList()
+        )
+        assertEquals(2, meals1.size)
+        assertEquals(1, meals1.map { it.plannedFor }.distinct().size)
+
+        // 7 ngày -> 14 bữa (7 ngày x 2 bữa)
+        val end7 = "2026-10-31"
+        val (_, meals7, _) = EasyMealsEngine.generatePeriodPlan(
+            startDateStr = start,
+            endDateStr = end7,
+            recipes = catalogue.recipes,
+            currentPantryLots = emptyList()
+        )
+        assertEquals(14, meals7.size)
+        assertEquals(7, meals7.map { it.plannedFor }.distinct().size)
+
+        // 8 ngày -> ném ngoại lệ
+        try {
+            EasyMealsEngine.generatePeriodPlan(
+                startDateStr = start,
+                endDateStr = "2026-11-01",
+                recipes = catalogue.recipes,
+                currentPantryLots = emptyList()
+            )
+            fail("Mong đợi ngoại lệ khi days=8")
+        } catch (_: IncompatibleUnitException) {}
+
+        // 0 ngày -> ném ngoại lệ
+        try {
+            EasyMealsEngine.generatePeriodPlan(
+                startDateStr = start,
+                endDateStr = "2026-10-24",
+                recipes = catalogue.recipes,
+                currentPantryLots = emptyList()
+            )
+            fail("Mong đợi ngoại lệ khi days=0")
+        } catch (_: IncompatibleUnitException) {}
     }
 }

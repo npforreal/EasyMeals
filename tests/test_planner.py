@@ -156,3 +156,60 @@ def test_shopping_list_generated_when_stock_deficit():
     for item in shopping_list:
         assert item.needed_quantity > Decimal("0")
         assert len(item.dish_names) > 0
+
+
+def test_plan_days_api_boundaries():
+    """Mục 2 prompt: API POST với days=8 -> 422; days=7 -> 200; days=1 -> 200; days=0 -> 422."""
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    client = TestClient(app)
+    today = date.today().isoformat()
+
+    # days = 8 -> 422
+    res_8 = client.post(
+        "/api/planner/generate", json={"pantry": [], "start_date": today, "days": 8}
+    )
+    assert res_8.status_code == 422
+
+    # days = 7 -> 200
+    res_7 = client.post(
+        "/api/planner/generate", json={"pantry": [], "start_date": today, "days": 7}
+    )
+    assert res_7.status_code == 200
+
+    # days = 1 -> 200
+    res_1 = client.post(
+        "/api/planner/generate", json={"pantry": [], "start_date": today, "days": 1}
+    )
+    assert res_1.status_code == 200
+
+    # days = 0 -> 422
+    res_0 = client.post(
+        "/api/planner/generate", json={"pantry": [], "start_date": today, "days": 0}
+    )
+    assert res_0.status_code == 422
+
+
+def test_no_hardcoded_three_days_or_thirty_one_in_planner():
+    """Test tĩnh: không còn chuỗi '3 ngày ngay' hay hằng 31 liên quan lập thực đơn."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+
+    # Kiểm tra chuỗi '3 ngày ngay' trong app/ và mobile/
+    for folder in ["app", "mobile"]:
+        for p in (root / folder).rglob("*"):
+            if p.is_file() and p.suffix in [".kt", ".swift", ".js", ".py", ".html"]:
+                content = p.read_text(encoding="utf-8", errors="ignore")
+                assert "3 ngày ngay" not in content, f"Tìm thấy '3 ngày ngay' trong {p}"
+
+    # Kiểm tra hằng 31 liên quan lập thực đơn
+    schemas_content = (root / "app" / "schemas.py").read_text(encoding="utf-8")
+    assert "le=31" not in schemas_content
+    assert "31 ngày" not in schemas_content
+
+    app_js_content = (root / "app" / "static" / "app.js").read_text(encoding="utf-8")
+    assert "days > 31" not in app_js_content
+    assert "31 ngày" not in app_js_content

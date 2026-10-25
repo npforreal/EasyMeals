@@ -39,6 +39,11 @@
   --danger-soft: #F6DCDC;
   --focus: #1F4FA3;
 
+  /* Plan Limits */
+  --plan-min-days: 1;
+  --plan-max-days: 7;
+  --plan-default-days: 3;
+
   /* Default Palette (Green Light) */
   --primary: #3F6B3A;
   --primary-strong: #2F5530;

@@ -119,9 +119,25 @@ describe("Ca logic dùng chung Python/JS", () => {
       } else if (c.op === "plan") {
         const end = new Date(`${c.start}T00:00:00Z`);
         end.setUTCDate(end.getUTCDate() + c.days - 1);
+        const endStr = end.toISOString().slice(0, 10);
+        if (c.expect && c.expect.error) {
+          assert.throws(
+            () => {
+              generatePeriodPlan(
+                c.start,
+                endStr,
+                c.recipes.map(toRecipe),
+                toLots(c.pantry),
+                { allow_leftovers: c.allow_leftovers, conversions: c.conversions }
+              );
+            },
+            Error
+          );
+          return;
+        }
         const plan = generatePeriodPlan(
           c.start,
-          end.toISOString().slice(0, 10),
+          endStr,
           c.recipes.map(toRecipe),
           toLots(c.pantry),
           { allow_leftovers: c.allow_leftovers, conversions: c.conversions }

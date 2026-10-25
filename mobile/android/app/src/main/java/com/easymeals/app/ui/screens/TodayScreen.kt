@@ -1,5 +1,6 @@
 package com.easymeals.app.ui.screens
 
+import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -46,6 +48,18 @@ fun TodayScreen(repository: AppRepository) {
     var viewingServings by remember { mutableIntStateOf(2) }
     var isCookingMode by remember { mutableStateOf(false) }
     var deficitAlert by remember { mutableStateOf<DeficitAlertState?>(null) }
+
+    var selectedPlanDays by remember {
+        val prefs = context.getSharedPreferences("easymeals_prefs", Context.MODE_PRIVATE)
+        val saved = prefs.getInt("selected_plan_days", GeneratedTokens.PlanLimits.DEFAULT_DAYS)
+        mutableIntStateOf(saved.coerceIn(GeneratedTokens.PlanLimits.MIN_DAYS, GeneratedTokens.PlanLimits.MAX_DAYS))
+    }
+
+    val onSelectDays: (Int) -> Unit = { d ->
+        selectedPlanDays = d
+        val prefs = context.getSharedPreferences("easymeals_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putInt("selected_plan_days", d).apply()
+    }
 
     BackHandler(enabled = isCookingMode) {
         isCookingMode = false
@@ -123,25 +137,107 @@ fun TodayScreen(repository: AppRepository) {
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Text(
+                            "Số ngày lập thực đơn (1–7 ngày):",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        ) {
+                            (GeneratedTokens.PlanLimits.MIN_DAYS..GeneratedTokens.PlanLimits.MAX_DAYS).forEach { d ->
+                                FilterChip(
+                                    selected = selectedPlanDays == d,
+                                    onClick = { onSelectDays(d) },
+                                    label = { Text("$d") },
+                                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                                )
+                            }
+                        }
                         Button(
-                            onClick = { repository.generateNewPlan(3) },
+                            onClick = { repository.generateNewPlan(selectedPlanDays) },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                         ) {
                             Icon(Icons.Default.AutoAwesome, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Lên thực đơn 3 ngày ngay", fontWeight = FontWeight.Bold)
+                            Text("Lên thực đơn $selectedPlanDays ngày", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             } else {
+                val lastPlanDate = mealPlans.maxOfOrNull { it.plannedFor } ?: ""
+                val expiringFreshLots = remember(pantryLots, lastPlanDate) {
+                    if (lastPlanDate.isBlank()) emptyList()
+                    else pantryLots.filter { lot ->
+                        !lot.expiresAt.isNullOrBlank() && lot.expiresAt <= lastPlanDate
+                    }
+                }
+
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(mealPlans.take(4), key = { it.id }) { plan ->
+                    if (expiringFreshLots.isNotEmpty()) {
+                        item {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    val names = expiringFreshLots.joinToString(", ") { "${it.ingredientName} (${DateFormatter.formatDateVN(it.expiresAt!!)})" }
+                                    Text(
+                                        "Đồ tươi sắp hết hạn trong thực đơn: $names. Hãy ưu tiên nấu sớm hoặc gia hạn trong tủ.",
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text("Lên đợt thực đơn mới:", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    (GeneratedTokens.PlanLimits.MIN_DAYS..GeneratedTokens.PlanLimits.MAX_DAYS).forEach { d ->
+                                        FilterChip(
+                                            selected = selectedPlanDays == d,
+                                            onClick = { onSelectDays(d) },
+                                            label = { Text("$d") },
+                                            modifier = Modifier.sizeIn(minWidth = 44.dp, minHeight = 44.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = { repository.generateNewPlan(selectedPlanDays) },
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                ) {
+                                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Lên thực đơn $selectedPlanDays ngày", fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+
+                    items(mealPlans, key = { it.id }) { plan ->
                         MealPlanCard(
                             plan = plan,
                             onViewRecipe = { recipeId, servings ->
