@@ -329,7 +329,21 @@ class AppRepository(private val context: Context) {
         persistState()
     }
 
-    fun generateNewPlan(days: Int = 3) {
+    /** Đợt mới có trùng bữa CHƯA ăn trong khoảng ngày [hôm nay, hôm nay + days - 1]? (A2) */
+    fun hasUneatenOverlap(days: Int = 3): Boolean {
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        val start = LocalDate.now().format(formatter)
+        val end = LocalDate.now().plusDays((days - 1).toLong()).format(formatter)
+        return _mealPlans.value.any {
+            it.eatenAt == null && it.plannedFor >= start && it.plannedFor <= end
+        }
+    }
+
+    /**
+     * Tạo đợt thực đơn mới an toàn (A2): gộp qua engine theo mode giữ/thay.
+     * Bữa đã ăn và bữa ngoài khoảng ngày được giữ nguyên, không xoá lịch sử kho.
+     */
+    fun generateNewPlan(days: Int = 3, mergeMode: String = "replace") {
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         val start = LocalDate.now()
         val end = start.plusDays((days - 1).toLong())
@@ -342,7 +356,9 @@ class AppRepository(private val context: Context) {
             allowLeftovers = _allowLeftovers.value,
             leftoverDays = _leftoverDays.value
         )
-        _mealPlans.value = meals
+        _mealPlans.value = EasyMealsEngine.mergeNewPlansIntoExisting(
+            _mealPlans.value, meals, mergeMode
+        )
         _shoppingItems.value = shopping
         persistState()
     }

@@ -98,6 +98,17 @@ fun TodayScreen(repository: AppRepository) {
     var viewingServings by remember { mutableIntStateOf(2) }
     var isCookingMode by remember { mutableStateOf(false) }
     var deficitAlert by remember { mutableStateOf<DeficitAlertState?>(null) }
+    // Hộp thoại giữ/thay khi tạo thực đơn trùng ngày bữa chưa ăn (A2 - Vòng 13).
+    var planConflictDays by remember { mutableStateOf<Int?>(null) }
+
+    // A2: nếu đợt mới trùng bữa CHƯA ăn -> hỏi giữ/thay trước khi tạo; nút luôn dùng đường này.
+    val onRequestGenerate: (Int) -> Unit = { days ->
+        if (repository.hasUneatenOverlap(days)) {
+            planConflictDays = days
+        } else {
+            repository.generateNewPlan(days)
+        }
+    }
 
     var selectedPlanDays by remember {
         val prefs = context.getSharedPreferences("easymeals_prefs", Context.MODE_PRIVATE)
@@ -211,7 +222,7 @@ fun TodayScreen(repository: AppRepository) {
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Button(
-                            onClick = { repository.generateNewPlan(selectedPlanDays) },
+                            onClick = { onRequestGenerate(selectedPlanDays) },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                         ) {
@@ -273,7 +284,7 @@ fun TodayScreen(repository: AppRepository) {
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Button(
-                                    onClick = { repository.generateNewPlan(selectedPlanDays) },
+                                    onClick = { onRequestGenerate(selectedPlanDays) },
                                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                                 ) {
                                     Icon(Icons.Default.AutoAwesome, contentDescription = null)
@@ -366,7 +377,70 @@ fun TodayScreen(repository: AppRepository) {
                 dismissButton = null
             )
         }
+
+        planConflictDays?.let { days ->
+            PlanConflictDialog(
+                onReplace = {
+                    repository.generateNewPlan(days, mergeMode = "replace")
+                    planConflictDays = null
+                },
+                onKeep = {
+                    repository.generateNewPlan(days, mergeMode = "keep")
+                    planConflictDays = null
+                },
+                onDismiss = { planConflictDays = null }
+            )
+        }
     }
+}
+
+/**
+ * Hộp thoại giữ/thay khi tạo thực đơn trùng ngày với bữa CHƯA ăn (A2 - Vòng 13).
+ * Bữa đã ăn luôn được giữ cùng lịch sử kho, không có lựa chọn nào xoá chúng.
+ * Tách composable `internal` để instrumented test dựng riêng ở các khổ hẹp dp.
+ */
+@Composable
+internal fun PlanConflictDialog(
+    onReplace: () -> Unit,
+    onKeep: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Thực đơn mới trùng ngày") },
+        text = {
+            Text(
+                "Thực đơn mới trùng ngày với bữa chưa ăn. " +
+                    "Bạn muốn xử lý thế nào? Các bữa đã ăn luôn được giữ cùng lịch sử kho."
+            )
+        },
+        confirmButton = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = onReplace,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Thay các bữa chưa ăn trong khoảng ngày này")
+                }
+                OutlinedButton(
+                    onClick = onKeep,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Giữ thực đơn cũ, chỉ thêm ngày chưa có")
+                }
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Huỷ")
+                }
+            }
+        },
+        dismissButton = null
+    )
 }
 
 @Composable
