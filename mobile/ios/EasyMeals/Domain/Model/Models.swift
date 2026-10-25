@@ -6,19 +6,79 @@ public enum UnitDimension: String, Codable, Sendable {
     case count
 }
 
+public struct Category: Identifiable, Codable, Equatable, Sendable {
+    public let id: String
+    public let name: String
+    public let displayOrder: Int
+
+    public init(id: String, name: String, displayOrder: Int = 0) {
+        self.id = id
+        self.name = name
+        self.displayOrder = displayOrder
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name
+        case displayOrder = "display_order"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try c.decode(String.self, forKey: .id)
+        self.name = try c.decode(String.self, forKey: .name)
+        self.displayOrder = try c.decodeIfPresent(Int.self, forKey: .displayOrder) ?? 0
+    }
+}
+
+public struct Conversion: Codable, Equatable, Sendable {
+    public let fromIngredientId: String
+    public let toIngredientId: String
+    public let ratio: String
+    public let fromUnit: String
+    public let toUnit: String
+    public let note: String?
+
+    public init(
+        fromIngredientId: String,
+        toIngredientId: String,
+        ratio: String,
+        fromUnit: String = "g",
+        toUnit: String = "g",
+        note: String? = nil
+    ) {
+        self.fromIngredientId = fromIngredientId
+        self.toIngredientId = toIngredientId
+        self.ratio = ratio
+        self.fromUnit = fromUnit
+        self.toUnit = toUnit
+        self.note = note
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case fromIngredientId = "from_ingredient_id"
+        case toIngredientId = "to_ingredient_id"
+        case ratio
+        case fromUnit = "from_unit"
+        case toUnit = "to_unit"
+        case note
+    }
+}
+
 public struct Ingredient: Identifiable, Codable, Equatable, Sendable {
     public let id: String
     public let name: String
     public let normalizedName: String
-    public let category: String
-    public let defaultUnit: String
+    public var category: String
+    public var defaultUnit: String
+    public let aliases: [String]
 
-    public init(id: String, name: String, normalizedName: String, category: String, defaultUnit: String) {
+    public init(id: String, name: String, normalizedName: String, category: String = "khac", defaultUnit: String = "g", aliases: [String] = []) {
         self.id = id
         self.name = name
         self.normalizedName = normalizedName
         self.category = category
         self.defaultUnit = defaultUnit
+        self.aliases = aliases
     }
 
     enum CodingKeys: String, CodingKey {
@@ -27,6 +87,17 @@ public struct Ingredient: Identifiable, Codable, Equatable, Sendable {
         case normalizedName = "normalized_name"
         case category
         case defaultUnit = "default_unit"
+        case aliases
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(String.self, forKey: .id)
+        self.name = try container.decode(String.self, forKey: .name)
+        self.normalizedName = try container.decodeIfPresent(String.self, forKey: .normalizedName) ?? ""
+        self.category = try container.decodeIfPresent(String.self, forKey: .category) ?? "khac"
+        self.defaultUnit = try container.decodeIfPresent(String.self, forKey: .defaultUnit) ?? "g"
+        self.aliases = try container.decodeIfPresent([String].self, forKey: .aliases) ?? []
     }
 }
 

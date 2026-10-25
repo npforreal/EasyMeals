@@ -44,15 +44,43 @@ def calc_sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+def validate_catalogue_contract(cat_data: dict) -> None:
+    required_keys = ["catalogue_version", "etag", "ingredients", "recipes"]
+    for k in required_keys:
+        if k not in cat_data or cat_data[k] is None:
+            raise ValueError(f"Catalogue JSON vi phạm hợp đồng: thiếu khoá '{k}'")
+
+    if not isinstance(cat_data["ingredients"], list) or not cat_data["ingredients"]:
+        raise ValueError("Catalogue JSON vi phạm hợp đồng: 'ingredients' phải là mảng không rỗng")
+
+    if not isinstance(cat_data["recipes"], list) or not cat_data["recipes"]:
+        raise ValueError("Catalogue JSON vi phạm hợp đồng: 'recipes' phải là mảng không rỗng")
+
+    for ing in cat_data["ingredients"]:
+        if not ing.get("id") or not ing.get("name") or not ing.get("normalized_name"):
+            raise ValueError(f"Nguyên liệu vi phạm hợp đồng thiếu id/name/normalized_name: {ing}")
+
+    for rec in cat_data["recipes"]:
+        if (
+            not rec.get("id")
+            or not rec.get("name")
+            or not rec.get("category")
+            or not rec.get("ingredients")
+        ):
+            raise ValueError(f"Món ăn vi phạm hợp đồng thiếu id/name/category/ingredients: {rec}")
+
+
 def sync_assets(check_only: bool = False) -> dict[str, str]:
     if not SRC_CATALOGUE.exists():
         raise FileNotFoundError(f"Không tìm thấy file nguồn catalogue: {SRC_CATALOGUE}")
     if not SRC_ENGINE_TESTS.exists():
         raise FileNotFoundError(f"Không tìm thấy file nguồn test cases: {SRC_ENGINE_TESTS}")
 
-    # Xác thực JSON hợp lệ
+    # Xác thực JSON hợp lệ và đúng hợp đồng
     with open(SRC_CATALOGUE, encoding="utf-8") as f:
         cat_data = json.load(f)
+    validate_catalogue_contract(cat_data)
+
     with open(SRC_ENGINE_TESTS, encoding="utf-8") as f:
         test_data = json.load(f)
 
@@ -61,6 +89,7 @@ def sync_assets(check_only: bool = False) -> dict[str, str]:
 
     targets = [
         (SRC_CATALOGUE, ANDROID_ASSETS_DIR / "catalogue.json", cat_hash),
+        (SRC_CATALOGUE, ANDROID_TEST_RESOURCES_DIR / "catalogue.json", cat_hash),
         (SRC_ENGINE_TESTS, ANDROID_TEST_RESOURCES_DIR / "engine_test_cases.json", test_hash),
         (SRC_CATALOGUE, IOS_RESOURCES_DIR / "catalogue.json", cat_hash),
         (SRC_ENGINE_TESTS, IOS_TEST_RESOURCES_DIR / "engine_test_cases.json", test_hash),

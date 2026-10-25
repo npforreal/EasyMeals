@@ -2,6 +2,7 @@ package com.easymeals.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
@@ -48,6 +49,10 @@ fun MainContent(repository: AppRepository) {
     var selectedTab by remember { mutableStateOf(AppTab.TODAY) }
     val undoMessage by repository.undoMessage.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    BackHandler(enabled = selectedTab != AppTab.TODAY) {
+        selectedTab = AppTab.TODAY
+    }
 
     LaunchedEffect(undoMessage) {
         val msg = undoMessage

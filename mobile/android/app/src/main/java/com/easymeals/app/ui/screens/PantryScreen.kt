@@ -236,7 +236,7 @@ fun AddPantryBottomSheet(
                             SuggestionChip(
                                 onClick = {
                                     selectedIng = ing
-                                    unit = ing.defaultUnit
+                                    unit = ing.defaultUnit ?: "g"
                                 },
                                 label = { Text(ing.name) }
                             )
@@ -252,13 +252,13 @@ fun AddPantryBottomSheet(
                                 .fillMaxWidth()
                                 .clickable {
                                     selectedIng = ing
-                                    unit = ing.defaultUnit
+                                    unit = ing.defaultUnit ?: "g"
                                 }
                                 .padding(vertical = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(ing.name, fontWeight = FontWeight.Medium)
-                            Text(ing.category, fontSize = 12.sp, color = Color.Gray)
+                            Text(categoryLabel(ing.category), fontSize = 12.sp, color = Color.Gray)
                         }
                     }
                 }
@@ -328,4 +328,18 @@ fun AddPantryBottomSheet(
             }
         }
     }
+}
+
+
+/** Nhãn nhóm nguyên liệu bằng tiếng Việt (dữ liệu lưu mã tiếng Anh). */
+internal fun categoryLabel(category: String?): String = when (category) {
+    "meat" -> "Thịt"
+    "poultry" -> "Gia cầm"
+    "seafood" -> "Hải sản"
+    "egg" -> "Trứng"
+    "vegetable" -> "Rau củ"
+    "root" -> "Củ"
+    "spice" -> "Gia vị"
+    "tofu" -> "Đậu hũ"
+    else -> ""
 }

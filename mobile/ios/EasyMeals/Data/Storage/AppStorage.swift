@@ -12,6 +12,7 @@ public final class AppStorage: @unchecked Sendable {
     public var stockMovements: [StockMovement] = []
     public var shoppingItems: [ShoppingItem] = []
     public var catalogueVersion: String = "2026.10.26"
+    public var loadError: String? = nil
 
     // Trạng thái snackbar hoàn tác
     public var undoMessage: String?
@@ -35,6 +36,9 @@ public final class AppStorage: @unchecked Sendable {
             self.ingredients = bundle.ingredients
             self.recipes = bundle.recipes
             self.catalogueVersion = bundle.version
+            self.loadError = nil
+        } else {
+            self.loadError = "Không thể nạp danh mục món ăn. Vui lòng thử lại."
         }
     }
 

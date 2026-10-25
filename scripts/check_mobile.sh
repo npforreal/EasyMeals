@@ -16,7 +16,11 @@ python scripts/sync_mobile_assets.py --check
 echo "==> 2. Android: Chạy EngineEquivalenceTest trên máy ảo JVM (OpenJDK 21)"
 (
   cd mobile/android
-  export JAVA_HOME="/opt/homebrew/opt/openjdk@21"
+  if [ -d "/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home" ]; then
+    export JAVA_HOME="/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"
+  elif [ -d "/opt/homebrew/opt/openjdk@21" ]; then
+    export JAVA_HOME="/opt/homebrew/opt/openjdk@21"
+  fi
   ./gradlew --no-daemon testDebugUnitTest
 )
 

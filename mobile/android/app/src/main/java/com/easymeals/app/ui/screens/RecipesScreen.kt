@@ -5,12 +5,14 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.view.WindowManager
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -42,6 +44,15 @@ fun RecipesScreen(repository: AppRepository) {
     var selectedCategory by remember { mutableStateOf("Tất cả") }
     var selectedRecipe by remember { mutableStateOf<Recipe?>(null) }
     var isCookingMode by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+
+    BackHandler(enabled = isCookingMode) {
+        isCookingMode = false
+    }
+
+    BackHandler(enabled = selectedRecipe != null && !isCookingMode) {
+        selectedRecipe = null
+    }
 
     val categories = remember(recipes) {
         val cats = recipes.map { it.category }.distinct().sorted()
@@ -145,6 +156,7 @@ fun RecipesScreen(repository: AppRepository) {
 
             // Recipe List
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)

@@ -40,6 +40,9 @@ class AppRepository(private val context: Context) {
     private val _undoMessage = MutableStateFlow<String?>(null)
     val undoMessage: StateFlow<String?> = _undoMessage.asStateFlow()
 
+    private val _catalogueError = MutableStateFlow<String?>(null)
+    val catalogueError: StateFlow<String?> = _catalogueError.asStateFlow()
+
     private var lastActionPlanId: String? = null
     var catalogueVersion: String = "2026.10.26"
         private set
@@ -49,12 +52,19 @@ class AppRepository(private val context: Context) {
         loadPersistedState()
     }
 
+    fun retryLoadCatalogue() {
+        loadCatalogue()
+    }
+
     private fun loadCatalogue() {
         val bundle = CatalogueLoader.loadBundledCatalogue(context)
         if (bundle != null) {
             _ingredients.value = bundle.ingredients
             _recipes.value = bundle.recipes
-            catalogueVersion = bundle.version
+            catalogueVersion = bundle.version ?: catalogueVersion
+            _catalogueError.value = null
+        } else {
+            _catalogueError.value = CatalogueLoader.lastError ?: "Không thể nạp danh mục món ăn"
         }
     }
 
