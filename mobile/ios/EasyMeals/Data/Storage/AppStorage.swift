@@ -238,6 +238,31 @@ public final class AppStorage: @unchecked Sendable {
         }
     }
 
+    public func updateShoppingItem(
+        id: String,
+        quantity: String? = nil,
+        unit: String? = nil,
+        price: String? = nil
+    ) {
+        if let idx = shoppingItems.firstIndex(where: { $0.id == id }) {
+            if let q = quantity?.trimmingCharacters(in: .whitespaces), !q.isEmpty {
+                shoppingItems[idx].neededQuantity = q
+            }
+            if let u = unit?.trimmingCharacters(in: .whitespaces), !u.isEmpty {
+                // If unit changes, need to update id? id is a computed property "\(ingredientId)_\(unit)" in ShoppingItem!
+            }
+            if let p = price?.trimmingCharacters(in: .whitespaces) {
+                shoppingItems[idx].price = p.isEmpty ? nil : p
+            }
+            persistState()
+        }
+    }
+
+    public func mergeShoppingItems() throws {
+        self.shoppingItems = try EasyMealsEngine.mergeCompatibleShoppingItems(shoppingItems)
+        persistState()
+    }
+
     public func deleteShoppingItem(id: String) {
         shoppingItems.removeAll { $0.id == id }
         persistState()
@@ -318,6 +343,98 @@ public final class AppStorage: @unchecked Sendable {
 
         self.shoppingItems = manual + mergedPlanItems
         persistState()
+    }
+
+    public func swapDish(mealPlanId: String, oldDishId: String, newRecipeId: String) throws {
+        guard let targetIdx = mealPlans.firstIndex(where: { $0.id == mealPlanId }) else {
+            throw MealPlanError("Không tìm thấy bữa ăn có ID \(mealPlanId)")
+        }
+        guard let recipe = recipes.first(where: { $0.id == newRecipeId }) else {
+            throw MealPlanError("Không tìm thấy món có ID \(newRecipeId)")
+        }
+        let updatedMeal = try EasyMealsEngine.swapDishInMeal(
+            mealPlan: mealPlans[targetIdx],
+            oldDishId: oldDishId,
+            newRecipe: recipe,
+            allPlansInPeriod: mealPlans
+        )
+        mealPlans[targetIdx] = updatedMeal
+        updateShoppingListAfterPlanChange()
+        persistState()
+    }
+
+    public func addDish(mealPlanId: String, recipeId: String, servings: Int? = nil) throws {
+        guard let targetIdx = mealPlans.firstIndex(where: { $0.id == mealPlanId }) else {
+            throw MealPlanError("Không tìm thấy bữa ăn có ID \(mealPlanId)")
+        }
+        guard let recipe = recipes.first(where: { $0.id == recipeId }) else {
+            throw MealPlanError("Không tìm thấy món có ID \(recipeId)")
+        }
+        let updatedMeal = try EasyMealsEngine.addDishToMeal(
+            mealPlan: mealPlans[targetIdx],
+            recipe: recipe,
+            servings: servings
+        )
+        mealPlans[targetIdx] = updatedMeal
+        updateShoppingListAfterPlanChange()
+        persistState()
+    }
+
+    public func removeDish(mealPlanId: String, dishId: String) throws {
+        guard let targetIdx = mealPlans.firstIndex(where: { $0.id == mealPlanId }) else {
+            throw MealPlanError("Không tìm thấy bữa ăn có ID \(mealPlanId)")
+        }
+        let updatedMeal = try EasyMealsEngine.removeDishFromMeal(
+            mealPlan: mealPlans[targetIdx],
+            dishId: dishId
+        )
+        mealPlans[targetIdx] = updatedMeal
+        updateShoppingListAfterPlanChange()
+        persistState()
+    }
+
+    public func rescheduleMeal(mealPlanId: String, newDateStr: String, newPeriod: String) throws {
+        guard let targetIdx = mealPlans.firstIndex(where: { $0.id == mealPlanId }) else {
+            throw MealPlanError("Không tìm thấy bữa ăn có ID \(mealPlanId)")
+        }
+        let updatedMeal = try EasyMealsEngine.rescheduleMeal(
+            mealPlan: mealPlans[targetIdx],
+            newDateStr: newDateStr,
+            newPeriod: newPeriod,
+            allMealPlans: mealPlans
+        )
+        mealPlans[targetIdx] = updatedMeal
+        updateShoppingListAfterPlanChange()
+        persistState()
+    }
+
+    private func updateShoppingListAfterPlanChange() {
+        let rawNames = Dictionary(uniqueKeysWithValues: ingredients.map { ($0.id, $0.name) })
+        let ingCats = Dictionary(uniqueKeysWithValues: ingredients.map { ($0.id, $0.category) })
+        let planShopping = EasyMealsEngine.recomputeShoppingList(
+            mealPlans: mealPlans,
+            currentPantryLots: pantryLots,
+            recipes: recipes,
+            conversions: conversions,
+            rawIngredientNames: rawNames,
+            ingredientCategories: ingCats
+        )
+
+        let manual = shoppingItems.filter { $0.isManuallyAdded }
+        let manualKeys = Set(manual.map { $0.id })
+        let oldMap = Dictionary(uniqueKeysWithValues: shoppingItems.map { ($0.ingredientId + "_" + $0.unit, $0) })
+
+        let mergedPlanItems = planShopping.filter { !manualKeys.contains($0.id) }.map { item -> ShoppingItem in
+            let key = item.ingredientId + "_" + item.unit
+            if let old = oldMap[key] {
+                var copy = item
+                copy.price = old.price
+                copy.isBought = old.isBought
+                return copy
+            }
+            return item
+        }
+        self.shoppingItems = manual + mergedPlanItems
     }
 
     public func bulkAddBoughtToPantry(overrides: [PurchaseOverride] = []) {

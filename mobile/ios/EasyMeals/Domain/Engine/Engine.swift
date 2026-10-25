@@ -1006,4 +1006,154 @@ public enum EasyMealsEngine {
 
         return Array(shoppingItemsMap.values)
     }
+
+    public static func swapDishInMeal(
+        mealPlan: MealPlan,
+        oldDishId: String,
+        newRecipe: Recipe,
+        allPlansInPeriod: [MealPlan] = []
+    ) throws -> MealPlan {
+        if mealPlan.eatenAt != nil {
+            throw MealPlanError("Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn đổi món.")
+        }
+        var dishes = mealPlan.dishes
+        guard let dishIdx = dishes.firstIndex(where: { $0.id == oldDishId }) else {
+            throw MealPlanError("Không tìm thấy món có ID \(oldDishId) trong bữa ăn.")
+        }
+
+        if !allPlansInPeriod.isEmpty {
+            let otherRecipeIds = Set(
+                allPlansInPeriod.flatMap { $0.dishes }
+                    .filter { !$0.isLeftover && ($0.mealPlanId != mealPlan.id || $0.id != oldDishId) }
+                    .map { $0.recipeId }
+            )
+            if otherRecipeIds.contains(newRecipe.id) {
+                throw MealPlanError("Món '\(newRecipe.name)' đã được lên lịch trong chu kỳ thực đơn này.")
+            }
+        }
+
+        dishes[dishIdx] = PlannedDish(
+            id: UUID().uuidString,
+            mealPlanId: mealPlan.id,
+            recipeId: newRecipe.id,
+            recipeName: newRecipe.name,
+            category: newRecipe.category,
+            isLeftover: false,
+            servings: newRecipe.servings
+        )
+        var copy = mealPlan
+        copy.dishes = dishes
+        return copy
+    }
+
+    public static func addDishToMeal(
+        mealPlan: MealPlan,
+        recipe: Recipe,
+        servings: Int? = nil
+    ) throws -> MealPlan {
+        if mealPlan.eatenAt != nil {
+            throw MealPlanError("Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn thêm món.")
+        }
+        if mealPlan.dishes.contains(where: { $0.recipeId == recipe.id }) {
+            throw MealPlanError("Món '\(recipe.name)' đã có trong bữa ăn này.")
+        }
+        let catCount = mealPlan.dishes.filter { $0.category == recipe.category }.count
+        if catCount >= 2 {
+            throw MealPlanError("Bữa ăn đã đạt giới hạn tối đa 2 món cho nhóm \(recipe.category).")
+        }
+
+        var copy = mealPlan
+        copy.dishes.append(
+            PlannedDish(
+                id: UUID().uuidString,
+                mealPlanId: mealPlan.id,
+                recipeId: recipe.id,
+                recipeName: recipe.name,
+                category: recipe.category,
+                isLeftover: false,
+                servings: servings ?? recipe.servings
+            )
+        )
+        return copy
+    }
+
+    public static func removeDishFromMeal(
+        mealPlan: MealPlan,
+        dishId: String
+    ) throws -> MealPlan {
+        if mealPlan.eatenAt != nil {
+            throw MealPlanError("Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn bỏ món.")
+        }
+        guard let dishIdx = mealPlan.dishes.firstIndex(where: { $0.id == dishId }) else {
+            throw MealPlanError("Không tìm thấy món có ID \(dishId) trong bữa ăn.")
+        }
+        if mealPlan.dishes.count <= 1 {
+            throw MealPlanError("Không thể bỏ món duy nhất còn lại trong bữa ăn.")
+        }
+        var copy = mealPlan
+        copy.dishes.remove(at: dishIdx)
+        return copy
+    }
+
+    public static func rescheduleMeal(
+        mealPlan: MealPlan,
+        newDateStr: String,
+        newPeriod: String,
+        allMealPlans: [MealPlan]
+    ) throws -> MealPlan {
+        if mealPlan.eatenAt != nil {
+            throw MealPlanError("Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn chuyển ngày/bữa.")
+        }
+        let targetDate = String(newDateStr.prefix(10))
+        let conflict = allMealPlans.contains {
+            $0.id != mealPlan.id &&
+            String($0.plannedFor.prefix(10)) == targetDate &&
+            $0.mealPeriod == newPeriod
+        }
+        if conflict {
+            let periodVn = newPeriod == "lunch" ? "trưa" : "tối"
+            throw MealPlanError("Đã có bữa ăn khác được lên lịch vào bữa \(periodVn) ngày \(newDateStr).")
+        }
+        return MealPlan(
+            id: mealPlan.id,
+            plannedFor: targetDate,
+            mealPeriod: newPeriod,
+            periodId: mealPlan.periodId,
+            eatenAt: mealPlan.eatenAt,
+            dishes: mealPlan.dishes
+        )
+    }
+
+    public static func mergeCompatibleShoppingItems(_ items: [ShoppingItem]) throws -> [ShoppingItem] {
+        var mergedMap: [String: ShoppingItem] = [:]
+
+        for it in items {
+            let dim = UnitDimensions.dimension(of: it.unit)?.rawValue ?? it.unit
+            let key = "\(it.ingredientId)_\(dim)"
+
+            if var existing = mergedMap[key] {
+                let converted = try UnitDimensions.convert(quantity: ExactDecimal(it.neededQuantity), from: it.unit, to: existing.unit)
+                existing.neededQuantity = (ExactDecimal(existing.neededQuantity) + converted).description
+
+                for dn in it.dishNames {
+                    if !existing.dishNames.contains(dn) {
+                        existing.dishNames.append(dn)
+                    }
+                }
+
+                if let p = it.price, existing.price == nil {
+                    existing.price = p
+                } else if let p1 = it.price, let p2 = existing.price {
+                    existing.price = (ExactDecimal(p2) + ExactDecimal(p1)).description
+                }
+
+                existing.isBought = existing.isBought && it.isBought
+                mergedMap[key] = existing
+            } else {
+                mergedMap[key] = it
+            }
+        }
+
+        return Array(mergedMap.values)
+    }
 }
