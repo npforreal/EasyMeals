@@ -34,7 +34,9 @@ import {
   replacePlanShoppingItems,
   toggleShoppingItemBought,
   clearBoughtShoppingItems,
-  deleteShoppingItemsByIds,
+  executeBoughtToPantryAtomic,
+  defaultExpiryDate,
+  resolveIngredientCategory,
   CATALOGUE_SOURCE,
 } from "./js/storage.js";
 import {
@@ -1722,6 +1724,10 @@ async function initShoppingPage() {
   const container = document.getElementById("shopping-list-container");
   const clearBtn = document.getElementById("btn-clear-bought");
   const addBtn = document.getElementById("btn-add-to-pantry");
+  // A4: lượng thực mua/hạn dùng người dùng chỉnh trên từng mục (reset sau mỗi lượt mua).
+  let actualQuantities = {};
+  let expiryOverrides = {};
+  let cachedCatalogueForExpiry = null;
 
   // A3: danh sách đi chợ giờ nằm trong kho versioned IndexedDB (store "shopping").
   function renderList(items) {
@@ -1758,6 +1764,9 @@ async function initShoppingPage() {
       check.checked = Boolean(item.bought);
       check.addEventListener("change", async () => {
         await toggleShoppingItemBought(item.id);
+        // Render lại hàng: khi đã mua có thêm trường lượng thực mua/hạn dùng (A4).
+        item.bought = check.checked;
+        renderList(items);
       });
 
       const label = document.createElement("div");
@@ -1776,6 +1785,49 @@ async function initShoppingPage() {
 
       row.appendChild(check);
       row.appendChild(label);
+
+      // A4: khi đã tích "đã mua" cho phép nhập LƯỢNG THỰC MUA khác ước tính.
+      const actualQty = actualQuantities[item.id] ?? item.needed_quantity;
+      const actualExp = expiryOverrides[item.id] ?? defaultExpiryDate(
+        resolveIngredientCategory(cachedCatalogueForExpiry, item.ingredient_id)
+      );
+      if (item.bought) {
+        const edit = document.createElement("div");
+        edit.style.cssText =
+          "display:flex;flex-direction:column;gap:4px;margin-right:var(--space-1);";
+
+        const qtyLabel = document.createElement("label");
+        qtyLabel.style.cssText = "font-size:10px;color:var(--text-muted);";
+        qtyLabel.textContent = "Thực mua (kg/g/ml/l/piece)";
+        const qtyInput = document.createElement("input");
+        qtyInput.type = "number";
+        qtyInput.min = "0";
+        qtyInput.step = "any";
+        qtyInput.value = actualQty;
+        qtyInput.style.cssText =
+          "width:92px;padding:4px 6px;border:1px solid var(--border);border-radius:var(--radius-sm);";
+        qtyInput.addEventListener("input", () => {
+          actualQuantities[item.id] = qtyInput.value;
+        });
+        qtyLabel.appendChild(qtyInput);
+
+        const expLabel = document.createElement("label");
+        expLabel.style.cssText = "font-size:10px;color:var(--text-muted);";
+        expLabel.textContent = "Hạn dùng (Nhóm mặc định)";
+        const expInput = document.createElement("input");
+        expInput.type = "date";
+        expInput.value = actualExp;
+        expInput.style.cssText =
+          "width:132px;padding:4px 6px;border:1px solid var(--border);border-radius:var(--radius-sm);";
+        expInput.addEventListener("input", () => {
+          expiryOverrides[item.id] = expInput.value;
+        });
+        expLabel.appendChild(expInput);
+
+        edit.appendChild(qtyLabel);
+        edit.appendChild(expLabel);
+        row.appendChild(edit);
+      }
       list.appendChild(row);
     });
 
@@ -1783,7 +1835,15 @@ async function initShoppingPage() {
   }
 
   async function loadAndRender() {
-    renderList(await getShoppingItems());
+    const items = await getShoppingItems();
+    if (!cachedCatalogueForExpiry) {
+      try {
+        cachedCatalogueForExpiry = await getCachedCatalogue();
+      } catch (_) {
+        cachedCatalogueForExpiry = null;
+      }
+    }
+    renderList(items);
   }
 
   if (clearBtn) {
@@ -1796,6 +1856,7 @@ async function initShoppingPage() {
 
   if (addBtn) {
     addBtn.addEventListener("click", async () => {
+      // A4: chống bấm lặp — khoá nút trong suốt quá trình mua vào tủ.
       const items = await getShoppingItems();
       const bought = items.filter((i) => i.bought);
       if (!bought.length) {
@@ -1803,17 +1864,29 @@ async function initShoppingPage() {
         return;
       }
 
-      for (const item of bought) {
-        await addPantryLot({
-          ingredient_id: item.ingredient_id,
-          ingredient_name: item.ingredient_name,
-          quantity: item.needed_quantity,
-          unit: item.unit,
-        });
+      addBtn.disabled = true;
+      try {
+        const overrides = {};
+        for (const item of bought) {
+          const ov = {};
+          const actual = Number(actualQuantities[item.id] ?? item.needed_quantity);
+          if (Number.isFinite(actual) && actual !== Number(item.needed_quantity)) {
+            ov.quantity = String(actual);
+          }
+          if (expiryOverrides[item.id]) {
+            ov.expires_at = expiryOverrides[item.id];
+          }
+          if (Object.keys(ov).length) overrides[item.id] = ov;
+        }
+        await executeBoughtToPantryAtomic(bought, overrides, cachedCatalogueForExpiry);
+        showToast(`Đã chuyển ${bought.length} món vào tủ lạnh!`, "success");
+      } catch (err) {
+        showToast(`Không thể mua vào tủ: ${err.message}`, "danger");
+      } finally {
+        addBtn.disabled = false;
+        actualQuantities = {};
+        expiryOverrides = {};
       }
-
-      await deleteShoppingItemsByIds(bought.map((i) => i.id));
-      showToast(`Đã chuyển ${bought.length} món vào tủ lạnh!`, "success");
       loadAndRender();
     });
   }

@@ -479,6 +479,96 @@ export async function toggleShoppingItemBought(id) {
 }
 
 // ==========================================
+// 4b. Đi chợ: mua vào tủ chính xác (A4 - Vòng 13)
+// ==========================================
+
+/** Hạn dùng mặc định theo nhóm nguyên liệu (ngày tính từ ngày mua). */
+export const DEFAULT_EXPIRY_DAYS = {
+  thit: 3,
+  gia_cam: 2,
+  hai_san: 2,
+  trung_sua: 7,
+  rau_cu: 5,
+  cu_qua: 10,
+  gao_bot_mi: 180,
+  gia_vi: 180,
+  nuoc_cham_dau: 180,
+};
+
+export function defaultExpiryDays(category) {
+  if (typeof category !== "string" || !DEFAULT_EXPIRY_DAYS.hasOwnProperty(category)) {
+    return 7; // nhóm "khac" hoặc nhóm lạ
+  }
+  return DEFAULT_EXPIRY_DAYS[category];
+}
+
+/** Ngày hết hạn mặc định (ISO "YYYY-MM-DD") = ngày mua + số ngày nhóm. */
+export function defaultExpiryDate(category, purchasedAt) {
+  const base = purchasedAt ? new Date(purchasedAt) : new Date();
+  const d = new Date(base);
+  d.setDate(d.getDate() + defaultExpiryDays(category));
+  return d.toISOString().slice(0, 10);
+}
+
+/** Nhóm nguyên liệu trong catalogue (nếu catalogue chưa tải -> "khac"). */
+export function resolveIngredientCategory(catalogue, ingredientId) {
+  const ing = (catalogue?.ingredients || []).find((i) => i.id === ingredientId);
+  return ing?.category || "khac";
+}
+
+/**
+ * A4: mua vào tủ trong MỘT giao dịch IndexedDB ("pantry" + "shopping").
+ * - `boughtItems` là các mục đã tích chọn trong danh sách đi chợ.
+ * - `overrides` (tuỳ chọn, theo id mục) cho phép nhập LƯỢNG THỰC MUA khác ước tính
+ *   và ghi đè hạn dùng (`{ "<itemId>": { quantity: "300", expires_at: "2026-10-30" } }`).
+ * - Ngày mua = hiện tại; khi thiếu hạn dùng khách hàng tự điền thì áp dụng mặc định nhóm.
+ * - Idempotent: mục bị xoá giữa chừng do bấm lặp sẽ được bỏ qua.
+ */
+export async function executeBoughtToPantryAtomic(boughtItems, overrides = {}, catalogue = null) {
+  if (boughtItems.length) {
+    const db = await openDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(["pantry", "shopping"], "readwrite");
+      const pStore = tx.objectStore("pantry");
+      const shopStore = tx.objectStore("shopping");
+      const purchasedAt = new Date().toISOString();
+      for (const item of boughtItems) {
+        if (!item || typeof item !== "object") continue;
+        const fresh = shopStore.get(item.id);
+        fresh.onsuccess = () => {
+          // Idempotent: mục đã bị xoá (bấm lặp) -> bỏ qua.
+          if (!fresh.result) return;
+          const ov = overrides[item.id] || {};
+          const category = resolveIngredientCategory(catalogue, item.ingredient_id);
+          const quantity = String(ov.quantity ?? item.needed_quantity ?? "0");
+          if (Number(quantity) <= 0) {
+            // Lượng thực mua phải > 0; mục vô nghĩa chỉ xoá khỏi danh sách.
+            shopStore.delete(item.id);
+            return;
+          }
+          pStore.put({
+            id: generateUUID(),
+            ingredient_id: item.ingredient_id,
+            ingredient_name: item.ingredient_name,
+            purchased_quantity: quantity,
+            remaining_quantity: quantity,
+            unit: item.unit,
+            purchased_at: purchasedAt,
+            expires_at: ov.expires_at || defaultExpiryDate(category, purchasedAt),
+            created_at: purchasedAt,
+          });
+          shopStore.delete(item.id);
+        };
+      }
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = (e) => reject(e.target.error);
+      tx.onabort = (event) => reject(new Error("Giao dịch mua vào tủ bị huỷ: " + event.target.error));
+    });
+  }
+  return boughtItems.length;
+}
+
+// ==========================================
 // 4. Backup & Restore (JSON)
 // ==========================================
 

@@ -30,6 +30,9 @@ import {
   toggleShoppingItemBought,
   clearBoughtShoppingItems,
   deleteShoppingItemsByIds,
+  executeBoughtToPantryAtomic,
+  defaultExpiryDays,
+  defaultExpiryDate,
   SCHEMA_VERSION,
 } from "../../app/static/js/storage.js";
 import { getAllItems } from "../../app/static/js/db.js";
@@ -577,5 +580,73 @@ describe("EasyMeals IndexedDB Storage Tests", () => {
         }),
       /Số lượng cần mua/
     );
+  });
+
+  test("A4: hạn dùng mặc định theo nhóm nguyên liệu", async () => {
+    assert.equal(defaultExpiryDays("thit"), 3);
+    assert.equal(defaultExpiryDays("hai_san"), 2);
+    assert.equal(defaultExpiryDays("rau_cu"), 5);
+    assert.equal(defaultExpiryDays("cu_qua"), 10);
+    assert.equal(defaultExpiryDays("gao_bot_mi"), 180);
+    assert.equal(defaultExpiryDays("khac"), 7);
+    assert.equal(defaultExpiryDays("nhom-khong-tim-thay"), 7);
+    assert.equal(defaultExpiryDays(null), 7);
+
+    const exp = defaultExpiryDate("hai_san", "2026-10-25T08:00:00Z");
+    assert.match(exp, /^\d{4}-\d{2}-\d{2}$/);
+    const diff = (new Date(exp) - new Date("2026-10-25")) / 86400000;
+    assert.equal(diff, 2, "hai_san mặc định +2 ngày kể từ ngày mua");
+  });
+
+  test("A4: mua vào tủ một giao dịch - lượng thực mua, hạn dùng, idempotent", async () => {
+    const catalogue = {
+      ingredients: [
+        { id: "ing-thit", name: "Thịt heo", normalized_name: "thit heo", category: "thit", default_unit: "g", aliases: [] },
+      ],
+      recipes: [],
+    };
+
+    const a = await addShoppingItem(
+      { ingredient_id: "ing-thit", ingredient_name: "Thịt heo", needed_quantity: "600", unit: "g" },
+      { source: "plan" }
+    );
+    const b = await addShoppingItem(
+      { ingredient_id: "ing-rau", ingredient_name: "Cải xanh", needed_quantity: "300", unit: "g" },
+      { source: "manual" }
+    );
+
+    // Mua: ghi đè lượng thực mua + hạn dùng cho mục a; mục b dùng mặc định nhóm "khac".
+    await executeBoughtToPantryAtomic(
+      [
+        { id: a.id, ingredient_id: "ing-thit", ingredient_name: "Thịt heo", needed_quantity: "600", unit: "g" },
+        { id: b.id, ingredient_id: "ing-rau", ingredient_name: "Cải xanh", needed_quantity: "300", unit: "g" },
+      ],
+      { [a.id]: { quantity: "450" } },
+      catalogue
+    );
+
+    const lots = await getPantryLots();
+    const lotThit = lots.find((l) => l.ingredient_id === "ing-thit");
+    const lotRau = lots.find((l) => l.ingredient_id === "ing-rau");
+    assert.equal(lotThit.purchased_quantity, "450", "Lượng thực mua khác ước tính được áp dụng");
+    assert.equal(lotThit.expires_at, lotThit.expires_at && /^\d{4}-\d{2}-\d{2}$/.test(lotThit.expires_at) ? lotThit.expires_at : null);
+    assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(lotThit.expires_at), "Có hạn dùng");
+    assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(lotRau?.expires_at || ""), "Mục còn lại có hạn dùng mặc định");
+
+    const diffThit = (new Date(lotThit.expires_at) - new Date(lotThit.purchased_at)) / 86400000;
+    assert.ok(diffThit <= 3 && diffThit >= 2, "th mặc định +3 ngày (làm tròn theo múi giờ ±)");
+    assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(lotRau.expires_at));
+
+    // Danh sách đi chợ: các mục đã mua bị xoá trong cùng giao dịch.
+    assert.equal((await getShoppingItems()).length, 0);
+
+    // Idempotent: bấm lặp với mục đã xoá -> không thêm lot mới.
+    const before = (await getPantryLots()).length;
+    await executeBoughtToPantryAtomic(
+      [{ id: a.id, ingredient_id: "ing-thit", ingredient_name: "Thịt heo", needed_quantity: "600", unit: "g" }],
+      {},
+      catalogue
+    );
+    assert.equal((await getPantryLots()).length, before, "Không nhân đôi lot khi bấm lặp");
   });
 });
