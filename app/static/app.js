@@ -1569,6 +1569,12 @@ async function initPlannerPage() {
           const data = engineGeneratePeriodPlan(s, end, catalogue.recipes, lots, {
             allowLeftovers: leftoverPrefs.allowLeftovers,
             leftoverDays: leftoverPrefs.leftoverDays,
+            // A7 - Vòng 13: đường offline/bundled cũng phải nhận quy đổi (gạo -> cơm)
+            // kèm tên nguyên liệu gốc, khớp đường API.
+            conversions: catalogue.conversions || [],
+            raw_ingredient_names: Object.fromEntries(
+              (catalogue.ingredients || []).map((ing) => [ing.id, ing.name])
+            ),
           });
           await saveGeneratedPlansBatch(existingPlans, data, mergeMode);
 
