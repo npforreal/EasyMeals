@@ -110,4 +110,33 @@ test.describe('Vòng 13 - Giai đoạn B: Chỉnh sửa thực đơn, Đi chợ 
 
     await expect(page.locator('.shopping-item-row:has-text("Khăn ướt em bé")')).toHaveCount(0);
   });
+
+  test('B1 & B3: Đổi món, bỏ món trên thực đơn và gộp món trùng trên shopping list', async ({ page }) => {
+    // 1. Lập thực đơn 1 ngày
+    await page.goto('/planner');
+    await page.waitForSelector('#btn-generate');
+    await page.click('.day-chip[data-days="1"]');
+    await page.click('#btn-generate');
+    await page.waitForSelector('.meal-box');
+
+    // 2. Thấy nút Đổi món trên từng món ăn
+    const swapBtns = page.locator('.btn-swap-dish');
+    await expect(swapBtns.first()).toBeVisible();
+
+    // 3. Thấy nút Chuyển bữa
+    const reschedBtn = page.locator('.btn-reschedule-meal').first();
+    await expect(reschedBtn).toBeVisible();
+
+    // 4. Qua trang đi chợ kiểm tra nút Gộp món trùng
+    await page.goto('/shopping-list');
+    await page.waitForSelector('#btn-merge-shopping');
+    const mergeBtn = page.locator('#btn-merge-shopping');
+    await expect(mergeBtn).toBeVisible();
+    await mergeBtn.click();
+    await expect(page.locator('.toast:has-text("Đã gộp")')).toBeVisible();
+
+    // 5. Kiểm tra nút Sửa lượng trên dòng nguyên liệu
+    const editQtyBtn = page.locator('.btn-edit-qty').first();
+    await expect(editQtyBtn).toBeVisible();
+  });
 });

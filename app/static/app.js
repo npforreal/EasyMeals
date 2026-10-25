@@ -41,6 +41,7 @@ import {
   resolveIngredientCategory,
   CATALOGUE_SOURCE,
   SHOPPING_SOURCE_MANUAL,
+  mergeShoppingItems,
 } from "./js/storage.js";
 import {
   generatePeriodPlan as engineGeneratePeriodPlan,
@@ -49,6 +50,11 @@ import {
   recomputeShoppingList as engineRecomputeShoppingList,
   calculateShoppingBudget as engineCalculateShoppingBudget,
   groupShoppingItemsByCategory as engineGroupShoppingItemsByCategory,
+  swapDishInMeal as engineSwapDishInMeal,
+  addDishToMeal as engineAddDishToMeal,
+  removeDishFromMeal as engineRemoveDishFromMeal,
+  rescheduleMeal as engineRescheduleMeal,
+  mergeCompatibleShoppingItems as engineMergeCompatibleShoppingItems,
   deductRecipeStockFifo as engineDeductRecipeStockFifo,
   deductRecipeStockAvailable as engineDeductRecipeStockAvailable,
   reverseStockMovements as engineReverseStockMovements,
@@ -1237,11 +1243,88 @@ async function initPlannerPage() {
           viewBtn.className = "btn btn-outline btn-xs";
           viewBtn.style.padding = "2px 8px";
           viewBtn.style.fontSize = "0.75rem";
-          viewBtn.textContent = "Xem công thức";
+          viewBtn.textContent = "Xem";
           viewBtn.addEventListener("click", () => {
             openRecipeModal(dish.recipe_id, dish.servings || 4);
           });
           right.appendChild(viewBtn);
+
+          // B1: Đổi món cụ thể và Bỏ món (khi bữa chưa ăn)
+          if (!meal.eaten_at) {
+            const swapBtn = document.createElement("button");
+            swapBtn.type = "button";
+            swapBtn.className = "btn btn-outline btn-xs btn-swap-dish";
+            swapBtn.style.padding = "2px 8px";
+            swapBtn.style.fontSize = "0.75rem";
+            swapBtn.textContent = "Đổi";
+            swapBtn.title = "Đổi món này sang món khác cùng nhóm";
+            swapBtn.addEventListener("click", async () => {
+              const catalogue = await getCachedCatalogue();
+              if (!catalogue || !catalogue.recipes) return;
+              const allPlans = await getMealPlans();
+              const usedIds = new Set(
+                allPlans.flatMap((p) => p.dishes || []).filter((d) => !d.is_leftover && d.id !== dish.id).map((d) => d.recipe_id)
+              );
+              const candidates = catalogue.recipes.filter(
+                (r) => r.category === dish.category && !usedIds.has(r.id)
+              );
+              if (!candidates.length) {
+                showToast("Không còn món nào khác cùng nhóm chưa nấu trong chu kỳ.", "info");
+                return;
+              }
+              const choiceNames = candidates.map((r, idx) => `${idx + 1}. ${r.name}`).join("\n");
+              const input = prompt(`Chọn món thay thế cho "${dish.recipe_name}":\n\n${choiceNames}\n\nNhập số thứ tự:`);
+              const selectedIdx = parseInt(input, 10) - 1;
+              if (isNaN(selectedIdx) || selectedIdx < 0 || selectedIdx >= candidates.length) return;
+              const chosenRecipe = candidates[selectedIdx];
+
+              try {
+                const updatedMeal = engineSwapDishInMeal(meal, dish.id, chosenRecipe, allPlans);
+                const updatedPlans = allPlans.map((p) => (p.id === meal.id ? updatedMeal : p));
+                await saveMealPlans(updatedPlans);
+
+                const currentLots = await getPantryLots();
+                const newShopping = engineRecomputeShoppingList(updatedPlans, currentLots, catalogue.recipes);
+                await replacePlanShoppingItems(newShopping);
+
+                showToast(`Đã đổi sang món "${chosenRecipe.name}"!`, "success");
+                loadAndRenderPlans();
+              } catch (err) {
+                showToast(`Lỗi: ${err.message}`, "danger");
+              }
+            });
+            right.appendChild(swapBtn);
+
+            if ((meal.dishes || []).length > 1) {
+              const removeBtn = document.createElement("button");
+              removeBtn.type = "button";
+              removeBtn.className = "btn btn-outline btn-xs btn-remove-dish";
+              removeBtn.style.padding = "2px 6px";
+              removeBtn.style.fontSize = "0.75rem";
+              removeBtn.textContent = "✕";
+              removeBtn.title = "Bỏ món này khỏi bữa ăn";
+              removeBtn.addEventListener("click", async () => {
+                if (!confirm(`Bạn có chắc muốn bỏ món "${dish.recipe_name}" khỏi bữa ăn này?`)) return;
+                try {
+                  const allPlans = await getMealPlans();
+                  const updatedMeal = engineRemoveDishFromMeal(meal, dish.id);
+                  const updatedPlans = allPlans.map((p) => (p.id === meal.id ? updatedMeal : p));
+                  await saveMealPlans(updatedPlans);
+
+                  const catalogue = await getCachedCatalogue();
+                  const currentLots = await getPantryLots();
+                  const newShopping = engineRecomputeShoppingList(updatedPlans, currentLots, catalogue?.recipes || []);
+                  await replacePlanShoppingItems(newShopping);
+
+                  showToast(`Đã bỏ món "${dish.recipe_name}"!`, "success");
+                  loadAndRenderPlans();
+                } catch (err) {
+                  showToast(`Lỗi: ${err.message}`, "danger");
+                }
+              });
+              right.appendChild(removeBtn);
+            }
+          }
 
           item.appendChild(left);
           item.appendChild(right);
@@ -1470,6 +1553,38 @@ async function initPlannerPage() {
             }
           });
           actionRow.appendChild(regenBtn);
+
+          // B1: Chuyển ngày hoặc chuyển bữa (trưa/tối)
+          const reschedBtn = document.createElement("button");
+          reschedBtn.type = "button";
+          reschedBtn.className = "btn btn-outline btn-sm btn-reschedule-meal";
+          reschedBtn.textContent = "Chuyển bữa";
+          reschedBtn.title = "Đổi ngày hoặc chuyển giữa trưa và tối";
+          reschedBtn.addEventListener("click", async () => {
+            const currentPeriod = meal.meal_period === "lunch" ? "Trưa" : "Tối";
+            const newPeriod = meal.meal_period === "lunch" ? "dinner" : "lunch";
+            const newPeriodName = newPeriod === "lunch" ? "Trưa" : "Tối";
+            const datePrompt = prompt(
+              `Chuyển bữa ăn (${currentPeriod} ${meal.planned_for}):\n\nNhập ngày mới (YYYY-MM-DD):`,
+              meal.planned_for
+            );
+            if (datePrompt === null) return;
+            const targetDate = datePrompt.trim() || meal.planned_for;
+            const switchPeriod = confirm(`Bạn có muốn chuyển sang bữa ${newPeriodName} không? (Bấm OK để chuyển sang ${newPeriodName}, Huỷ để giữ bữa ${currentPeriod})`);
+            const targetPeriod = switchPeriod ? newPeriod : meal.meal_period;
+
+            try {
+              const allPlans = await getMealPlans();
+              const updatedMeal = engineRescheduleMeal(meal, targetDate, targetPeriod, allPlans);
+              const updatedPlans = allPlans.map((p) => (p.id === meal.id ? updatedMeal : p));
+              await saveMealPlans(updatedPlans);
+              showToast("Đã chuyển ngày/bữa thành công!", "success");
+              loadAndRenderPlans();
+            } catch (err) {
+              showToast(`Lỗi: ${err.message}`, "danger");
+            }
+          });
+          actionRow.appendChild(reschedBtn);
         } else {
           const undoBtn = document.createElement("button");
           undoBtn.type = "button";
@@ -1963,6 +2078,28 @@ async function initShoppingPage() {
         if (item.bought) name.style.textDecoration = "line-through";
         nameRow.appendChild(name);
 
+        // B3: Sửa số lượng cần mua
+        const editQtyBtn = document.createElement("button");
+        editQtyBtn.type = "button";
+        editQtyBtn.className = "btn btn-outline btn-xs btn-edit-qty";
+        editQtyBtn.style.cssText = "font-size: 10px; padding: 1px 5px; margin-left: 4px; border-color: var(--border);";
+        editQtyBtn.textContent = "Sửa lượng";
+        editQtyBtn.title = "Chỉnh sửa số lượng cần mua";
+        editQtyBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const newQty = prompt(`Nhập số lượng cần mua mới cho "${item.ingredient_name}" (${item.unit}):`, item.needed_quantity);
+          if (newQty === null) return;
+          const parsed = parseFloat(newQty);
+          if (isNaN(parsed) || parsed <= 0) {
+            showToast("Số lượng không hợp lệ.", "warning");
+            return;
+          }
+          await updateShoppingItem(item.id, { needed_quantity: String(parsed) });
+          item.needed_quantity = String(parsed);
+          loadAndRender();
+        });
+        nameRow.appendChild(editQtyBtn);
+
         if (item.source === "manual") {
           const manualBadge = document.createElement("span");
           manualBadge.className = "badge";
@@ -2087,6 +2224,22 @@ async function initShoppingPage() {
       }
     }
     renderList(items);
+  }
+
+  const mergeBtn = document.getElementById("btn-merge-shopping");
+  if (mergeBtn) {
+    mergeBtn.addEventListener("click", async () => {
+      mergeBtn.disabled = true;
+      try {
+        await mergeShoppingItems();
+        showToast("Đã gộp các món cùng nguyên liệu và cùng thứ nguyên!", "success");
+        await loadAndRender();
+      } catch (err) {
+        showToast(`Lỗi gộp: ${err.message}`, "danger");
+      } finally {
+        mergeBtn.disabled = false;
+      }
+    });
   }
 
   if (clearBtn) {
