@@ -1254,6 +1254,20 @@ async function initPlannerPage() {
           eatBtn.className = "btn btn-primary btn-sm";
           eatBtn.textContent = "Đánh dấu Đã ăn (Trừ kho)";
 
+          // A7 - Vòng 13: multiplier khẩu phần bằng số học chính xác: chia BigInt
+          // nguyên với SCALE 6 chữ số thập phân của engine.js, làm tròn nửa lên.
+          // Không dùng phép chia số thực (7/3 -> "2.3333333333333335" sai lệch).
+          function computeMealMultiplier(servings, baseServings) {
+            const SCALE = 1000000n;
+            const s = BigInt(servings || 1);
+            const b = BigInt(baseServings || 1);
+            const fixed = (s * SCALE + b / 2n) / b;
+            const whole = fixed / SCALE;
+            const frac = fixed % SCALE;
+            if (frac === 0n) return String(whole);
+            return `${whole}.${frac.toString().padStart(6, "0")}`;
+          }
+
           async function doEat(allowPartial) {
             eatBtn.disabled = true;
             eatBtn.textContent = "Đang trừ kho...";
@@ -1275,7 +1289,10 @@ async function initPlannerPage() {
                   if (!recipe) {
                     throw new Error(`Không tìm thấy công thức "${d.recipe_name || d.recipe_id}" trong danh mục.`);
                   }
-                  const mult = d.servings ? String(d.servings / recipe.servings) : "1";
+                  // A7 - Vòng 13: multiplier tính bằng số học chính xác (BigInt, làm
+                  // tròn nửa lên tới SCALE 6 chữ số của engine.js) thay vì chia số thực
+                  // (7/3 -> "2.3333333333333335" làm trừ kho lệch ~2mg mỗi lần ăn).
+                  const mult = computeMealMultiplier(d.servings, recipe.servings);
                   if (allowPartial) {
                     const deduction = engineDeductRecipeStockAvailable(
                       updatedLots,
