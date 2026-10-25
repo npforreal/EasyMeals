@@ -1065,3 +1065,175 @@ export function groupShoppingItemsByCategory(items = [], categoriesOrder = null)
   }
   return result;
 }
+
+export function swapDishInMeal(mealPlan, oldDishId, newRecipe, allPlansInPeriod = []) {
+  if (mealPlan.eaten_at || mealPlan.eatenAt) {
+    throw new Error(
+      "Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn đổi món."
+    );
+  }
+
+  const dishes = mealPlan.dishes || [];
+  const dishIdx = dishes.findIndex((d) => String(d.id) === String(oldDishId));
+  if (dishIdx === -1) {
+    throw new Error(`Không tìm thấy món có ID ${oldDishId} trong bữa ăn.`);
+  }
+
+  if (allPlansInPeriod && allPlansInPeriod.length > 0) {
+    const otherRecipeIds = new Set();
+    for (const p of allPlansInPeriod) {
+      for (const d of p.dishes || []) {
+        if (!d.is_leftover && (String(p.id) !== String(mealPlan.id) || String(d.id) !== String(oldDishId))) {
+          otherRecipeIds.add(String(d.recipe_id));
+        }
+      }
+    }
+    if (otherRecipeIds.has(String(newRecipe.id))) {
+      throw new Error(`Món '${newRecipe.name}' đã được lên lịch trong chu kỳ thực đơn này.`);
+    }
+  }
+
+  const updatedDishes = [...dishes];
+  updatedDishes[dishIdx] = {
+    id: generateEngineUUID(),
+    meal_plan_id: mealPlan.id,
+    recipe_id: newRecipe.id,
+    recipe_name: newRecipe.name,
+    category: newRecipe.category,
+    servings: newRecipe.servings || 4,
+    is_leftover: false,
+  };
+
+  return {
+    ...mealPlan,
+    dishes: updatedDishes,
+  };
+}
+
+export function addDishToMeal(mealPlan, recipe, servings = null) {
+  if (mealPlan.eaten_at || mealPlan.eatenAt) {
+    throw new Error(
+      "Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn thêm món."
+    );
+  }
+
+  const dishes = mealPlan.dishes || [];
+  if (dishes.some((d) => String(d.recipe_id) === String(recipe.id))) {
+    throw new Error(`Món '${recipe.name}' đã có trong bữa ăn này.`);
+  }
+
+  const catCount = dishes.filter((d) => d.category === recipe.category).length;
+  if (catCount >= 2) {
+    throw new Error(
+      `Bữa ăn đã đạt giới hạn tối đa 2 món cho nhóm ${recipe.category}.`
+    );
+  }
+
+  const newDish = {
+    id: generateEngineUUID(),
+    meal_plan_id: mealPlan.id,
+    recipe_id: recipe.id,
+    recipe_name: recipe.name,
+    category: recipe.category,
+    servings: servings || recipe.servings || 4,
+    is_leftover: false,
+  };
+
+  return {
+    ...mealPlan,
+    dishes: [...dishes, newDish],
+  };
+}
+
+export function removeDishFromMeal(mealPlan, dishId) {
+  if (mealPlan.eaten_at || mealPlan.eatenAt) {
+    throw new Error(
+      "Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn bỏ món."
+    );
+  }
+
+  const dishes = mealPlan.dishes || [];
+  const dishIdx = dishes.findIndex((d) => String(d.id) === String(dishId));
+  if (dishIdx === -1) {
+    throw new Error(`Không tìm thấy món có ID ${dishId} trong bữa ăn.`);
+  }
+
+  if (dishes.length <= 1) {
+    throw new Error("Không thể bỏ món duy nhất còn lại trong bữa ăn.");
+  }
+
+  const updatedDishes = dishes.filter((_, idx) => idx !== dishIdx);
+  return {
+    ...mealPlan,
+    dishes: updatedDishes,
+  };
+}
+
+export function rescheduleMeal(mealPlan, newDateStr, newPeriod, allMealPlans = []) {
+  if (mealPlan.eaten_at || mealPlan.eatenAt) {
+    throw new Error(
+      "Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn chuyển ngày/bữa."
+    );
+  }
+
+  const conflict = allMealPlans.some(
+    (p) =>
+      String(p.id) !== String(mealPlan.id) &&
+      String(p.planned_for).slice(0, 10) === String(newDateStr).slice(0, 10) &&
+      p.meal_period === newPeriod
+  );
+  if (conflict) {
+    const periodVn = newPeriod === "lunch" ? "trưa" : "tối";
+    throw new Error(`Đã có bữa ăn khác được lên lịch vào bữa ${periodVn} ngày ${newDateStr}.`);
+  }
+
+  return {
+    ...mealPlan,
+    planned_for: String(newDateStr).slice(0, 10),
+    meal_period: newPeriod,
+  };
+}
+
+export function mergeCompatibleShoppingItems(items = []) {
+  const mergedMap = new Map();
+
+  for (const it of items || []) {
+    const dim = UNIT_DIMENSIONS[it.unit];
+    const key = `${it.ingredient_id}|${dim || it.unit}`;
+
+    const existing = mergedMap.get(key);
+    if (!existing) {
+      mergedMap.set(key, {
+        ...it,
+        needed_quantity: String(it.needed_quantity),
+        dish_names: [...(it.dish_names || [])],
+      });
+    } else {
+      const convertedQty = convertQuantity(it.needed_quantity, it.unit, existing.unit);
+      existing.needed_quantity = Decimal.from(existing.needed_quantity)
+        .add(convertedQty)
+        .toString();
+
+      for (const dn of it.dish_names || []) {
+        if (!existing.dish_names.includes(dn)) {
+          existing.dish_names.push(dn);
+        }
+      }
+
+      if (it.price && !existing.price) {
+        existing.price = it.price;
+      } else if (it.price && existing.price) {
+        existing.price = Decimal.from(existing.price).add(it.price).toString();
+      }
+
+      if (existing.is_bought !== undefined && it.is_bought !== undefined) {
+        existing.is_bought = Boolean(existing.is_bought && it.is_bought);
+      }
+      if (existing.bought !== undefined && it.bought !== undefined) {
+        existing.bought = Boolean(existing.bought && it.bought);
+      }
+    }
+  }
+
+  return Array.from(mergedMap.values());
+}

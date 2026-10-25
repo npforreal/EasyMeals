@@ -5,6 +5,11 @@ import {
   recomputeShoppingList,
   calculateShoppingBudget,
   groupShoppingItemsByCategory,
+  swapDishInMeal,
+  addDishToMeal,
+  removeDishFromMeal,
+  rescheduleMeal,
+  mergeCompatibleShoppingItems,
 } from "../../app/static/js/engine.js";
 
 describe("Plan Editing & Shopping Budget (JS Engine)", () => {
@@ -78,5 +83,82 @@ describe("Plan Editing & Shopping Budget (JS Engine)", () => {
     assert.equal(grouped.gia_cam.length, 1);
     assert.equal(grouped.rau_cu.length, 1);
     assert.equal(grouped.khac.length, 1);
+  });
+
+  it("B1 & B2: swapDishInMeal replaces specific dish and enforces eaten history protection", () => {
+    const meal = {
+      id: "m1",
+      planned_for: "2026-10-26",
+      meal_period: "lunch",
+      dishes: [
+        { id: "d1", recipe_id: "r1", recipe_name: "Thịt heo luộc", category: "man" },
+        { id: "d2", recipe_id: "r2", recipe_name: "Rau luộc", category: "rau" },
+      ],
+    };
+    const newRecipe = { id: "r3", name: "Sườn xào chua ngọt", category: "man", servings: 4 };
+
+    // Đổi món thành công
+    const swapped = swapDishInMeal(meal, "d1", newRecipe, [meal]);
+    assert.equal(swapped.dishes.length, 2);
+    assert.equal(swapped.dishes[0].recipe_id, "r3");
+    assert.equal(swapped.dishes[0].recipe_name, "Sườn xào chua ngọt");
+
+    // Đã ăn -> ném lỗi
+    const eatenMeal = { ...meal, eaten_at: "2026-10-26T12:00:00Z" };
+    assert.throws(
+      () => swapDishInMeal(eatenMeal, "d1", newRecipe, [eatenMeal]),
+      /đã được đánh dấu ăn/
+    );
+  });
+
+  it("B1 & B2: addDishToMeal respects category max limit and removeDishFromMeal prevents empty meal", () => {
+    const meal = {
+      id: "m1",
+      planned_for: "2026-10-26",
+      meal_period: "lunch",
+      dishes: [
+        { id: "d1", recipe_id: "r1", recipe_name: "Thịt kho", category: "man" },
+      ],
+    };
+    const man2 = { id: "r2", name: "Gà kho", category: "man", servings: 4 };
+    const man3 = { id: "r3", name: "Bò xào", category: "man", servings: 4 };
+
+    // Thêm món thứ 2 thành công
+    const with2 = addDishToMeal(meal, man2);
+    assert.equal(with2.dishes.length, 2);
+
+    // Thêm món thứ 3 cùng nhóm mặn -> ném lỗi
+    assert.throws(() => addDishToMeal(with2, man3), /tối đa 2 món/);
+
+    // Bỏ món
+    const with1 = removeDishFromMeal(with2, with2.dishes[1].id);
+    assert.equal(with1.dishes.length, 1);
+
+    // Bỏ món duy nhất còn lại -> ném lỗi
+    assert.throws(() => removeDishFromMeal(with1, with1.dishes[0].id), /món duy nhất/);
+  });
+
+  it("B1 & B2: rescheduleMeal changes date and checks conflict", () => {
+    const m1 = { id: "m1", planned_for: "2026-10-26", meal_period: "lunch", dishes: [] };
+    const m2 = { id: "m2", planned_for: "2026-10-27", meal_period: "dinner", dishes: [] };
+
+    // Chuyển hợp lệ
+    const moved = rescheduleMeal(m1, "2026-10-28", "lunch", [m1, m2]);
+    assert.equal(moved.planned_for, "2026-10-28");
+
+    // Trùng lịch với m2 -> ném lỗi xung đột
+    assert.throws(() => rescheduleMeal(m1, "2026-10-27", "dinner", [m1, m2]), /Đã có bữa ăn khác/);
+  });
+
+  it("B3: mergeCompatibleShoppingItems merges same ingredient within same dimension", () => {
+    const items = [
+      { ingredient_id: "ing1", ingredient_name: "Đường", needed_quantity: "200", unit: "g", price: "10000" },
+      { ingredient_id: "ing1", ingredient_name: "Đường", needed_quantity: "0.5", unit: "kg", price: "25000" },
+    ];
+    const merged = mergeCompatibleShoppingItems(items);
+    assert.equal(merged.length, 1);
+    assert.equal(merged[0].needed_quantity, "700");
+    assert.equal(merged[0].unit, "g");
+    assert.equal(merged[0].price, "35000");
   });
 });

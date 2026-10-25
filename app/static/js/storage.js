@@ -16,6 +16,7 @@ import {
   openDB,
   putItem,
 } from "./db.js";
+import { mergeCompatibleShoppingItems } from "./engine.js";
 
 export const SCHEMA_VERSION = 2;
 export const LEGACY_SCHEMA_VERSION = 1;
@@ -498,6 +499,17 @@ export async function updateShoppingItem(id, updates = {}) {
   };
   await putItem("shopping", updated);
   return updated;
+}
+
+export async function mergeShoppingItems() {
+  const all = await getAllItems("shopping");
+  const merged = mergeCompatibleShoppingItems(all);
+  const oldIds = all.map((it) => it.id);
+  await deleteShoppingItemsByIds(oldIds);
+  for (const it of merged) {
+    await putItem("shopping", it);
+  }
+  return merged;
 }
 
 // ==========================================
