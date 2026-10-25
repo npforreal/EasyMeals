@@ -187,6 +187,59 @@ fun SettingsScreen(repository: AppRepository) {
                 }
             }
 
+            // Section: Đồ ăn dư (A1 - Vòng 13)
+            val currentAllowLeftovers by repository.allowLeftovers.collectAsState()
+            val currentLeftoverDays by repository.leftoverDays.collectAsState()
+
+            Text(
+                "ĐỒ ĂN DƯ",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Dùng lại đồ ăn dư", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Bật để thực đơn tận dụng phần dư của mẻ nấu trước, tránh lãng phí thực phẩm.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Cho phép", fontSize = 14.sp, modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = currentAllowLeftovers,
+                            onCheckedChange = { repository.setAllowLeftovers(it) }
+                        )
+                    }
+                    if (currentAllowLeftovers) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Dùng lại trong tối đa", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            for (days in GeneratedTokens.PlanLimits.LEFTOVER_MIN_DAYS..GeneratedTokens.PlanLimits.LEFTOVER_MAX_DAYS) {
+                                FilterChip(
+                                    selected = currentLeftoverDays == days,
+                                    onClick = { repository.setLeftoverDays(days) },
+                                    label = { Text("$days ngày") },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // Section: Backup & Restore
             Text(
                 "SAO LƯU & KHÔI PHỤC",

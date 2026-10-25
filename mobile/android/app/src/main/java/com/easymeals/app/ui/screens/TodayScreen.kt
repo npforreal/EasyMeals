@@ -42,6 +42,50 @@ private data class DeficitAlertState(
     val deficits: Map<String, DeficitItem>
 )
 
+/**
+ * Hàng tuỳ chọn đồ ăn dư: bật/tắt dùng lại đồ dư và số ngày dùng lại (1-3, mặc định 2).
+ * Ghép với cả hai chỗ tạo thực đơn trong TodayScreen, đọc/ghi qua AppRepository.
+ */
+@Composable
+internal fun LeftoverOptionsRow(
+    allowLeftovers: Boolean,
+    leftoverDays: Int,
+    onAllowChange: (Boolean) -> Unit,
+    onDaysChange: (Int) -> Unit
+) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = allowLeftovers, onCheckedChange = onAllowChange)
+            Text(
+                "Cho dùng lại đồ ăn dư",
+                fontSize = 14.sp,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        if (allowLeftovers) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 16.dp)
+            ) {
+                Text(
+                    "Dùng lại trong tối đa:",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                for (days in GeneratedTokens.PlanLimits.LEFTOVER_MIN_DAYS..GeneratedTokens.PlanLimits.LEFTOVER_MAX_DAYS) {
+                    FilterChip(
+                        selected = leftoverDays == days,
+                        onClick = { onDaysChange(days) },
+                        label = { Text("$days ngày", fontSize = 12.sp) },
+                        modifier = Modifier.padding(end = 6.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayScreen(repository: AppRepository) {
@@ -66,6 +110,9 @@ fun TodayScreen(repository: AppRepository) {
         val prefs = context.getSharedPreferences("easymeals_prefs", Context.MODE_PRIVATE)
         prefs.edit().putInt("selected_plan_days", d).apply()
     }
+
+    val allowLeftovers by repository.allowLeftovers.collectAsState()
+    val leftoverDays by repository.leftoverDays.collectAsState()
 
     BackHandler(enabled = isCookingMode) {
         isCookingMode = false
@@ -154,8 +201,15 @@ fun TodayScreen(repository: AppRepository) {
                         PlanDaysSelector(
                             selected = selectedPlanDays,
                             onSelect = onSelectDays,
-                            modifier = Modifier.padding(bottom = 16.dp)
+                            modifier = Modifier.padding(bottom = 4.dp)
                         )
+                        LeftoverOptionsRow(
+                            allowLeftovers = allowLeftovers,
+                            leftoverDays = leftoverDays,
+                            onAllowChange = { repository.setAllowLeftovers(it) },
+                            onDaysChange = { repository.setLeftoverDays(it) }
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
                         Button(
                             onClick = { repository.generateNewPlan(selectedPlanDays) },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
@@ -210,6 +264,13 @@ fun TodayScreen(repository: AppRepository) {
                                 Text("Lên đợt thực đơn mới:", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                 Spacer(modifier = Modifier.height(6.dp))
                                 PlanDaysSelector(selected = selectedPlanDays, onSelect = onSelectDays)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                LeftoverOptionsRow(
+                                    allowLeftovers = allowLeftovers,
+                                    leftoverDays = leftoverDays,
+                                    onAllowChange = { repository.setAllowLeftovers(it) },
+                                    onDaysChange = { repository.setLeftoverDays(it) }
+                                )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Button(
                                     onClick = { repository.generateNewPlan(selectedPlanDays) },

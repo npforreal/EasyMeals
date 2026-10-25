@@ -6,6 +6,7 @@ import com.easymeals.app.data.backup.BackupPayload
 import com.easymeals.app.data.catalogue.CatalogueLoader
 import com.easymeals.app.domain.engine.EasyMealsEngine
 import com.easymeals.app.domain.model.*
+import com.easymeals.app.ui.theme.GeneratedTokens
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,6 +51,27 @@ class AppRepository(private val context: Context) {
 
     private val _palette = MutableStateFlow(prefs.getString("theme_palette", "green") ?: "green")
     val palette: StateFlow<String> = _palette.asStateFlow()
+
+    // Tuỳ chọn đồ ăn dư: bật/tắt và số ngày dùng lại (1-3, mặc định 2) theo quyết định chủ dự án.
+    private val _allowLeftovers = MutableStateFlow(prefs.getBoolean("allow_leftovers", true))
+    val allowLeftovers: StateFlow<Boolean> = _allowLeftovers.asStateFlow()
+
+    private val _leftoverDays = MutableStateFlow(
+        prefs.getInt("leftover_days", GeneratedTokens.PlanLimits.LEFTOVER_DEFAULT_DAYS)
+            .coerceIn(GeneratedTokens.PlanLimits.LEFTOVER_MIN_DAYS, GeneratedTokens.PlanLimits.LEFTOVER_MAX_DAYS)
+    )
+    val leftoverDays: StateFlow<Int> = _leftoverDays.asStateFlow()
+
+    fun setAllowLeftovers(enabled: Boolean) {
+        _allowLeftovers.value = enabled
+        prefs.edit().putBoolean("allow_leftovers", enabled).apply()
+    }
+
+    fun setLeftoverDays(days: Int) {
+        val bounded = days.coerceIn(GeneratedTokens.PlanLimits.LEFTOVER_MIN_DAYS, GeneratedTokens.PlanLimits.LEFTOVER_MAX_DAYS)
+        _leftoverDays.value = bounded
+        prefs.edit().putInt("leftover_days", bounded).apply()
+    }
 
     fun setThemeMode(mode: String) {
         _themeMode.value = mode
@@ -317,7 +339,8 @@ class AppRepository(private val context: Context) {
             endDateStr = end.format(formatter),
             recipes = _recipes.value,
             currentPantryLots = _pantryLots.value,
-            allowLeftovers = true
+            allowLeftovers = _allowLeftovers.value,
+            leftoverDays = _leftoverDays.value
         )
         _mealPlans.value = meals
         _shoppingItems.value = shopping

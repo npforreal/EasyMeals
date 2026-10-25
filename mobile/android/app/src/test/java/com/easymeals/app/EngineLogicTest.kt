@@ -2,6 +2,7 @@ package com.easymeals.app
 
 import com.easymeals.app.domain.engine.*
 import com.easymeals.app.domain.model.*
+import com.easymeals.app.ui.theme.GeneratedTokens
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.json.JSONArray
@@ -200,6 +201,7 @@ class EngineLogicTest {
                     val start = java.time.LocalDate.parse(c.getString("start"))
                     val end = start.plusDays(c.getLong("days") - 1)
                     val allowLeftovers = c.optBoolean("allow_leftovers", true)
+                    val leftoverDays = c.optInt("leftover_days", GeneratedTokens.PlanLimits.LEFTOVER_DEFAULT_DAYS)
 
                     val exp = c.getJSONObject("expect")
                     if (exp.optBoolean("error", false)) {
@@ -210,7 +212,8 @@ class EngineLogicTest {
                                 recipes = recipes,
                                 currentPantryLots = pantry,
                                 allowLeftovers = allowLeftovers,
-                                conversions = convs
+                                conversions = convs,
+                                leftoverDays = leftoverDays
                             )
                             org.junit.Assert.fail("[$name] Mong đợi IncompatibleUnitException nhưng không ném")
                         } catch (_: IncompatibleUnitException) {
@@ -227,7 +230,8 @@ class EngineLogicTest {
                         recipes = recipes,
                         currentPantryLots = pantry,
                         allowLeftovers = allowLeftovers,
-                        conversions = convs
+                        conversions = convs,
+                        leftoverDays = leftoverDays
                     )
 
                     val expDishes = exp.getJSONArray("dishes")

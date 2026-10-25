@@ -64,6 +64,28 @@ data class AggregatedRequirement(
 
 object EasyMealsEngine {
 
+    /**
+     * Sổ cái phần dư của một mẻ nấu: mỗi mẻ nấu (≥ 4 khẩu phần) dư đúng một phần
+     * ăn, dùng lại một lần trong quá hạn (ngày nấu + leftoverDays).
+     * Mô hình khớp AvailableLeftover trong app/domain/planner.py.
+     */
+    class AvailableLeftover(
+        val dish: PlannedDish,
+        var portionsRemaining: Int,
+        val deadline: LocalDate
+    )
+
+    /** Đồ dư dùng lại tối đa 2 ngày (mặc định), cấu hình được trong 1-3 ngày. */
+    fun validateLeftoverDays(leftoverDays: Int) {
+        val min = GeneratedTokens.PlanLimits.LEFTOVER_MIN_DAYS
+        val max = GeneratedTokens.PlanLimits.LEFTOVER_MAX_DAYS
+        if (leftoverDays < min || leftoverDays > max) {
+            throw IllegalArgumentException(
+                "Số ngày dùng lại đồ dư phải từ $min đến $max ngày."
+            )
+        }
+    }
+
     fun aggregateRequirements(recipe: Recipe, multiplier: String = "1"): List<AggregatedRequirement> {
         val mult = ExactDecimal(multiplier)
         val merged = linkedMapOf<String, AggregatedRequirement>()
@@ -467,8 +489,10 @@ object EasyMealsEngine {
         currentPantryLots: List<PantryLot>,
         allowLeftovers: Boolean = true,
         conversions: List<Conversion>? = null,
-        rawIngredientNames: Map<String, String>? = null
+        rawIngredientNames: Map<String, String>? = null,
+        leftoverDays: Int = GeneratedTokens.PlanLimits.LEFTOVER_DEFAULT_DAYS
     ): Triple<String, List<MealPlan>, List<ShoppingItem>> {
+        validateLeftoverDays(leftoverDays)
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         val start = LocalDate.parse(startDateStr, formatter)
         val end = LocalDate.parse(endDateStr, formatter)
@@ -487,7 +511,9 @@ object EasyMealsEngine {
 
         val simulatedLots = currentPantryLots.map { it.copy() }.toMutableList()
         val cookedRecipeIds = mutableSetOf<String>()
-        val availableLeftovers = mutableListOf<PlannedDish>()
+        // Sổ cái phần dư: mỗi mẻ nấu (≥ 4 khẩu phần) dư đúng một phần ăn, dùng lại
+        // một lần trong quá hạn (ngày nấu + leftoverDays). Khớp planner.py / engine.js.
+        val availableLeftovers = mutableListOf<AvailableLeftover>()
         val mealPlans = mutableListOf<MealPlan>()
         val shoppingItemsMap = linkedMapOf<String, ShoppingItem>()
 
@@ -508,16 +534,20 @@ object EasyMealsEngine {
                 for (cat in listOf("man", "rau", "canh")) {
                     var dishChosen: PlannedDish? = null
 
-                    // 1. Dùng thức ăn thừa
+                    // 1. Dùng thức ăn thừa (chỉ phần còn hạn và chưa dùng)
                     if (allowLeftovers && availableLeftovers.isNotEmpty()) {
-                        val leftIdx = availableLeftovers.indexOfFirst { it.category == cat }
+                        val leftIdx = availableLeftovers.indexOfFirst {
+                            it.portionsRemaining > 0 && !curr.isAfter(it.deadline) && it.dish.category == cat
+                        }
                         if (leftIdx != -1) {
-                            val left = availableLeftovers.removeAt(leftIdx)
+                            val entry = availableLeftovers.removeAt(leftIdx)
+                            entry.portionsRemaining -= 1
+                            val left = entry.dish
                             dishChosen = PlannedDish(
                                 id = UUID.randomUUID().toString(),
                                 mealPlanId = planId,
                                 recipeId = left.recipeId,
-                                recipeName = "${left.recipeName} (Ăn lại)",
+                                recipeName = left.recipeName,
                                 category = cat,
                                 isLeftover = true,
                                 originalDishId = left.id,
@@ -609,7 +639,7 @@ object EasyMealsEngine {
                             cookedRecipeIds.add(chosen.id)
 
                             if (allowLeftovers && chosen.servings >= 4) {
-                                availableLeftovers.add(dish)
+                                availableLeftovers.add(AvailableLeftover(dish, 1, curr.plusDays(leftoverDays.toLong())))
                             }
                         }
                     }
