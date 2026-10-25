@@ -6,7 +6,7 @@
  */
 
 const DB_NAME = "easymeals_local_db";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbInstance = null;
 
@@ -70,6 +70,15 @@ export function openDB() {
         // 5. Catalogue cache store
         if (!db.objectStoreNames.contains("catalogue")) {
           db.createObjectStore("catalogue", { keyPath: "key" });
+        }
+      }
+
+      // A3 - Vòng 13: danh sách đi chợ vào kho versioned (từ v1 cũ chỉ có localStorage).
+      if (oldVersion < 2) {
+        if (!db.objectStoreNames.contains("shopping")) {
+          const shoppingStore = db.createObjectStore("shopping", { keyPath: "id" });
+          shoppingStore.createIndex("by_source", "source", { unique: false });
+          shoppingStore.createIndex("by_ingredient_id", "ingredient_id", { unique: false });
         }
       }
     };
@@ -198,7 +207,7 @@ export async function clearStore(storeName) {
 export async function clearAllPersonalData() {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const stores = ["pantry", "plans", "movements", "settings"];
+    const stores = ["pantry", "plans", "movements", "settings", "shopping"];
     const tx = db.transaction(stores, "readwrite");
     for (const name of stores) {
       tx.objectStore(name).clear();

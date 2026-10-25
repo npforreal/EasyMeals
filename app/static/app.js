@@ -29,6 +29,12 @@ import {
   exportBackupJSON,
   validateBackupJSON,
   importBackupJSON,
+  getShoppingItems,
+  addShoppingItem,
+  replacePlanShoppingItems,
+  toggleShoppingItemBought,
+  clearBoughtShoppingItems,
+  deleteShoppingItemsByIds,
   CATALOGUE_SOURCE,
 } from "./js/storage.js";
 import {
@@ -353,22 +359,19 @@ export function askPlanConflictChoice() {
   });
 }
 
-export function addDeficitsToShoppingList(deficits) {
-  let existing = [];
-  try {
-    const raw = localStorage.getItem("easymeals_shopping_list");
-    if (raw) existing = JSON.parse(raw);
-  } catch (_) {}
+export async function addDeficitsToShoppingList(deficits) {
   for (const d of deficits) {
-    existing.push({
-      ingredient_id: d.ingredient_id || d.id || ("custom_" + Date.now()),
-      ingredient_name: d.ingredient_name || d.name,
-      needed_quantity: String(d.missing_quantity || d.missing || d.quantity || "200"),
-      unit: d.unit || "g",
-      dish_names: [],
-    });
+    await addShoppingItem(
+      {
+        // id thiếu (nguyên liệu tuỳ nhập) -> sinh mã duy nhất để không trùng key.
+        ingredient_id: d.ingredient_id || d.id || ("custom_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8)),
+        ingredient_name: d.ingredient_name || d.name,
+        needed_quantity: String(d.missing_quantity || d.missing || d.quantity || "200"),
+        unit: d.unit || "g",
+      },
+      { source: "manual" } // người dùng tự bấm thêm -> giữ khi kế hoạch đổi (A3)
+    );
   }
-  localStorage.setItem("easymeals_shopping_list", JSON.stringify(existing));
 }
 
 export async function openRecipeModal(recipeId, initialServings = null) {
@@ -1525,11 +1528,14 @@ async function initPlannerPage() {
           });
           await saveGeneratedPlansBatch(existingPlans, data, mergeMode);
 
-          if (data.shopping_list && data.shopping_list.length) {
-            localStorage.setItem("easymeals_shopping_list", JSON.stringify(data.shopping_list));
+          // A3: cập nhật kho versioned - thay mục sinh tự, giữ mục người dùng tự thêm.
+          const planItems = await replacePlanShoppingItems(
+            data.shopping_list || [],
+            [data.period_id, (data.meals || [])[0] && data.meals[0].period_id].filter(Boolean)
+          );
+          if (planItems.length) {
             if (alertBox) alertBox.style.display = "flex";
           } else {
-            localStorage.removeItem("easymeals_shopping_list");
             if (alertBox) alertBox.style.display = "none";
           }
 
@@ -1573,11 +1579,14 @@ async function initPlannerPage() {
         const data = await res.json();
         await saveGeneratedPlansBatch(existingPlans, data, mergeMode);
 
-        if (data.shopping_list && data.shopping_list.length) {
-          localStorage.setItem("easymeals_shopping_list", JSON.stringify(data.shopping_list));
+        // A3: cập nhật kho versioned - thay mục sinh tự, giữ mục người dùng tự thêm.
+        const planItems = await replacePlanShoppingItems(
+          data.shopping_list || [],
+          [data.period_id, (data.meals || [])[0] && data.meals[0].period_id].filter(Boolean)
+        );
+        if (planItems.length) {
           if (alertBox) alertBox.style.display = "flex";
         } else {
-          localStorage.removeItem("easymeals_shopping_list");
           if (alertBox) alertBox.style.display = "none";
         }
 
@@ -1714,22 +1723,9 @@ async function initShoppingPage() {
   const clearBtn = document.getElementById("btn-clear-bought");
   const addBtn = document.getElementById("btn-add-to-pantry");
 
-  function getShoppingItems() {
-    try {
-      const raw = localStorage.getItem("easymeals_shopping_list");
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function saveShoppingItems(items) {
-    localStorage.setItem("easymeals_shopping_list", JSON.stringify(items));
-  }
-
-  function renderList() {
+  // A3: danh sách đi chợ giờ nằm trong kho versioned IndexedDB (store "shopping").
+  function renderList(items) {
     if (!container) return;
-    const items = getShoppingItems();
     container.innerHTML = "";
 
     if (!items.length) {
@@ -1760,9 +1756,8 @@ async function initShoppingPage() {
       const check = document.createElement("input");
       check.type = "checkbox";
       check.checked = Boolean(item.bought);
-      check.addEventListener("change", () => {
-        item.bought = check.checked;
-        saveShoppingItems(items);
+      check.addEventListener("change", async () => {
+        await toggleShoppingItemBought(item.id);
       });
 
       const label = document.createElement("div");
@@ -1787,19 +1782,21 @@ async function initShoppingPage() {
     container.appendChild(list);
   }
 
+  async function loadAndRender() {
+    renderList(await getShoppingItems());
+  }
+
   if (clearBtn) {
-    clearBtn.addEventListener("click", () => {
-      const items = getShoppingItems();
-      const remaining = items.filter((i) => !i.bought);
-      saveShoppingItems(remaining);
+    clearBtn.addEventListener("click", async () => {
+      await clearBoughtShoppingItems();
       showToast("Đã xoá các món đã chọn.", "info");
-      renderList();
+      loadAndRender();
     });
   }
 
   if (addBtn) {
     addBtn.addEventListener("click", async () => {
-      const items = getShoppingItems();
+      const items = await getShoppingItems();
       const bought = items.filter((i) => i.bought);
       if (!bought.length) {
         showToast("Vui lòng tích chọn các món bạn đã mua trước.", "warning");
@@ -1815,14 +1812,13 @@ async function initShoppingPage() {
         });
       }
 
-      const remaining = items.filter((i) => !i.bought);
-      saveShoppingItems(remaining);
+      await deleteShoppingItemsByIds(bought.map((i) => i.id));
       showToast(`Đã chuyển ${bought.length} món vào tủ lạnh!`, "success");
-      renderList();
+      loadAndRender();
     });
   }
 
-  renderList();
+  loadAndRender();
 }
 
 // ==========================================

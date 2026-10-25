@@ -17,7 +17,8 @@ import {
   putItem,
 } from "./db.js";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
+export const LEGACY_SCHEMA_VERSION = 1;
 export const VALID_UNITS = ["g", "kg", "ml", "l", "piece"];
 export const VALID_CATEGORIES = ["man", "rau", "canh"];
 
@@ -338,6 +339,146 @@ export async function syncCatalogue(baseUrl = "", bundledData = null) {
 }
 
 // ==========================================
+// 4a. Shopping List (kho versioned, A3 - Vòng 13)
+// ==========================================
+
+export const SHOPPING_SOURCE_PLAN = "plan"; // sinh tự từ lập thực đơn
+export const SHOPPING_SOURCE_MANUAL = "manual"; // người dùng tự thêm (giữ khi kế hoạch đổi)
+
+function shoppingItemId(ingredientId, unit) {
+  return `${ingredientId}_${unit}`;
+}
+
+/**
+ * Chuẩn hoá một mục danh sách đi chợ theo schema v2:
+ * id (ingredient_id_unit), trạng thái đã mua, nguồn phát sinh và plan_ids liên quan.
+ */
+function normalizeShoppingItem(raw, { source = SHOPPING_SOURCE_PLAN, planIds = [] } = {}) {
+  const ingredientId = String(raw.ingredient_id || "custom_" + Date.now());
+  const unit = String(raw.unit || "g");
+  return {
+    id: raw.id || shoppingItemId(ingredientId, unit),
+    ingredient_id: ingredientId,
+    ingredient_name: String(raw.ingredient_name || "Nguyên liệu"),
+    needed_quantity: String(raw.needed_quantity || raw.quantity || "0"),
+    unit,
+    bought: Boolean(raw.bought || raw.isBought || raw.is_bought || false),
+    // Nguồn phát sinh: "plan" (sinh tự) hoặc "manual" (người dùng tự thêm).
+    source: raw.source === SHOPPING_SOURCE_MANUAL ? SHOPPING_SOURCE_MANUAL : source,
+    // Mã đợt bữa liên quan (mục plan mới có; mục manual để rỗng).
+    plan_ids: Array.isArray(raw.plan_ids) ? raw.plan_ids : Array.isArray(planIds) ? planIds : [],
+    dish_names: Array.isArray(raw.dish_names) ? raw.dish_names.map(String) : [],
+    created_at: raw.created_at || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Migration tương thích: kéo danh sách cũ trong khoá localStorage
+ * `easymeals_shopping_list` về kho v2 và xoá khoá cũ.
+ * Heuristic nguồn: mục không có món nào gắn kèm (dish_names rỗng) coi như người dùng tự thêm.
+ */
+export async function migrateLegacyShoppingList() {
+  const hasLocalStorage =
+    typeof globalThis !== "undefined" && !!globalThis.localStorage;
+  let legacy = [];
+  if (hasLocalStorage) {
+    try {
+      const raw = localStorage.getItem("easymeals_shopping_list");
+      if (raw) legacy = JSON.parse(raw);
+    } catch (_) {
+      legacy = [];
+    }
+  }
+  if (!Array.isArray(legacy)) legacy = [];
+  const existing = await getAllItems("shopping");
+  const knownIds = new Set(existing.map((it) => it.id));
+  for (const item of legacy) {
+    if (!item || typeof item !== "object") continue;
+    const normalized = normalizeShoppingItem(item, {
+      source: Array.isArray(item.dish_names) && item.dish_names.length
+        ? SHOPPING_SOURCE_PLAN
+        : SHOPPING_SOURCE_MANUAL,
+    });
+    if (!knownIds.has(normalized.id)) {
+      await putItem("shopping", normalized);
+      knownIds.add(normalized.id);
+    }
+  }
+  if (hasLocalStorage) {
+    localStorage.removeItem("easymeals_shopping_list");
+  }
+}
+
+export async function getShoppingItems() {
+  await migrateLegacyShoppingList();
+  return (await getAllItems("shopping")).sort((a, b) =>
+    String(a.created_at).localeCompare(String(b.created_at))
+  );
+}
+
+export async function saveShoppingItems(items) {
+  for (const item of items) {
+    await putItem("shopping", normalizeShoppingItem(item));
+  }
+}
+
+export async function addShoppingItem(item, { source = SHOPPING_SOURCE_MANUAL, planIds = [] } = {}) {
+  const normalized = normalizeShoppingItem(item, { source, planIds });
+  await putItem("shopping", normalized);
+  return normalized;
+}
+
+export async function deleteShoppingItemsByIds(ids) {
+  for (const id of ids) {
+    await deleteItem("shopping", id);
+  }
+}
+
+export async function clearBoughtShoppingItems() {
+  const items = await getAllItems("shopping");
+  await deleteShoppingItemsByIds(items.filter((it) => it.bought).map((it) => it.id));
+}
+
+/** Chỉ mục có nguồn "manual" (người dùng tự thêm) — giữ lại khi kế hoạch đổi. */
+export async function getManuallyAddedShoppingItems() {
+  const items = await getAllItems("shopping");
+  return items.filter((it) => it.source === SHOPPING_SOURCE_MANUAL);
+}
+
+/**
+ * Thay toàn bộ mục sinh tự từ kế hoạch (source "plan") bằng danh sách đợt mới.
+ * Mục người dùng tự thêm (source "manual") được giữ nguyên (A3).
+ * Nếu mục manual cùng ingredient_id+unit đã tồn tại thì không thêm bản sao trùng.
+ */
+export async function replacePlanShoppingItems(planItems, planIds = []) {
+  const all = await getAllItems("shopping");
+  const manual = all.filter((it) => it.source === SHOPPING_SOURCE_MANUAL);
+  await deleteShoppingItemsByIds(all.filter((it) => it.source !== SHOPPING_SOURCE_MANUAL).map((it) => it.id));
+
+  const manualKeys = new Set(manual.map((it) => shoppingItemId(it.ingredient_id, it.unit)));
+  const planKeys = new Set();
+  const normalizedPlanItems = [];
+  for (const item of planItems) {
+    if (!item || typeof item !== "object") continue;
+    const key = shoppingItemId(String(item.ingredient_id), String(item.unit));
+    if (manualKeys.has(key) || planKeys.has(key)) continue;
+    planKeys.add(key);
+    normalizedPlanItems.push(normalizeShoppingItem(item, { source: SHOPPING_SOURCE_PLAN, planIds }));
+  }
+  for (const item of normalizedPlanItems) {
+    await putItem("shopping", item);
+  }
+  return [...manual, ...normalizedPlanItems];
+}
+
+export async function toggleShoppingItemBought(id) {
+  const item = await getItem("shopping", id);
+  if (!item) return;
+  await putItem("shopping", { ...item, bought: !item.bought, updated_at: new Date().toISOString() });
+}
+
+// ==========================================
 // 4. Backup & Restore (JSON)
 // ==========================================
 
@@ -346,6 +487,7 @@ export async function exportBackupJSON() {
   const plans = await getAllItems("plans");
   const movements = await getAllItems("movements");
   const settings = await getAllItems("settings");
+  const shopping = await getAllItems("shopping");
 
   const backupObject = {
     schema_version: SCHEMA_VERSION,
@@ -355,12 +497,14 @@ export async function exportBackupJSON() {
       total_lots: pantry.length,
       total_plans: plans.length,
       total_movements: movements.length,
+      total_shopping_items: shopping.length,
     },
     data: {
       pantry,
       plans,
       movements,
       settings,
+      shopping,
     },
   };
 
@@ -411,8 +555,12 @@ export function validateBackupJSON(raw) {
     throw new Error("File này không phải là bản sao lưu của EasyMeals.");
   }
 
-  if (raw.schema_version !== 1) {
-    throw new Error(`Phiên bản file sao lưu (${raw.schema_version}) không tương thích với ứng dụng (1).`);
+  // schema_version 1 (bản sao lưu cũ, chỉ pantry/plans/movements/settings)
+  // hoặc 2 (thêm data.shopping). Bản sao lưu cũ được migration tương thích khi import.
+  if (raw.schema_version !== SCHEMA_VERSION && raw.schema_version !== LEGACY_SCHEMA_VERSION) {
+    throw new Error(
+      `Phiên bản file sao lưu (${raw.schema_version}) không tương thích với ứng dụng (1-${SCHEMA_VERSION}).`
+    );
   }
 
   if (!raw.data || typeof raw.data !== "object") {
@@ -555,13 +703,56 @@ export function validateBackupJSON(raw) {
     }
   }
 
+  // Validate shopping list (schema v2; bản v1 không có -> được migration khi import)
+  const shopping = raw.data.shopping;
+  if (raw.schema_version >= 2) {
+    if (shopping !== undefined && !Array.isArray(shopping)) {
+      throw new Error("data.shopping phải là danh sách mảng.");
+    }
+    if (Array.isArray(shopping)) {
+      if (shopping.length > 1000) {
+        throw new Error("Số lượng mục danh sách đi chợ vượt quá giới hạn an toàn (tối đa 1,000 items).");
+      }
+      for (const item of shopping) {
+        if (!item || typeof item !== "object") {
+          throw new Error("Mục danh sách đi chợ không hợp lệ.");
+        }
+        if (!item.id || typeof item.id !== "string" || item.id.length > 128) {
+          throw new Error("ID mục danh sách đi chợ phải là chuỗi từ 1 đến 128 ký tự.");
+        }
+        if (!item.ingredient_id || typeof item.ingredient_id !== "string" || item.ingredient_id.length > 128) {
+          throw new Error(`ID nguyên liệu của mục '${item.id}' phải là chuỗi hợp lệ.`);
+        }
+        if (item.ingredient_name && (typeof item.ingredient_name !== "string" || item.ingredient_name.length > 100)) {
+          throw new Error("Tên nguyên liệu trong danh sách đi chợ không được vượt quá 100 ký tự.");
+        }
+        const sQty = Number(item.needed_quantity);
+        if (!Number.isFinite(sQty) || sQty <= 0 || sQty > 100000) {
+          throw new Error(`Số lượng cần mua của '${item.ingredient_name || item.id}' phải là số hữu hạn > 0 và <= 100,000.`);
+        }
+        if (item.unit && !VALID_UNITS.includes(item.unit)) {
+          throw new Error(`Đơn vị '${item.unit}' của mục '${item.ingredient_name || ""}' không được hỗ trợ.`);
+        }
+        if (item.source && item.source !== "plan" && item.source !== "manual") {
+          throw new Error(`Nguồn phát sinh '${item.source}' của mục '${item.id}' không hợp lệ.`);
+        }
+        if (item.created_at && !isValidISODate(item.created_at)) {
+          throw new Error(`Thời điểm tạo mục '${item.id}' không đúng định dạng ISO.`);
+        }
+        if (item.updated_at && !isValidISODate(item.updated_at)) {
+          throw new Error(`Thời điểm cập nhật mục '${item.id}' không đúng định dạng ISO.`);
+        }
+      }
+    }
+  }
+
   return true;
 }
 
 export async function importBackupJSON(backupData, mode = "replace") {
   validateBackupJSON(backupData);
 
-  const { pantry, plans, movements, settings = [] } = backupData.data;
+  const { pantry, plans, movements, settings = [], shopping = [] } = backupData.data;
 
   if (mode === "replace") {
     await clearAllPersonalData();
@@ -569,11 +760,13 @@ export async function importBackupJSON(backupData, mode = "replace") {
 
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(["pantry", "plans", "movements", "settings"], "readwrite");
+    // A3 - Vòng 13: import gồm cả danh sách đi chợ (kho versioned "shopping").
+    const tx = db.transaction(["pantry", "plans", "movements", "settings", "shopping"], "readwrite");
     const pStore = tx.objectStore("pantry");
     const mStore = tx.objectStore("plans");
     const movStore = tx.objectStore("movements");
     const sStore = tx.objectStore("settings");
+    const shopStore = tx.objectStore("shopping");
 
     for (const lot of pantry) {
       pStore.put(lot);
@@ -587,6 +780,9 @@ export async function importBackupJSON(backupData, mode = "replace") {
     for (const s of settings) {
       sStore.put(s);
     }
+    for (const item of shopping) {
+      shopStore.put(item);
+    }
 
     sStore.put({
       key: "last_import_at",
@@ -599,6 +795,7 @@ export async function importBackupJSON(backupData, mode = "replace") {
         imported_lots: pantry.length,
         imported_plans: plans.length,
         imported_movements: movements.length,
+        imported_shopping_items: shopping.length,
       });
     };
     tx.onerror = (e) => reject(e.target.error);

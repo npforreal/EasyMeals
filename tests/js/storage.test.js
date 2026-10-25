@@ -24,7 +24,15 @@ import {
   setCatalogueSource,
   syncCatalogue,
   getCachedCatalogue,
+  getShoppingItems,
+  addShoppingItem,
+  replacePlanShoppingItems,
+  toggleShoppingItemBought,
+  clearBoughtShoppingItems,
+  deleteShoppingItemsByIds,
+  SCHEMA_VERSION,
 } from "../../app/static/js/storage.js";
+import { getAllItems } from "../../app/static/js/db.js";
 
 describe("EasyMeals IndexedDB Storage Tests", () => {
   beforeEach(async () => {
@@ -176,7 +184,9 @@ describe("EasyMeals IndexedDB Storage Tests", () => {
 
     const backup = await exportBackupJSON();
     assert.equal(backup.app, "EasyMeals");
-    assert.equal(backup.schema_version, 1);
+    assert.equal(backup.schema_version, 2);
+    assert.equal(typeof SCHEMA_VERSION, "number");
+    assert.ok(Array.isArray(backup.data.shopping), "Backup phải chứa data.shopping");
     assert.equal(backup.data.pantry.length, 1);
 
     // Validate valid backup
@@ -405,5 +415,167 @@ describe("EasyMeals IndexedDB Storage Tests", () => {
 
     // Reset source
     setCatalogueSource("remote");
+  });
+
+  test("A3: danh sách đi chợ nằm trong kho versioned và giữ mục tự thêm khi kế hoạch đổi", async () => {
+    // Người dùng tự thêm mục (source "manual")
+    const manual = await addShoppingItem({
+      ingredient_id: "ing-manual-1",
+      ingredient_name: "Nước mắm",
+      needed_quantity: "500",
+      unit: "ml",
+    });
+    assert.equal(manual.source, "manual");
+    assert.equal(manual.id, "ing-manual-1_ml");
+    assert.deepEqual(manual.plan_ids, []);
+
+    // Lập kế hoạch sinh danh sách đi chợ của đợt (source "plan")
+    const itemsAfterPlan = await replacePlanShoppingItems(
+      [
+        { ingredient_id: "ing-plan-1", ingredient_name: "Sườn non heo", needed_quantity: "600", unit: "g", dish_names: ["Canh sườn"] },
+        { ingredient_id: "ing-plan-2", ingredient_name: "Cà chua", needed_quantity: "200", unit: "g", dish_names: ["Canh cà chua"] },
+      ],
+      ["period-001"]
+    );
+    assert.equal(itemsAfterPlan.length, 3);
+    const planItem = itemsAfterPlan.find((i) => i.ingredient_id === "ing-plan-1");
+    assert.equal(planItem.source, "plan");
+    assert.deepEqual(planItem.plan_ids, ["period-001"]);
+    assert.ok(itemsAfterPlan.some((i) => i.id === manual.id && i.source === "manual"));
+
+    // Đổi kế hoạch -> chỉ thay mục plan, giữ nguyên mục manual (kể cả trạng thái đã tích)
+    await toggleShoppingItemBought("ing-plan-1_g");
+    let items = await getShoppingItems();
+    assert.ok(items.find((i) => i.id === "ing-plan-1_g").bought === true);
+
+    await replacePlanShoppingItems(
+      [
+        { ingredient_id: "ing-plan-1", ingredient_name: "Sườn non heo", needed_quantity: "300", unit: "g", dish_names: ["Món mới"] },
+      ],
+      ["period-002"]
+    );
+    items = await getShoppingItems();
+    assert.ok(
+      items.find((i) => i.id === manual.id),
+      "Mục tự thêm phải còn sau khi đổi kế hoạch"
+    );
+    assert.ok(
+      !items.some((i) => i.id === "ing-plan-2_g"),
+      "Mục plan cũ phải bị thay"
+    );
+    const replaced = items.find((i) => i.id === "ing-plan-1_g");
+    assert.equal(replaced.needed_quantity, "300");
+    assert.equal(replaced.bought, false, "Mục mới của đợt mới chưa được mua");
+    assert.equal(replaced.source, "plan");
+    assert.deepEqual(replaced.plan_ids, ["period-002"]);
+
+    // Xoá mục plan cũ & rõ ràng mục đã mua
+    await clearBoughtShoppingItems();
+    items = await getShoppingItems();
+    assert.ok(!items.some((i) => i.bought));
+    assert.ok(items.some((i) => i.id === manual.id));
+
+    await deleteShoppingItemsByIds([manual.id]);
+    items = await getShoppingItems();
+    assert.ok(!items.some((i) => i.id === manual.id));
+
+    // Ngăn trùng: mục plan trùng nguyên liệu+đơn vị với mục manual -> không thêm bản sao
+    await addShoppingItem({
+      ingredient_id: "ing-manual-1",
+      ingredient_name: "Nước mắm",
+      needed_quantity: "500",
+      unit: "ml",
+    });
+    const dup = await replacePlanShoppingItems(
+      [{ ingredient_id: "ing-manual-1", ingredient_name: "Nước mắm", needed_quantity: "250", unit: "ml" }],
+      ["period-003"]
+    );
+    assert.ok(dup.some((i) => i.id === "ing-manual-1_ml" && i.source === "manual"));
+    assert.equal(dup.filter((i) => i.id === "ing-manual-1_ml").length, 1);
+  });
+
+  test("A3: backup v2 mang theo danh sách đi chợ và phục hồi đúng nguồn phát sinh", async () => {
+    await addShoppingItem({
+      ingredient_id: "ing-manual-1",
+      ingredient_name: "Nước mắm",
+      needed_quantity: "500",
+      unit: "ml",
+    });
+    await replacePlanShoppingItems(
+      [{ ingredient_id: "ing-plan-1", ingredient_name: "Sườn non heo", needed_quantity: "600", unit: "g", dish_names: ["Canh sườn"] }],
+      ["period-001"]
+    );
+
+    const backup = await exportBackupJSON();
+    assert.equal(backup.schema_version, 2);
+    assert.equal(backup.data.shopping.length, 2);
+    assert.equal(backup.data.shopping.find((i) => i.source === "manual").ingredient_id, "ing-manual-1");
+
+    // Xoá sạch -> phục hồi -> danh sách trở lại nguyên trạng
+    await clearAllPersonalData();
+    assert.equal((await getShoppingItems()).length, 0);
+
+    await importBackupJSON(JSON.parse(JSON.stringify(backup)));
+    const restored = await getShoppingItems();
+    assert.equal(restored.length, 2);
+    assert.ok(restored.some((i) => i.source === "manual" && i.id === "ing-manual-1_ml"));
+    assert.ok(restored.some((i) => i.source === "plan" && i.plan_ids.includes("period-001")));
+  });
+
+  test("A3: backup cũ (schema_version 1 không có shopping) vẫn nhập được - migration tương thích", async () => {
+    await addPantryLot({
+      ingredient_id: "ing-legacy",
+      ingredient_name: "Thịt ba chỉ",
+      quantity: "1000",
+      unit: "g",
+      created_at: new Date().toISOString(),
+    });
+    const legacy = await exportBackupJSON();
+    const legacyV1 = {
+      ...legacy,
+      schema_version: 1,
+      data: {
+        pantry: legacy.data.pantry,
+        plans: legacy.data.plans,
+        movements: legacy.data.movements,
+        settings: legacy.data.settings,
+      },
+    };
+    assert.equal(validateBackupJSON(legacyV1), true);
+
+    await clearAllPersonalData();
+    const res = await importBackupJSON(JSON.parse(JSON.stringify(legacyV1)));
+    assert.equal(res.success, true);
+    assert.equal((await getPantryLots()).length, 1);
+    // Danh sách đi chợ sau import từ bản v1: rỗng (mục chưa có trong bản cũ).
+    assert.deepEqual(await getShoppingItems(), []);
+
+    // Bản v1 có trường shopping lảng ngoài (dựa vào người dùng thêm mới) -> bỏ qua, không văng.
+    const weirdV1 = { ...legacyV1, data: { ...legacyV1.data, shopping: "khong-phai-mang" } };
+    assert.equal(validateBackupJSON(weirdV1), true);
+
+    // Bản v2 mới phải kiểm tra schema shopping.
+    const badV2 = { ...legacyV1, schema_version: 2, data: { ...legacyV1.data, shopping: "khong-phai-mang" } };
+    assert.throws(() => validateBackupJSON(badV2), /data\.shopping/);
+  });
+
+  test("A3: backup v2 sai nguồn phát sinh hoặc schema sai bị từ chối", async () => {
+    const base = await exportBackupJSON();
+    assert.throws(
+      () =>
+        validateBackupJSON({
+          ...base,
+          data: { ...base.data, shopping: [{ id: "x", ingredient_id: "ing", needed_quantity: "1", unit: "g", source: "kỳ lạ" }] },
+        }),
+      /Nguồn phát sinh/
+    );
+    assert.throws(
+      () =>
+        validateBackupJSON({
+          ...base,
+          data: { ...base.data, shopping: [{ id: "x", ingredient_id: "ing", needed_quantity: "không phải số", unit: "g" }] },
+        }),
+      /Số lượng cần mua/
+    );
   });
 });
