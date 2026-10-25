@@ -333,6 +333,12 @@ public final class AppStorage: @unchecked Sendable {
             recipes: recipes,
             currentPantryLots: pantryLots,
             allowLeftovers: allowLeftovers,
+            // A7 - Vòng 13: truyền quy đổi đơn vị/nguyên liệu (gạo -> cơm) kèm tên
+            // nguyên liệu gốc để danh sách mua nêu "Gạo", khớp mọi đường chạy khác.
+            conversions: conversions,
+            rawIngredientNames: Dictionary(
+                uniqueKeysWithValues: ingredients.map { ($0.id, $0.name) }
+            ),
             leftoverDays: leftoverDays
         ) {
             self.mealPlans = EasyMealsEngine.mergeNewPlansIntoExisting(
