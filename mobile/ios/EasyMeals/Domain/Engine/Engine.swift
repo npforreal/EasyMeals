@@ -16,6 +16,12 @@ public struct InsufficientStockError: Error, LocalizedError, Equatable {
     public var errorDescription: String? { message }
 }
 
+public struct MealPlanError: Error, LocalizedError, Equatable {
+    public let message: String
+    public init(_ message: String) { self.message = message }
+    public var errorDescription: String? { message }
+}
+
 public enum UnitDimensions {
     private static let dimensions: [String: UnitDimension] = [
         "g": .mass,
@@ -747,5 +753,257 @@ public enum EasyMealsEngine {
             }
         }
         return kept
+    }
+
+    public struct ShoppingBudgetResult: Equatable, Sendable {
+        public let totalEstimatedBudget: String
+        public let totalSpent: String
+        public let itemsWithPriceCount: Int
+        public let totalItemsCount: Int
+
+        public init(
+            totalEstimatedBudget: String,
+            totalSpent: String,
+            itemsWithPriceCount: Int,
+            totalItemsCount: Int
+        ) {
+            self.totalEstimatedBudget = totalEstimatedBudget
+            self.totalSpent = totalSpent
+            self.itemsWithPriceCount = itemsWithPriceCount
+            self.totalItemsCount = totalItemsCount
+        }
+    }
+
+    public static func calculateShoppingBudget(_ items: [ShoppingItem]) -> ShoppingBudgetResult {
+        var totalEstimated = ExactDecimal.zero
+        var totalSpent = ExactDecimal.zero
+        var itemsWithPrice = 0
+
+        for it in items {
+            if let pStr = it.price, !pStr.trimmingCharacters(in: .whitespaces).isEmpty {
+                let p = ExactDecimal(pStr)
+                if p > ExactDecimal.zero {
+                    totalEstimated = totalEstimated + p
+                    itemsWithPrice += 1
+                    if it.isBought {
+                        totalSpent = totalSpent + p
+                    }
+                }
+            }
+        }
+
+        return ShoppingBudgetResult(
+            totalEstimatedBudget: totalEstimated.description,
+            totalSpent: totalSpent.description,
+            itemsWithPriceCount: itemsWithPrice,
+            totalItemsCount: items.count
+        )
+    }
+
+    public static func groupShoppingItemsByCategory(
+        _ items: [ShoppingItem],
+        categoriesOrder: [String] = [
+            "thit", "gia_cam", "hai_san", "trung_sua", "rau_cu",
+            "cu_qua", "gao_bot_mi", "gia_vi", "nuoc_cham_dau", "khac"
+        ]
+    ) -> [String: [ShoppingItem]] {
+        var grouped: [String: [ShoppingItem]] = [:]
+        for c in categoriesOrder {
+            grouped[c] = []
+        }
+        for it in items {
+            let cat = it.category ?? "khac"
+            if grouped[cat] != nil {
+                grouped[cat]?.append(it)
+            } else {
+                if grouped["khac"] == nil {
+                    grouped["khac"] = []
+                }
+                grouped["khac"]?.append(it)
+            }
+        }
+        return grouped.filter { !$0.value.isEmpty }
+    }
+
+    public static func regenerateSingleMeal(
+        targetMealPlanId: String,
+        allMealPlans: [MealPlan],
+        recipes: [Recipe],
+        currentPantryLots: [PantryLot] = [],
+        conversions: [Conversion] = []
+    ) throws -> MealPlan {
+        guard let targetPlan = allMealPlans.first(where: { $0.id == targetMealPlanId }) else {
+            throw MealPlanError("Không tìm thấy bữa ăn có ID \(targetMealPlanId)")
+        }
+
+        if targetPlan.eatenAt != nil {
+            throw MealPlanError("Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn đổi món.")
+        }
+
+        var otherCookedRecipeIds = Set<String>()
+        for p in allMealPlans {
+            if p.id == targetMealPlanId { continue }
+            for d in p.dishes {
+                if !d.isLeftover {
+                    otherCookedRecipeIds.insert(d.recipeId)
+                }
+            }
+        }
+
+        let recipesByCat: [String: [Recipe]] = [
+            "man": recipes.filter { $0.category == "man" },
+            "rau": recipes.filter { $0.category == "rau" },
+            "canh": recipes.filter { $0.category == "canh" }
+        ]
+
+        let planDateStr = String(targetPlan.plannedFor.prefix(10))
+        var usableLots = currentPantryLots.filter { lot in
+            guard let exp = lot.expiresAt else { return true }
+            return exp >= planDateStr
+        }
+
+        var newDishes: [PlannedDish] = []
+        for cat in ["man", "rau", "canh"] {
+            var candidates = (recipesByCat[cat] ?? []).filter { !otherCookedRecipeIds.contains($0.id) }
+            if candidates.isEmpty {
+                candidates = (recipesByCat[cat] ?? []).filter { r in
+                    !newDishes.contains { $0.recipeId == r.id }
+                }
+            }
+
+            var chosen: Recipe?
+            for r in candidates {
+                let (canCook, _) = checkRecipeStock(recipe: r, pantryLots: usableLots, multiplier: "1", conversions: conversions)
+                if canCook {
+                    chosen = r
+                    break
+                }
+            }
+            if chosen == nil, !candidates.isEmpty {
+                chosen = candidates.first
+            }
+
+            if let r = chosen {
+                for req in aggregateRequirements(recipe: r) {
+                    _ = consumeAvailable(
+                        pantryLots: &usableLots,
+                        ingredientId: req.ingredientId,
+                        quantity: req.quantity,
+                        unit: req.unit,
+                        conversions: conversions
+                    )
+                }
+                newDishes.append(
+                    PlannedDish(
+                        id: UUID().uuidString,
+                        mealPlanId: targetPlan.id,
+                        recipeId: r.id,
+                        recipeName: r.name,
+                        category: cat,
+                        isLeftover: false,
+                        originalDishId: nil,
+                        servings: r.servings
+                    )
+                )
+            }
+        }
+
+        return MealPlan(
+            id: targetPlan.id,
+            plannedFor: targetPlan.plannedFor,
+            mealPeriod: targetPlan.mealPeriod,
+            periodId: targetPlan.periodId,
+            eatenAt: nil,
+            dishes: newDishes
+        )
+    }
+
+    public static func recomputeShoppingList(
+        mealPlans: [MealPlan],
+        currentPantryLots: [PantryLot] = [],
+        recipes: [Recipe] = [],
+        conversions: [Conversion] = [],
+        rawIngredientNames: [String: String] = [:],
+        ingredientCategories: [String: String] = [:]
+    ) -> [ShoppingItem] {
+        let recipesMap = Dictionary(uniqueKeysWithValues: recipes.map { ($0.id, $0) })
+        var simulatedLots = currentPantryLots
+        var shoppingItemsMap: [String: ShoppingItem] = [:]
+
+        let uneatenPlans = mealPlans.filter { $0.eatenAt == nil }
+            .sorted { $0.plannedFor < $1.plannedFor }
+
+        for meal in uneatenPlans {
+            let mealDateStr = String(meal.plannedFor.prefix(10))
+            simulatedLots = simulatedLots.filter { lot in
+                guard let exp = lot.expiresAt else { return true }
+                return exp >= mealDateStr
+            }
+
+            for dish in meal.dishes {
+                if dish.isLeftover { continue }
+                guard let recipe = recipesMap[dish.recipeId] else { continue }
+
+                let (_, deficits) = checkRecipeStock(recipe: recipe, pantryLots: simulatedLots, multiplier: "1", conversions: conversions)
+                for req in aggregateRequirements(recipe: recipe) {
+                    _ = consumeAvailable(
+                        pantryLots: &simulatedLots,
+                        ingredientId: req.ingredientId,
+                        quantity: req.quantity,
+                        unit: req.unit,
+                        conversions: conversions
+                    )
+                }
+
+                for (ingId, def) in deficits {
+                    let actualIngId: String
+                    let actualUnit: String
+                    let actualQty: String
+                    let actualName: String
+
+                    let targetConvs = findConversionsForTarget(ingredientId: ingId, conversions: conversions)
+                    if let conv = targetConvs.first {
+                        let missingInTo = try! UnitDimensions.convert(quantity: ExactDecimal(def.missingQuantity), from: def.unit, to: conv.toUnit)
+                        let rawNeeded = missingInTo / ExactDecimal(conv.ratio)
+                        actualIngId = conv.fromIngredientId
+                        actualUnit = conv.fromUnit
+                        actualQty = rawNeeded.description
+                        actualName = rawIngredientNames[actualIngId] ?? "Nguyên liệu gốc cho \(def.ingredientName)"
+                    } else {
+                        actualIngId = ingId
+                        actualUnit = def.unit
+                        actualQty = def.missingQuantity
+                        actualName = def.ingredientName
+                    }
+
+                    let dim = UnitDimensions.dimension(of: actualUnit)?.rawValue ?? actualUnit
+                    let key = "\(actualIngId)_\(dim)"
+                    let cat = ingredientCategories[actualIngId] ?? "khac"
+
+                    if var existing = shoppingItemsMap[key] {
+                        let added = try! UnitDimensions.convert(quantity: ExactDecimal(actualQty), from: actualUnit, to: existing.unit)
+                        let sum = ExactDecimal(existing.neededQuantity) + added
+                        existing.neededQuantity = sum.description
+                        if !existing.dishNames.contains(recipe.name) {
+                            existing.dishNames.append(recipe.name)
+                        }
+                        shoppingItemsMap[key] = existing
+                    } else {
+                        shoppingItemsMap[key] = ShoppingItem(
+                            ingredientId: actualIngId,
+                            ingredientName: actualName,
+                            neededQuantity: actualQty,
+                            unit: actualUnit,
+                            isBought: false,
+                            isManuallyAdded: false,
+                            dishNames: [recipe.name],
+                            category: cat
+                        )
+                    }
+                }
+            }
+        }
+
+        return Array(shoppingItemsMap.values)
     }
 }

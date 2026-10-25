@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -316,6 +317,9 @@ fun TodayScreen(repository: AppRepository) {
                             },
                             onUndo = {
                                 repository.undoLastEatMeal()
+                            },
+                            onRegenerate = {
+                                repository.regenerateMeal(plan.id)
                             }
                         )
                     }
@@ -448,7 +452,8 @@ fun MealPlanCard(
     plan: MealPlan,
     onViewRecipe: (String, Int) -> Unit,
     onEat: () -> Unit,
-    onUndo: () -> Unit
+    onUndo: () -> Unit,
+    onRegenerate: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -526,12 +531,22 @@ fun MealPlanCard(
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
             if (plan.eatenAt == null) {
-                Button(
-                    onClick = onEat,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Đã ăn (Trừ kho)", fontWeight = FontWeight.Bold)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = onEat,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Đã ăn (Trừ kho)", fontWeight = FontWeight.Bold)
+                    }
+                    OutlinedButton(
+                        onClick = onRegenerate,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Sinh lại bữa này (Đổi món)")
+                    }
                 }
             } else {
                 OutlinedButton(

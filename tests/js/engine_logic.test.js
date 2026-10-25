@@ -16,6 +16,7 @@ import {
   reverseStockMovements,
   generatePeriodPlan,
   mergeNewPlansIntoExisting,
+  calculateShoppingBudget,
   Decimal,
 } from "../../app/static/js/engine.js";
 
@@ -123,6 +124,12 @@ describe("Ca logic dùng chung Python/JS", () => {
           kept.map((p) => String(p.id)),
           c.expect.kept_ids
         );
+      } else if (c.op === "shopping_budget") {
+        const budget = calculateShoppingBudget(c.items);
+        assert.equal(norm(budget.total_estimated_budget), c.expect.total_estimated);
+        assert.equal(norm(budget.total_spent), c.expect.total_spent);
+        assert.equal(budget.items_with_price_count, c.expect.items_with_price_count);
+        assert.equal(budget.total_items_count, c.expect.total_items_count);
       } else if (c.op === "plan") {
         const end = new Date(`${c.start}T00:00:00Z`);
         end.setUTCDate(end.getUTCDate() + c.days - 1);

@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from datetime import date, timedelta
+from decimal import Decimal
 from uuid import UUID, uuid4
 
 from app.constants import (
@@ -67,6 +68,12 @@ class AvailableLeftover:
         # (Khẩu phần thực tế theo hộ gia đình sẽ hoàn thiện ở Giai đoạn C1.)
         self.portions_remaining = 1
         self.deadline = cook_date + timedelta(days=leftover_days)
+
+
+class MealAlreadyEatenError(ValueError):
+    """Raised when attempting to edit, remove, or regenerate a meal that has already been eaten."""
+
+    pass
 
 
 class DishLimitExceededError(ValueError):
@@ -367,3 +374,281 @@ def merge_new_plans_into_existing(
             seen_ids.add(plan.id)
             kept.append(plan)
     return kept
+
+
+def regenerate_single_meal(
+    target_meal_plan_id: UUID,
+    all_meal_plans: list[MealPlan],
+    recipes: list[Recipe],
+    current_pantry_lots: list[PantryLot],
+    allow_leftovers: bool = True,
+    conversions: list[IngredientConversion] | None = None,
+    raw_ingredient_names: dict[UUID, str] | None = None,
+    leftover_days: int = LEFTOVER_DEFAULT_DAYS,
+) -> MealPlan:
+    """Sinh lại 1 bữa đơn lẻ mà không ảnh hưởng các bữa khác (B1 & B2).
+
+    Quy tắc:
+      - B2: Nếu bữa đã ăn (eaten_at is not None), quăng MealAlreadyEatenError.
+      - B1: Thu thập danh sách recipe_id đã nấu trong các bữa khác của cùng đợt
+        (để tuân thủ quy tắc không lặp món trong đợt - NO REPEAT RULE).
+      - Lập lại các món (1 mặn, 1 rau, 1 canh) cho bữa này.
+      - Giữ nguyên id, planned_for, meal_period, period_id của bữa cũ.
+    """
+    _validate_leftover_days(leftover_days)
+    target_plan = next((p for p in all_meal_plans if p.id == target_meal_plan_id), None)
+    if target_plan is None:
+        raise ValueError(f"Không tìm thấy bữa ăn có ID {target_meal_plan_id}")
+
+    if target_plan.eaten_at is not None:
+        raise MealAlreadyEatenError(
+            "Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. "
+            "Hãy hoàn tác bữa ăn trước nếu bạn muốn đổi món."
+        )
+
+    # Thu thập các món đã nấu trong các bữa KHÁC của cùng đợt (is_leftover = False)
+    other_cooked_recipe_ids: set[UUID] = {
+        dish.recipe_id
+        for p in all_meal_plans
+        if p.id != target_meal_plan_id
+        for dish in p.dishes
+        if not dish.is_leftover
+    }
+
+    recipes_by_cat: dict[DishCategory, list[Recipe]] = {
+        DishCategory.MAN: [r for r in recipes if r.category == DishCategory.MAN],
+        DishCategory.RAU: [r for r in recipes if r.category == DishCategory.RAU],
+        DishCategory.CANH: [r for r in recipes if r.category == DishCategory.CANH],
+    }
+
+    usable_lots = [
+        PantryLot(
+            id=lot.id,
+            ingredient_id=lot.ingredient_id,
+            ingredient_name=lot.ingredient_name,
+            purchased_quantity=lot.purchased_quantity,
+            remaining_quantity=lot.remaining_quantity,
+            unit=lot.unit,
+            purchased_at=lot.purchased_at,
+            expires_at=lot.expires_at,
+            created_at=lot.created_at,
+        )
+        for lot in current_pantry_lots
+        if lot.expires_at is None or lot.expires_at >= target_plan.planned_for
+    ]
+
+    new_dishes: list[PlannedDish] = []
+    for cat in [DishCategory.MAN, DishCategory.RAU, DishCategory.CANH]:
+        candidate_recipes = [r for r in recipes_by_cat[cat] if r.id not in other_cooked_recipe_ids]
+        if not candidate_recipes:
+            candidate_recipes = [
+                r for r in recipes_by_cat[cat] if r.id not in {d.recipe_id for d in new_dishes}
+            ]
+
+        chosen_recipe: Recipe | None = None
+        for r in candidate_recipes:
+            can_cook, _ = check_recipe_stock(r, usable_lots, conversions=conversions)
+            if can_cook:
+                chosen_recipe = r
+                break
+
+        if not chosen_recipe and candidate_recipes:
+            chosen_recipe = candidate_recipes[0]
+
+        if chosen_recipe:
+            for req in aggregate_requirements(chosen_recipe):
+                consume_available(
+                    usable_lots,
+                    req.ingredient_id,
+                    req.quantity,
+                    req.unit,
+                    conversions=conversions,
+                )
+            new_dishes.append(
+                PlannedDish(
+                    id=uuid4(),
+                    meal_plan_id=target_plan.id,
+                    recipe_id=chosen_recipe.id,
+                    recipe_name=chosen_recipe.name,
+                    category=cat,
+                    is_leftover=False,
+                    servings=chosen_recipe.servings,
+                )
+            )
+
+    validate_meal_dish_limits(new_dishes)
+    return MealPlan(
+        id=target_plan.id,
+        planned_for=target_plan.planned_for,
+        meal_period=target_plan.meal_period,
+        period_id=target_plan.period_id,
+        eaten_at=None,
+        notes=target_plan.notes,
+        dishes=new_dishes,
+        created_at=target_plan.created_at,
+    )
+
+
+def recompute_shopping_list(
+    meal_plans: list[MealPlan],
+    current_pantry_lots: list[PantryLot],
+    recipes: list[Recipe],
+    conversions: list[IngredientConversion] | None = None,
+    raw_ingredient_names: dict[UUID, str] | None = None,
+    ingredient_categories: dict[UUID, str] | None = None,
+) -> list[ShoppingItem]:
+    """Tính lại danh sách mua từ các bữa chưa ăn dựa trên tồn kho hiện tại (B1 & B3)."""
+    recipes_map: dict[UUID, Recipe] = {r.id: r for r in recipes}
+    target_conv_map = {c.to_ingredient_id: c for c in conversions} if conversions else {}
+
+    simulated_lots: list[PantryLot] = [
+        PantryLot(
+            id=lot.id,
+            ingredient_id=lot.ingredient_id,
+            ingredient_name=lot.ingredient_name,
+            purchased_quantity=lot.purchased_quantity,
+            remaining_quantity=lot.remaining_quantity,
+            unit=lot.unit,
+            purchased_at=lot.purchased_at,
+            expires_at=lot.expires_at,
+            created_at=lot.created_at,
+        )
+        for lot in current_pantry_lots
+    ]
+
+    shopping_items_map: dict[tuple[UUID, str], ShoppingItem] = {}
+
+    uneaten_plans = sorted(
+        [p for p in meal_plans if p.eaten_at is None],
+        key=lambda p: (p.planned_for, p.meal_period),
+    )
+
+    for meal in uneaten_plans:
+        usable_lots = [
+            lot
+            for lot in simulated_lots
+            if lot.expires_at is None or lot.expires_at >= meal.planned_for
+        ]
+
+        for dish in meal.dishes:
+            if dish.is_leftover:
+                continue
+            recipe = recipes_map.get(dish.recipe_id)
+            if not recipe:
+                continue
+
+            _, deficits = check_recipe_stock(recipe, usable_lots, conversions=conversions)
+            for req in aggregate_requirements(recipe):
+                consume_available(
+                    usable_lots,
+                    req.ingredient_id,
+                    req.quantity,
+                    req.unit,
+                    conversions=conversions,
+                )
+
+            for ing_id, (ing_name, missing_qty, unit) in deficits.items():
+                if ing_id in target_conv_map:
+                    conv = target_conv_map[ing_id]
+                    missing_in_to = convert_quantity(missing_qty, unit, conv.to_unit)
+                    raw_needed = missing_in_to / conv.ratio
+                    actual_ing_id = conv.from_ingredient_id
+                    actual_unit = conv.from_unit
+                    actual_qty = raw_needed
+                    raw_name = (
+                        raw_ingredient_names.get(actual_ing_id) if raw_ingredient_names else None
+                    ) or f"Nguyên liệu gốc cho {ing_name}"
+                    actual_name = raw_name
+                else:
+                    actual_ing_id = ing_id
+                    actual_unit = unit
+                    actual_qty = missing_qty
+                    actual_name = ing_name
+
+                key = (actual_ing_id, UNIT_DIMENSIONS[actual_unit])
+                item = shopping_items_map.get(key)
+                cat = (
+                    ingredient_categories.get(actual_ing_id, "khac")
+                    if ingredient_categories
+                    else "khac"
+                )
+                if item is None:
+                    shopping_items_map[key] = ShoppingItem(
+                        ingredient_id=actual_ing_id,
+                        ingredient_name=actual_name,
+                        needed_quantity=actual_qty,
+                        unit=actual_unit,
+                        dish_names=[recipe.name],
+                        category=cat,
+                        source="plan",
+                    )
+                else:
+                    item.needed_quantity += convert_quantity(actual_qty, actual_unit, item.unit)
+                    if recipe.name not in item.dish_names:
+                        item.dish_names.append(recipe.name)
+
+    return list(shopping_items_map.values())
+
+
+def calculate_shopping_budget(items: list[ShoppingItem | dict]) -> dict:
+    """B4: Tính toán ngân sách từ giá người dùng nhập.
+
+    TUYỆT ĐỐI không bịa giá thị trường khi người dùng chưa nhập giá.
+    """
+    total_estimated = Decimal("0")
+    total_spent = Decimal("0")
+    items_with_price = 0
+    total_items = len(items)
+
+    for it in items:
+        price = it.price if isinstance(it, ShoppingItem) else it.get("price")
+        is_bought = (
+            it.is_bought
+            if isinstance(it, ShoppingItem)
+            else (it.get("is_bought") or it.get("bought", False))
+        )
+        if price is not None:
+            p = Decimal(str(price))
+            if p > Decimal("0"):
+                total_estimated += p
+                items_with_price += 1
+                if is_bought:
+                    total_spent += p
+
+    return {
+        "total_estimated_budget": total_estimated,
+        "total_spent": total_spent,
+        "items_with_price_count": items_with_price,
+        "total_items_count": total_items,
+    }
+
+
+STANDARD_SHOPPING_CATEGORIES = [
+    "thit",
+    "gia_cam",
+    "hai_san",
+    "trung_sua",
+    "rau_cu",
+    "cu_qua",
+    "gao_bot_mi",
+    "gia_vi",
+    "nuoc_cham_dau",
+    "khac",
+]
+
+
+def group_shopping_items_by_category(
+    items: list[ShoppingItem | dict],
+    categories_order: list[str] | None = None,
+) -> dict[str, list]:
+    """B3: Nhóm danh sách mua theo loại/quầy hàng."""
+    order = categories_order or STANDARD_SHOPPING_CATEGORIES
+    grouped: dict[str, list] = {c: [] for c in order}
+
+    for it in items:
+        cat = it.category if isinstance(it, ShoppingItem) else (it.get("category") or "khac")
+        if not cat or cat not in grouped:
+            cat = "khac"
+        grouped[cat].append(it)
+
+    return {cat: items_list for cat, items_list in grouped.items() if items_list}

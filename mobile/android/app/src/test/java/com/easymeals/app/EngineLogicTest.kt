@@ -207,6 +207,29 @@ class EngineLogicTest {
                         assertEquals("[$name] kept $k", expKept.getString(k), merged[k].id)
                     }
                 }
+                "shopping_budget" -> {
+                    val itemsArray = c.getJSONArray("items")
+                    val items = mutableListOf<ShoppingItem>()
+                    for (j in 0 until itemsArray.length()) {
+                        val obj = itemsArray.getJSONObject(j)
+                        items.add(
+                            ShoppingItem(
+                                ingredientId = obj.getString("ingredient_id"),
+                                ingredientName = obj.getString("ingredient_name"),
+                                neededQuantity = obj.getString("needed_quantity"),
+                                unit = obj.getString("unit"),
+                                isBought = obj.optBoolean("is_bought", false),
+                                price = if (obj.isNull("price")) null else obj.getString("price")
+                            )
+                        )
+                    }
+                    val budget = EasyMealsEngine.calculateShoppingBudget(items)
+                    val exp = c.getJSONObject("expect")
+                    assertEquals("[$name] total estimated", norm(exp.getString("total_estimated")), norm(budget.totalEstimatedBudget))
+                    assertEquals("[$name] total spent", norm(exp.getString("total_spent")), norm(budget.totalSpent))
+                    assertEquals("[$name] items with price", exp.getInt("items_with_price_count"), budget.itemsWithPriceCount)
+                    assertEquals("[$name] total items", exp.getInt("total_items_count"), budget.totalItemsCount)
+                }
                 "plan" -> {
                     val recipesArray = c.getJSONArray("recipes")
                     val recipes = mutableListOf<Recipe>()

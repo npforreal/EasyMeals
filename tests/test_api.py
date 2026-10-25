@@ -233,3 +233,65 @@ def test_stateless_generate_converted_ingredient_shows_raw_name_and_ratio(
     assert float(item["needed_quantity"]) == 200.0
     assert item["unit"] == "g"
     assert all(str(s["ingredient_id"]) != comnguoi_id for s in shopping)
+
+
+def test_stateless_regenerate_meal_and_recompute_shopping_api(client, repo):
+    """B1, B2, B3, B4: Test API sinh lại 1 bữa và tính lại danh sách mua kèm ngân sách."""
+    # 1. Sinh thực đơn 2 ngày
+    res_gen = client.post(
+        "/api/planner/generate",
+        json={
+            "pantry": [],
+            "start_date": "2026-10-25",
+            "days": 2,
+            "options": {"allow_leftovers": False},
+        },
+    )
+    assert res_gen.status_code == 200
+    meals = res_gen.json()["meals"]
+    target_meal = meals[0]
+
+    # 2. Sinh lại bữa đầu tiên
+    res_regen = client.post(
+        "/api/planner/regenerate-meal",
+        json={
+            "target_meal_plan_id": target_meal["id"],
+            "all_meal_plans": meals,
+            "pantry": [],
+            "options": {"allow_leftovers": False},
+        },
+    )
+    assert res_regen.status_code == 200
+    regen_data = res_regen.json()
+    assert regen_data["success"] is True
+    assert regen_data["meal"]["id"] == target_meal["id"]
+    assert len(regen_data["meal"]["dishes"]) > 0
+
+    # 3. Thử sinh lại bữa đã ăn -> 400 Bad Request
+    target_meal_eaten = dict(target_meal)
+    target_meal_eaten["eaten_at"] = "2026-10-25T12:00:00"
+    meals_with_eaten = [target_meal_eaten] + meals[1:]
+    res_regen_eaten = client.post(
+        "/api/planner/regenerate-meal",
+        json={
+            "target_meal_plan_id": target_meal["id"],
+            "all_meal_plans": meals_with_eaten,
+            "pantry": [],
+        },
+    )
+    assert res_regen_eaten.status_code == 400
+    assert "đã được đánh dấu ăn" in res_regen_eaten.json()["detail"]
+
+    # 4. Tính lại danh sách mua từ các bữa
+    res_recompute = client.post(
+        "/api/planner/recompute-shopping",
+        json={
+            "meal_plans": meals,
+            "pantry": [],
+        },
+    )
+    assert res_recompute.status_code == 200
+    recomp_data = res_recompute.json()
+    assert len(recomp_data["shopping_list"]) > 0
+    assert "total_estimated_budget" in recomp_data
+    assert "total_spent" in recomp_data

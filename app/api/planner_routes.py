@@ -16,11 +16,20 @@ from app.domain.inventory import (
 )
 from app.domain.models import (
     IncompatibleUnitError,
+    MealPlan,
     PantryLot,
+    PlannedDish,
     StockMovement,
 )
-from app.domain.planner import generate_period_plan
+from app.domain.planner import (
+    MealAlreadyEatenError,
+    calculate_shopping_budget,
+    generate_period_plan,
+    recompute_shopping_list,
+    regenerate_single_meal,
+)
 from app.schemas import (
+    MealPlanInput,
     MealPlanResponse,
     PantryLotInput,
     PlannedDishResponse,
@@ -29,6 +38,10 @@ from app.schemas import (
     StatelessEatResponse,
     StatelessGeneratePlanRequest,
     StatelessGeneratePlanResponse,
+    StatelessRecomputeShoppingRequest,
+    StatelessRecomputeShoppingResponse,
+    StatelessRegenerateMealRequest,
+    StatelessRegenerateMealResponse,
     StatelessUndoEatRequest,
     StatelessUndoEatResponse,
     StockMovementResponse,
@@ -286,4 +299,130 @@ def undo_eat_stateless_meal(
             )
             for rm in reversal_movements
         ],
+    )
+
+
+def _to_domain_meal_plan(inp: MealPlanInput) -> MealPlan:
+    return MealPlan(
+        id=inp.id,
+        planned_for=inp.planned_for,
+        meal_period=inp.meal_period,
+        period_id=inp.period_id,
+        eaten_at=inp.eaten_at,
+        notes=inp.notes,
+        dishes=[
+            PlannedDish(
+                id=d.id,
+                meal_plan_id=d.meal_plan_id,
+                recipe_id=d.recipe_id,
+                recipe_name=d.recipe_name,
+                category=d.category,
+                is_leftover=d.is_leftover,
+                original_dish_id=d.original_dish_id,
+                servings=d.servings,
+            )
+            for d in inp.dishes
+        ],
+    )
+
+
+@router.post("/regenerate-meal", response_model=StatelessRegenerateMealResponse)
+def regenerate_stateless_meal(
+    payload: StatelessRegenerateMealRequest,
+    repo: Repository = Depends(get_repo),
+) -> StatelessRegenerateMealResponse:
+    """Sinh lại 1 bữa đơn lẻ trong đợt kế hoạch (B1 & B2)."""
+    domain_lots = [_to_domain_lot(lot) for lot in payload.pantry]
+    domain_plans = [_to_domain_meal_plan(p) for p in payload.all_meal_plans]
+    recipes = repo.get_recipes()
+    conversions = repo.get_conversions()
+    raw_ingredient_names = {ing.id: ing.name for ing in repo.get_ingredients()}
+
+    try:
+        updated_meal = regenerate_single_meal(
+            target_meal_plan_id=payload.target_meal_plan_id,
+            all_meal_plans=domain_plans,
+            recipes=recipes,
+            current_pantry_lots=domain_lots,
+            allow_leftovers=payload.options.allow_leftovers,
+            conversions=conversions,
+            raw_ingredient_names=raw_ingredient_names,
+            leftover_days=payload.options.leftover_days,
+        )
+    except MealAlreadyEatenError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+
+    return StatelessRegenerateMealResponse(
+        success=True,
+        meal=MealPlanResponse(
+            id=updated_meal.id,
+            planned_for=updated_meal.planned_for,
+            meal_period=updated_meal.meal_period,
+            period_id=updated_meal.period_id,
+            eaten_at=updated_meal.eaten_at,
+            notes=updated_meal.notes,
+            dishes=[
+                PlannedDishResponse(
+                    id=d.id,
+                    meal_plan_id=d.meal_plan_id,
+                    recipe_id=d.recipe_id,
+                    recipe_name=d.recipe_name,
+                    category=d.category,
+                    is_leftover=d.is_leftover,
+                    servings=d.servings,
+                )
+                for d in updated_meal.dishes
+            ],
+        ),
+    )
+
+
+@router.post("/recompute-shopping", response_model=StatelessRecomputeShoppingResponse)
+def recompute_stateless_shopping(
+    payload: StatelessRecomputeShoppingRequest,
+    repo: Repository = Depends(get_repo),
+) -> StatelessRecomputeShoppingResponse:
+    """Tính lại danh sách mua từ các bữa chưa ăn (B1 & B3 & B4)."""
+    domain_lots = [_to_domain_lot(lot) for lot in payload.pantry]
+    domain_plans = [_to_domain_meal_plan(p) for p in payload.meal_plans]
+    recipes = repo.get_recipes()
+    conversions = repo.get_conversions()
+    ingredients = repo.get_ingredients()
+    raw_ingredient_names = {ing.id: ing.name for ing in ingredients}
+    ingredient_categories = {ing.id: ing.category or "khac" for ing in ingredients}
+
+    items = recompute_shopping_list(
+        meal_plans=domain_plans,
+        current_pantry_lots=domain_lots,
+        recipes=recipes,
+        conversions=conversions,
+        raw_ingredient_names=raw_ingredient_names,
+        ingredient_categories=ingredient_categories,
+    )
+
+    budget = calculate_shopping_budget(items)
+
+    return StatelessRecomputeShoppingResponse(
+        shopping_list=[
+            ShoppingItemResponse(
+                id=item.id,
+                ingredient_id=item.ingredient_id,
+                ingredient_name=item.ingredient_name,
+                needed_quantity=item.needed_quantity,
+                unit=item.unit,
+                dish_names=item.dish_names,
+                category=item.category,
+                price=item.price,
+                is_bought=item.is_bought,
+                bought_quantity=item.bought_quantity,
+                source=item.source,
+            )
+            for item in items
+        ],
+        total_estimated_budget=budget["total_estimated_budget"],
+        total_spent=budget["total_spent"],
+        items_with_price_count=budget["items_with_price_count"],
+        total_items_count=budget["total_items_count"],
     )

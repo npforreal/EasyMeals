@@ -707,4 +707,209 @@ object EasyMealsEngine {
         }
         return kept
     }
+
+    data class ShoppingBudgetResult(
+        val totalEstimatedBudget: String,
+        val totalSpent: String,
+        val itemsWithPriceCount: Int,
+        val totalItemsCount: Int
+    )
+
+    fun calculateShoppingBudget(items: List<ShoppingItem>): ShoppingBudgetResult {
+        var totalEstimated = ExactDecimal.ZERO
+        var totalSpent = ExactDecimal.ZERO
+        var itemsWithPrice = 0
+
+        for (it in items) {
+            val pStr = it.price
+            if (!pStr.isNullOrBlank()) {
+                val p = ExactDecimal(pStr)
+                if (p > ExactDecimal.ZERO) {
+                    totalEstimated = totalEstimated + p
+                    itemsWithPrice++
+                    if (it.isBought) {
+                        totalSpent = totalSpent + p
+                    }
+                }
+            }
+        }
+
+        return ShoppingBudgetResult(
+            totalEstimatedBudget = totalEstimated.toString(),
+            totalSpent = totalSpent.toString(),
+            itemsWithPriceCount = itemsWithPrice,
+            totalItemsCount = items.size
+        )
+    }
+
+    fun groupShoppingItemsByCategory(
+        items: List<ShoppingItem>,
+        categoriesOrder: List<String> = listOf(
+            "thit", "gia_cam", "hai_san", "trung_sua", "rau_cu",
+            "cu_qua", "gao_bot_mi", "gia_vi", "nuoc_cham_dau", "khac"
+        )
+    ): Map<String, List<ShoppingItem>> {
+        val grouped = categoriesOrder.associateWith { mutableListOf<ShoppingItem>() }.toMutableMap()
+        for (it in items) {
+            val cat = it.category ?: "khac"
+            val targetList = grouped.getOrPut(cat) { mutableListOf() }
+            targetList.add(it)
+        }
+        return grouped.filterValues { it.isNotEmpty() }
+    }
+
+    fun regenerateSingleMeal(
+        targetMealPlanId: String,
+        allMealPlans: List<MealPlan>,
+        recipes: List<Recipe>,
+        currentPantryLots: List<PantryLot> = emptyList(),
+        conversions: List<Conversion>? = null
+    ): MealPlan {
+        val targetPlan = allMealPlans.find { it.id == targetMealPlanId }
+            ?: throw IllegalArgumentException("Không tìm thấy bữa ăn có ID $targetMealPlanId")
+
+        if (targetPlan.eatenAt != null) {
+            throw IllegalStateException("Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn đổi món.")
+        }
+
+        val otherCookedRecipeIds = mutableSetOf<String>()
+        for (p in allMealPlans) {
+            if (p.id == targetMealPlanId) continue
+            for (d in p.dishes) {
+                if (!d.isLeftover) {
+                    otherCookedRecipeIds.add(d.recipeId)
+                }
+            }
+        }
+
+        val recipesByCat = mapOf(
+            "man" to recipes.filter { it.category == "man" },
+            "rau" to recipes.filter { it.category == "rau" },
+            "canh" to recipes.filter { it.category == "canh" }
+        )
+
+        val planDate = LocalDate.parse(targetPlan.plannedFor.substring(0, 10))
+        val usableLots = currentPantryLots.filter { lot ->
+            lot.expiresAt == null || !LocalDate.parse(lot.expiresAt).isBefore(planDate)
+        }.map { it.copy() }.toMutableList()
+
+        val newDishes = mutableListOf<PlannedDish>()
+        for (cat in listOf("man", "rau", "canh")) {
+            val candidates = (recipesByCat[cat] ?: emptyList()).filter { !otherCookedRecipeIds.contains(it.id) }
+                .ifEmpty { (recipesByCat[cat] ?: emptyList()).filter { r -> !newDishes.any { it.recipeId == r.id } } }
+
+            var chosen: Recipe? = null
+            for (r in candidates) {
+                val (canCook, _) = checkRecipeStock(r, usableLots, "1", conversions)
+                if (canCook) {
+                    chosen = r
+                    break
+                }
+            }
+            if (chosen == null && candidates.isNotEmpty()) {
+                chosen = candidates.first()
+            }
+
+            if (chosen != null) {
+                for (req in aggregateRequirements(chosen)) {
+                    consumeAvailable(usableLots, req.ingredientId, req.quantity, req.unit, conversions)
+                }
+                newDishes.add(
+                    PlannedDish(
+                        id = UUID.randomUUID().toString(),
+                        mealPlanId = targetPlan.id,
+                        recipeId = chosen.id,
+                        recipeName = chosen.name,
+                        category = cat,
+                        isLeftover = false,
+                        servings = chosen.servings
+                    )
+                )
+            }
+        }
+
+        return targetPlan.copy(eatenAt = null, dishes = newDishes)
+    }
+
+    fun recomputeShoppingList(
+        mealPlans: List<MealPlan>,
+        currentPantryLots: List<PantryLot> = emptyList(),
+        recipes: List<Recipe> = emptyList(),
+        conversions: List<Conversion>? = null,
+        rawIngredientNames: Map<String, String> = emptyMap(),
+        ingredientCategories: Map<String, String> = emptyMap()
+    ): List<ShoppingItem> {
+        val recipesMap = recipes.associateBy { it.id }
+        val simulatedLots = currentPantryLots.map { it.copy() }.toMutableList()
+        val shoppingItemsMap = mutableMapOf<String, ShoppingItem>()
+
+        val uneatenPlans = mealPlans.filter { it.eatenAt == null }
+            .sortedBy { it.plannedFor }
+
+        for (meal in uneatenPlans) {
+            val mealDate = LocalDate.parse(meal.plannedFor.substring(0, 10))
+            val usableLots = simulatedLots.filter { lot ->
+                lot.expiresAt == null || !LocalDate.parse(lot.expiresAt).isBefore(mealDate)
+            }.toMutableList()
+
+            for (dish in meal.dishes) {
+                if (dish.isLeftover) continue
+                val recipe = recipesMap[dish.recipeId] ?: continue
+
+                val (_, deficits) = checkRecipeStock(recipe, usableLots, "1", conversions)
+                for (req in aggregateRequirements(recipe)) {
+                    consumeAvailable(usableLots, req.ingredientId, req.quantity, req.unit, conversions)
+                }
+
+                for ((ingId, def) in deficits) {
+                    val actualIngId: String
+                    val actualUnit: String
+                    val actualQty: String
+                    val actualName: String
+
+                    val targetConvs = findConversionsForTarget(ingId, conversions)
+                    if (targetConvs.isNotEmpty()) {
+                        val conv = targetConvs.first()
+                        val missingInTo = UnitDimensions.convert(ExactDecimal(def.missingQuantity), def.unit, conv.toUnit)
+                        val rawNeeded = missingInTo / ExactDecimal(conv.ratio)
+                        actualIngId = conv.fromIngredientId
+                        actualUnit = conv.fromUnit
+                        actualQty = rawNeeded.toString()
+                        actualName = rawIngredientNames[actualIngId] ?: "Nguyên liệu gốc cho ${def.ingredientName}"
+                    } else {
+                        actualIngId = ingId
+                        actualUnit = def.unit
+                        actualQty = def.missingQuantity
+                        actualName = def.ingredientName
+                    }
+
+                    val dim = UnitDimensions.dimension(actualUnit)?.name ?: actualUnit
+                    val key = "${actualIngId}_$dim"
+                    val cat = ingredientCategories[actualIngId] ?: "khac"
+                    val existing = shoppingItemsMap[key]
+
+                    if (existing == null) {
+                        shoppingItemsMap[key] = ShoppingItem(
+                            ingredientId = actualIngId,
+                            ingredientName = actualName,
+                            neededQuantity = actualQty,
+                            unit = actualUnit,
+                            isBought = false,
+                            isManuallyAdded = false,
+                            dishNames = mutableListOf(recipe.name),
+                            category = cat
+                        )
+                    } else {
+                        val added = UnitDimensions.convert(ExactDecimal(actualQty), actualUnit, existing.unit)
+                        existing.neededQuantity = (ExactDecimal(existing.neededQuantity) + added).toString()
+                        if (!existing.dishNames.contains(recipe.name)) {
+                            existing.dishNames.add(recipe.name)
+                        }
+                    }
+                }
+            }
+        }
+
+        return shoppingItemsMap.values.toList()
+    }
 }

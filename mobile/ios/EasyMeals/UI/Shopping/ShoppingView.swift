@@ -5,17 +5,65 @@ public struct ShoppingView: View {
     @State private var newItemName = ""
     @State private var newItemQty = "200"
     @State private var newItemUnit = "g"
+    @State private var newItemCategory = "khac"
+    @State private var newItemPrice = ""
     @State private var showingAddSheet = false
+    @State private var editingPriceItem: ShoppingItem? = nil
+    @State private var editingPriceValue = ""
     // A4 - Vòng 13: hộp thoại xác nhận mua vào tủ (lượng thực mua + hạn dùng).
     @State private var showingPurchaseSheet = false
     @State private var purchaseQuantities: [String: String] = [:]
     @State private var purchaseExpiries: [String: Date] = [:]
 
+    private let categoryLabels: [String: String] = [
+        "thit": "Thịt tươi sống",
+        "gia_cam": "Gia cầm & trứng",
+        "hai_san": "Hải sản tươi sống",
+        "trung_sua": "Trứng & Sữa",
+        "rau_cu": "Rau tươi & nấm",
+        "cu_qua": "Củ & quả",
+        "gao_bot_mi": "Gạo, mì & bột",
+        "gia_vi": "Gia vị & phụ liệu",
+        "nuoc_cham_dau": "Nước chấm & dầu ăn",
+        "khac": "Mặt hàng khác"
+    ]
+
+    private let categoriesOrder: [String] = [
+        "thit", "gia_cam", "hai_san", "trung_sua", "rau_cu",
+        "cu_qua", "gao_bot_mi", "gia_vi", "nuoc_cham_dau", "khac"
+    ]
+
+    private func formatVnd(_ amountStr: String) -> String {
+        let val = Double(amountStr) ?? 0
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.locale = Locale(identifier: "vi_VN")
+        let formatted = formatter.string(from: NSNumber(value: Int(val))) ?? "0"
+        return "\(formatted) đ"
+    }
+
+    var budget: ShoppingBudgetResult {
+        EasyMealsEngine.calculateShoppingBudget(storage.shoppingItems)
+    }
+
+    var groupedItems: [String: [ShoppingItem]] {
+        EasyMealsEngine.groupShoppingItemsByCategory(storage.shoppingItems)
+    }
+
     var shareText: String {
-        var lines = ["DANH SÁCH ĐI CHỢ - EASYMEALS"]
-        for item in storage.shoppingItems {
-            let mark = item.isBought ? "[x]" : "[ ]"
-            lines.append("\(mark) \(item.ingredientName): \(item.neededQuantity) \(item.unit)")
+        var lines = ["DANH SÁCH ĐI CHỢ - EASYMEALS\n"]
+        for cat in categoriesOrder {
+            guard let items = groupedItems[cat], !items.isEmpty else { continue }
+            lines.append("=== \(categoryLabels[cat] ?? "Mặt hàng khác") ===")
+            for item in items {
+                let mark = item.isBought ? "[x]" : "[ ]"
+                let priceText = (item.price?.isEmpty == false) ? " (~\(formatVnd(item.price!)))" : ""
+                lines.append("\(mark) \(item.ingredientName): \(item.neededQuantity) \(item.unit)\(priceText)")
+            }
+            lines.append("")
+        }
+        if budget.itemsWithPriceCount > 0 {
+            lines.append("Dự toán: \(formatVnd(budget.totalEstimatedBudget)) | Đã chi: \(formatVnd(budget.totalSpent))")
         }
         return lines.joined(separator: "\n")
     }
@@ -26,38 +74,109 @@ public struct ShoppingView: View {
                 if storage.shoppingItems.isEmpty {
                     emptyShoppingView
                 } else {
-                    List {
-                        ForEach(storage.shoppingItems) { item in
-                            HStack {
-                                Image(systemName: item.isBought ? "checkmark.circle.fill" : "circle")
-                                    .foregroundColor(item.isBought ? AppColors.primary : AppColors.textSecondary)
-                                    .font(.title3)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(item.ingredientName)
-                                        .font(.body)
-                                        .strikethrough(item.isBought, color: .secondary)
-                                        .foregroundColor(item.isBought ? .secondary : AppColors.textPrimary)
-
-                                    if !item.dishNames.isEmpty {
-                                        Text("Cho món: \(item.dishNames.joined(separator: ", "))")
-                                            .font(.caption2)
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-
-                                Spacer()
-
-                                Text("\(item.neededQuantity) \(item.unit)")
+                    // Thẻ Ngân Sách & Chi tiêu (B4)
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Ngân sách & Chi tiêu")
+                                .font(.subheadline.bold())
+                                .foregroundColor(AppColors.primary)
+                            Spacer()
+                            Text("\(budget.itemsWithPriceCount)/\(budget.totalItemsCount) món có giá")
+                                .font(.caption)
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Dự toán tổng")
+                                    .font(.caption2)
+                                    .foregroundColor(AppColors.textSecondary)
+                                Text(formatVnd(budget.totalEstimatedBudget))
+                                    .font(.subheadline.bold())
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text("Đã chi")
+                                    .font(.caption2)
+                                    .foregroundColor(AppColors.textSecondary)
+                                Text(formatVnd(budget.totalSpent))
                                     .font(.subheadline.bold())
                                     .foregroundColor(AppColors.primary)
                             }
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                storage.toggleShoppingItem(id: item.id)
+                        }
+                    }
+                    .padding(12)
+                    .background(AppColors.primary.opacity(0.08))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                    .padding(.top, 4)
+
+                    List {
+                        ForEach(categoriesOrder, id: \.self) { cat in
+                            if let items = groupedItems[cat], !items.isEmpty {
+                                Section(header: Text(categoryLabels[cat] ?? "Mặt hàng khác").font(.caption.bold())) {
+                                    ForEach(items) { item in
+                                        HStack {
+                                            Image(systemName: item.isBought ? "checkmark.circle.fill" : "circle")
+                                                .foregroundColor(item.isBought ? AppColors.primary : AppColors.textSecondary)
+                                                .font(.title3)
+
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(item.ingredientName)
+                                                    .font(.body)
+                                                    .strikethrough(item.isBought, color: .secondary)
+                                                    .foregroundColor(item.isBought ? .secondary : AppColors.textPrimary)
+
+                                                if !item.dishNames.isEmpty {
+                                                    Text("Cho món: \(item.dishNames.joined(separator: ", "))")
+                                                        .font(.caption2)
+                                                        .foregroundColor(.secondary)
+                                                }
+                                            }
+
+                                            Spacer()
+
+                                            VStack(alignment: .trailing, spacing: 2) {
+                                                Text("\(item.neededQuantity) \(item.unit)")
+                                                    .font(.subheadline.bold())
+                                                    .foregroundColor(AppColors.primary)
+
+                                                Button {
+                                                    editingPriceItem = item
+                                                    editingPriceValue = item.price ?? ""
+                                                } label: {
+                                                    if let p = item.price, !p.isEmpty {
+                                                        Text(formatVnd(p))
+                                                            .font(.caption2)
+                                                            .foregroundColor(AppColors.textPrimary)
+                                                    } else {
+                                                        Text("+ Giá")
+                                                            .font(.caption2)
+                                                            .foregroundColor(AppColors.primary)
+                                                    }
+                                                }
+                                                .buttonStyle(.plain)
+                                            }
+
+                                            Button {
+                                                storage.deleteShoppingItem(id: item.id)
+                                            } label: {
+                                                Image(systemName: "trash")
+                                                    .font(.caption)
+                                                    .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                                            }
+                                            .buttonStyle(.plain)
+                                            .padding(.leading, 6)
+                                        }
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            storage.toggleShoppingItem(id: item.id)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
+                    .listStyle(.insetGrouped)
 
                     // Thanh hành động dưới cùng
                     VStack(spacing: 12) {
@@ -98,7 +217,27 @@ public struct ShoppingView: View {
             }
             .sheet(isPresented: $showingAddSheet) {
                 addCustomItemSheet
-                    .presentationDetents([.medium])
+                    .presentationDetents([.medium, .large])
+            }
+            .alert("Nhập giá thực tế", isPresented: Binding(
+                get: { editingPriceItem != nil },
+                set: { if !$0 { editingPriceItem = nil } }
+            )) {
+                TextField("Đơn giá VNĐ", text: $editingPriceValue)
+                    .keyboardType(.numberPad)
+                Button("Lưu giá") {
+                    if let item = editingPriceItem {
+                        storage.updateShoppingItemPrice(id: item.id, price: editingPriceValue)
+                    }
+                    editingPriceItem = nil
+                }
+                Button("Huỷ", role: .cancel) {
+                    editingPriceItem = nil
+                }
+            } message: {
+                if let item = editingPriceItem {
+                    Text("Nhập giá bạn thực tế chi trả cho \(item.ingredientName):")
+                }
             }
             // A4 - Vòng 13: xác nhận mua vào tủ — chỉnh lượng thực mua & hạn dùng từng món.
             .sheet(isPresented: $showingPurchaseSheet) {
@@ -137,17 +276,28 @@ public struct ShoppingView: View {
     private var addCustomItemSheet: some View {
         NavigationStack {
             Form {
-                TextField("Tên món cần mua", text: $newItemName)
-                HStack {
-                    TextField("Số lượng", text: $newItemQty)
-                        .keyboardType(.decimalPad)
-                    Picker("Đơn vị", selection: $newItemUnit) {
-                        Text("g").tag("g")
-                        Text("kg").tag("kg")
-                        Text("ml").tag("ml")
-                        Text("l").tag("l")
-                        Text("piece").tag("piece")
+                Section(header: Text("Thông tin nguyên liệu")) {
+                    TextField("Tên món cần mua", text: $newItemName)
+                    HStack {
+                        TextField("Số lượng", text: $newItemQty)
+                            .keyboardType(.decimalPad)
+                        Picker("Đơn vị", selection: $newItemUnit) {
+                            Text("g").tag("g")
+                            Text("kg").tag("kg")
+                            Text("ml").tag("ml")
+                            Text("l").tag("l")
+                            Text("piece").tag("piece")
+                        }
                     }
+                }
+                Section(header: Text("Quầy hàng & Giá")) {
+                    Picker("Quầy hàng", selection: $newItemCategory) {
+                        ForEach(categoriesOrder, id: \.self) { cat in
+                            Text(categoryLabels[cat] ?? cat).tag(cat)
+                        }
+                    }
+                    TextField("Đơn giá VNĐ (tuỳ chọn)", text: $newItemPrice)
+                        .keyboardType(.numberPad)
                 }
             }
             .navigationTitle("Thêm món đi chợ")
@@ -157,8 +307,15 @@ public struct ShoppingView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Thêm") {
-                        storage.addCustomShoppingItem(name: newItemName, quantity: newItemQty, unit: newItemUnit)
+                        storage.addCustomShoppingItem(
+                            name: newItemName,
+                            quantity: newItemQty,
+                            unit: newItemUnit,
+                            category: newItemCategory,
+                            price: newItemPrice
+                        )
                         newItemName = ""
+                        newItemPrice = ""
                         showingAddSheet = false
                     }
                     .disabled(newItemName.isEmpty)

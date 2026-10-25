@@ -363,6 +363,9 @@ function normalizeShoppingItem(raw, { source = SHOPPING_SOURCE_PLAN, planIds = [
     needed_quantity: String(raw.needed_quantity || raw.quantity || "0"),
     unit,
     bought: Boolean(raw.bought || raw.isBought || raw.is_bought || false),
+    category: raw.category || "khac",
+    price: raw.price != null ? String(raw.price) : null,
+    bought_quantity: raw.bought_quantity != null ? String(raw.bought_quantity) : null,
     // Nguồn phát sinh: "plan" (sinh tự) hoặc "manual" (người dùng tự thêm).
     source: raw.source === SHOPPING_SOURCE_MANUAL ? SHOPPING_SOURCE_MANUAL : source,
     // Mã đợt bữa liên quan (mục plan mới có; mục manual để rỗng).
@@ -454,6 +457,9 @@ export async function getManuallyAddedShoppingItems() {
 export async function replacePlanShoppingItems(planItems, planIds = []) {
   const all = await getAllItems("shopping");
   const manual = all.filter((it) => it.source === SHOPPING_SOURCE_MANUAL);
+  const oldPlanMap = new Map(
+    all.filter((it) => it.source !== SHOPPING_SOURCE_MANUAL).map((it) => [it.id, it])
+  );
   await deleteShoppingItemsByIds(all.filter((it) => it.source !== SHOPPING_SOURCE_MANUAL).map((it) => it.id));
 
   const manualKeys = new Set(manual.map((it) => shoppingItemId(it.ingredient_id, it.unit)));
@@ -464,6 +470,10 @@ export async function replacePlanShoppingItems(planItems, planIds = []) {
     const key = shoppingItemId(String(item.ingredient_id), String(item.unit));
     if (manualKeys.has(key) || planKeys.has(key)) continue;
     planKeys.add(key);
+    const old = oldPlanMap.get(key);
+    if (old) {
+      if (old.price != null && item.price == null) item.price = old.price;
+    }
     normalizedPlanItems.push(normalizeShoppingItem(item, { source: SHOPPING_SOURCE_PLAN, planIds }));
   }
   for (const item of normalizedPlanItems) {
@@ -476,6 +486,18 @@ export async function toggleShoppingItemBought(id) {
   const item = await getItem("shopping", id);
   if (!item) return;
   await putItem("shopping", { ...item, bought: !item.bought, updated_at: new Date().toISOString() });
+}
+
+export async function updateShoppingItem(id, updates = {}) {
+  const item = await getItem("shopping", id);
+  if (!item) return null;
+  const updated = {
+    ...item,
+    ...updates,
+    updated_at: new Date().toISOString(),
+  };
+  await putItem("shopping", updated);
+  return updated;
 }
 
 // ==========================================

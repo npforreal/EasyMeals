@@ -816,3 +816,252 @@ export function mergeNewPlansIntoExisting(existingPlans, newPlans, mode = "repla
   }
   return kept;
 }
+
+export const STANDARD_SHOPPING_CATEGORIES = [
+  "thit",
+  "gia_cam",
+  "hai_san",
+  "trung_sua",
+  "rau_cu",
+  "cu_qua",
+  "gao_bot_mi",
+  "gia_vi",
+  "nuoc_cham_dau",
+  "khac",
+];
+
+export function regenerateSingleMeal(
+  targetMealPlanId,
+  allMealPlans,
+  recipes,
+  currentPantryLots = [],
+  options = {}
+) {
+  const conversions = options.conversions || [];
+
+  const targetPlan = (allMealPlans || []).find(
+    (p) => String(p.id) === String(targetMealPlanId)
+  );
+  if (!targetPlan) {
+    throw new Error(`Không tìm thấy bữa ăn có ID ${targetMealPlanId}`);
+  }
+
+  if (targetPlan.eaten_at) {
+    throw new Error(
+      "Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn đổi món."
+    );
+  }
+
+  const otherCookedRecipeIds = new Set();
+  for (const p of allMealPlans) {
+    if (String(p.id) === String(targetMealPlanId)) continue;
+    for (const d of p.dishes || []) {
+      if (!d.is_leftover) {
+        otherCookedRecipeIds.add(d.recipe_id);
+      }
+    }
+  }
+
+  const recipesByCat = {
+    man: (recipes || []).filter((r) => r.category === "man"),
+    rau: (recipes || []).filter((r) => r.category === "rau"),
+    canh: (recipes || []).filter((r) => r.category === "canh"),
+  };
+
+  const planDateStr = String(targetPlan.planned_for).slice(0, 10);
+  const usableLots = (currentPantryLots || [])
+    .filter((l) => !l.expires_at || String(l.expires_at).slice(0, 10) >= planDateStr)
+    .map((l) => ({ ...l }));
+
+  const newDishes = [];
+  for (const cat of ["man", "rau", "canh"]) {
+    let candidates = (recipesByCat[cat] || []).filter(
+      (r) => !otherCookedRecipeIds.has(r.id)
+    );
+    if (!candidates.length) {
+      candidates = (recipesByCat[cat] || []).filter(
+        (r) => !newDishes.some((d) => d.recipe_id === r.id)
+      );
+    }
+
+    let chosenRecipe = null;
+    for (const r of candidates) {
+      const { canCook } = checkRecipeStock(r, usableLots, conversions);
+      if (canCook) {
+        chosenRecipe = r;
+        break;
+      }
+    }
+
+    if (!chosenRecipe && candidates.length) {
+      chosenRecipe = candidates[0];
+    }
+
+    if (chosenRecipe) {
+      for (const req of aggregateRequirements(chosenRecipe)) {
+        consumeAvailable(
+          usableLots,
+          req.ingredient_id,
+          req.quantity,
+          req.unit,
+          conversions
+        );
+      }
+      newDishes.push({
+        id: generateEngineUUID(),
+        meal_plan_id: targetPlan.id,
+        recipe_id: chosenRecipe.id,
+        recipe_name: chosenRecipe.name,
+        category: cat,
+        is_leftover: false,
+        servings: chosenRecipe.servings || 1,
+      });
+    }
+  }
+
+  return {
+    ...targetPlan,
+    eaten_at: null,
+    dishes: newDishes,
+  };
+}
+
+export function recomputeShoppingList(
+  mealPlans,
+  currentPantryLots = [],
+  recipes = [],
+  options = {}
+) {
+  const conversions = options.conversions || [];
+  const rawIngredientNames = options.rawIngredientNames || {};
+  const ingredientCategories = options.ingredientCategories || {};
+
+  const recipesMap = new Map((recipes || []).map((r) => [r.id, r]));
+  const targetConvMap = new Map((conversions || []).map((c) => [c.to_ingredient_id, c]));
+
+  const simulatedLots = (currentPantryLots || []).map((l) => ({ ...l }));
+  const shoppingItemsMap = new Map();
+
+  const uneatenPlans = (mealPlans || [])
+    .filter((p) => !p.eaten_at)
+    .sort((a, b) => String(a.planned_for).localeCompare(String(b.planned_for)));
+
+  for (const meal of uneatenPlans) {
+    const mealDateStr = String(meal.planned_for).slice(0, 10);
+    const usableLots = simulatedLots.filter(
+      (l) => !l.expires_at || String(l.expires_at).slice(0, 10) >= mealDateStr
+    );
+
+    for (const dish of meal.dishes || []) {
+      if (dish.is_leftover) continue;
+      const recipe = recipesMap.get(dish.recipe_id);
+      if (!recipe) continue;
+
+      const { deficits } = checkRecipeStock(recipe, usableLots, conversions);
+      for (const req of aggregateRequirements(recipe)) {
+        consumeAvailable(
+          usableLots,
+          req.ingredient_id,
+          req.quantity,
+          req.unit,
+          conversions
+        );
+      }
+
+      for (const [ingId, def] of Object.entries(deficits)) {
+        let actualIngId = ingId;
+        let actualUnit = def.unit;
+        let actualQty = def.missing_quantity;
+        let actualName = def.ingredient_name;
+
+        if (targetConvMap.has(ingId)) {
+          const conv = targetConvMap.get(ingId);
+          const missingInTo = convertQuantity(def.missing_quantity, def.unit, conv.to_unit);
+          const rawNeeded = Decimal.from(missingInTo).div(conv.ratio);
+          actualIngId = conv.from_ingredient_id;
+          actualUnit = conv.from_unit;
+          actualQty = rawNeeded.toString();
+          actualName =
+            rawIngredientNames[actualIngId] || `Nguyên liệu gốc cho ${def.ingredient_name}`;
+        }
+
+        const key = `${actualIngId}|${UNIT_DIMENSIONS[actualUnit]}`;
+        const cat = ingredientCategories[actualIngId] || "khac";
+        const item = shoppingItemsMap.get(key);
+
+        if (!item) {
+          shoppingItemsMap.set(key, {
+            id: generateEngineUUID(),
+            ingredient_id: actualIngId,
+            ingredient_name: actualName,
+            needed_quantity: actualQty,
+            unit: actualUnit,
+            dish_names: [recipe.name],
+            category: cat,
+            source: "plan",
+          });
+        } else {
+          item.needed_quantity = Decimal.from(item.needed_quantity)
+            .add(convertQuantity(actualQty, actualUnit, item.unit))
+            .toString();
+          if (!item.dish_names.includes(recipe.name)) {
+            item.dish_names.push(recipe.name);
+          }
+        }
+      }
+    }
+  }
+
+  return Array.from(shoppingItemsMap.values());
+}
+
+export function calculateShoppingBudget(items = []) {
+  let totalEstimated = new Decimal(0);
+  let totalSpent = new Decimal(0);
+  let itemsWithPriceCount = 0;
+  const totalItemsCount = (items || []).length;
+
+  for (const it of items || []) {
+    const price = it.price != null ? String(it.price) : null;
+    const isBought = Boolean(it.is_bought || it.bought);
+    if (price && Number(price) > 0) {
+      const p = new Decimal(price);
+      totalEstimated = totalEstimated.add(p);
+      itemsWithPriceCount += 1;
+      if (isBought) {
+        totalSpent = totalSpent.add(p);
+      }
+    }
+  }
+
+  return {
+    total_estimated_budget: totalEstimated.toString(),
+    total_spent: totalSpent.toString(),
+    items_with_price_count: itemsWithPriceCount,
+    total_items_count: totalItemsCount,
+  };
+}
+
+export function groupShoppingItemsByCategory(items = [], categoriesOrder = null) {
+  const order = categoriesOrder || STANDARD_SHOPPING_CATEGORIES;
+  const grouped = {};
+  for (const c of order) {
+    grouped[c] = [];
+  }
+
+  for (const it of items || []) {
+    let cat = it.category || "khac";
+    if (!grouped[cat]) {
+      cat = "khac";
+    }
+    grouped[cat].push(it);
+  }
+
+  const result = {};
+  for (const [cat, list] of Object.entries(grouped)) {
+    if (list.length > 0) {
+      result[cat] = list;
+    }
+  }
+  return result;
+}

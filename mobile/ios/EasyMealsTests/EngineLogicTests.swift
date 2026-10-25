@@ -209,6 +209,25 @@ final class EngineLogicTests: XCTestCase {
                 let actualKept = merged.map(\.id)
                 XCTAssertEqual(actualKept, expKept, "[\(name)] kept ids")
 
+            case "shopping_budget":
+                let itemsRaw = c["items"] as! [[String: Any]]
+                let items = itemsRaw.map { it in
+                    ShoppingItem(
+                        ingredientId: it["ingredient_id"] as! String,
+                        ingredientName: it["ingredient_name"] as! String,
+                        neededQuantity: it["needed_quantity"] as! String,
+                        unit: it["unit"] as! String,
+                        isBought: (it["is_bought"] as? Bool) ?? false,
+                        price: it["price"] as? String
+                    )
+                }
+                let budget = EasyMealsEngine.calculateShoppingBudget(items)
+                let exp = c["expect"] as! [String: Any]
+                XCTAssertEqual(norm(budget.totalEstimatedBudget), norm(exp["total_estimated"] as! String), "[\(name)] total estimated")
+                XCTAssertEqual(norm(budget.totalSpent), norm(exp["total_spent"] as! String), "[\(name)] total spent")
+                XCTAssertEqual(budget.itemsWithPriceCount, exp["items_with_price_count"] as! Int, "[\(name)] items with price")
+                XCTAssertEqual(budget.totalItemsCount, exp["total_items_count"] as! Int, "[\(name)] total items")
+
             case "plan":
                 let rawRecipes = c["recipes"] as! [[String: Any]]
                 let recipes = rawRecipes.map { toRecipe($0) }

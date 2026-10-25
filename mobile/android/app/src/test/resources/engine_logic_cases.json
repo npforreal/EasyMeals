@@ -1608,6 +1608,45 @@
      "00000000-0000-0000-0000-000000000040": "2000"
     }
    }
+  },
+  {
+   "name": "shopping_budget_calculation_user_entered_prices",
+   "op": "shopping_budget",
+   "items": [
+    {
+     "id": "item-1",
+     "ingredient_id": "00000000-0000-0000-0000-000000000101",
+     "ingredient_name": "Thịt ba chỉ",
+     "needed_quantity": "500",
+     "unit": "g",
+     "price": "75000",
+     "is_bought": true
+    },
+    {
+     "id": "item-2",
+     "ingredient_id": "00000000-0000-0000-0000-000000000102",
+     "ingredient_name": "Rau muống",
+     "needed_quantity": "300",
+     "unit": "g",
+     "price": "15000",
+     "is_bought": false
+    },
+    {
+     "id": "item-3",
+     "ingredient_id": "00000000-0000-0000-0000-000000000103",
+     "ingredient_name": "Hành lá",
+     "needed_quantity": "50",
+     "unit": "g",
+     "price": null,
+     "is_bought": false
+    }
+   ],
+   "expect": {
+    "total_estimated": "90000",
+    "total_spent": "75000",
+    "items_with_price_count": 2,
+    "total_items_count": 3
+   }
   }
  ]
 }

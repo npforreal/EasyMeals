@@ -325,6 +325,9 @@ public struct ShoppingItem: Identifiable, Codable, Equatable, Sendable {
     // A3 - Vòng 13: nguồn phát sinh — người dùng tự thêm thì giữ khi kế hoạch đổi.
     public var isManuallyAdded: Bool
     public var dishNames: [String]
+    public var category: String?
+    public var price: String?
+    public var boughtQuantity: String?
 
     public init(
         ingredientId: String,
@@ -333,7 +336,10 @@ public struct ShoppingItem: Identifiable, Codable, Equatable, Sendable {
         unit: String,
         isBought: Bool = false,
         isManuallyAdded: Bool = false,
-        dishNames: [String] = []
+        dishNames: [String] = [],
+        category: String? = "khac",
+        price: String? = nil,
+        boughtQuantity: String? = nil
     ) {
         self.ingredientId = ingredientId
         self.ingredientName = ingredientName
@@ -342,6 +348,9 @@ public struct ShoppingItem: Identifiable, Codable, Equatable, Sendable {
         self.isBought = isBought
         self.isManuallyAdded = isManuallyAdded
         self.dishNames = dishNames
+        self.category = category
+        self.price = price
+        self.boughtQuantity = boughtQuantity
     }
 
     enum CodingKeys: String, CodingKey {
@@ -352,10 +361,13 @@ public struct ShoppingItem: Identifiable, Codable, Equatable, Sendable {
         case isBought = "is_bought"
         case isManuallyAdded = "is_manually_added"
         case dishNames = "dish_names"
+        case category
+        case price
+        case boughtQuantity = "bought_quantity"
     }
 
     /// A3: decode tương thích — bản state/backup cũ thiếu `is_manually_added` (và cả
-    /// `is_bought`/`dish_names`) về giá trị mặc định thay vì văng lỗi giải mã.
+    /// `is_bought`/`dish_names`/`price`/`category`) về giá trị mặc định thay vì văng lỗi giải mã.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         ingredientId = try container.decode(String.self, forKey: .ingredientId)
@@ -365,6 +377,9 @@ public struct ShoppingItem: Identifiable, Codable, Equatable, Sendable {
         isBought = try container.decodeIfPresent(Bool.self, forKey: .isBought) ?? false
         isManuallyAdded = try container.decodeIfPresent(Bool.self, forKey: .isManuallyAdded) ?? false
         dishNames = try container.decodeIfPresent([String].self, forKey: .dishNames) ?? []
+        category = try container.decodeIfPresent(String.self, forKey: .category) ?? "khac"
+        price = try container.decodeIfPresent(String.self, forKey: .price)
+        boughtQuantity = try container.decodeIfPresent(String.self, forKey: .boughtQuantity)
     }
 }
 

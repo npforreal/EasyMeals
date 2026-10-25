@@ -8,10 +8,33 @@
     </div>
   </div>
 
+  <!-- Thẻ ngân sách & chi tiêu thực tế (B4) -->
+  <div class="card" id="shopping-budget-card" style="margin-bottom: var(--space-3); background: var(--surface);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-2);">
+      <div>
+        <h3 style="margin: 0 0 4px 0; font-size: var(--text-base);">Ngân Sách & Chi Tiêu Thực Tế</h3>
+        <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">
+          Dựa trên giá bạn tự nhập. EasyMeals không tự phỏng đoán giá thị trường.
+        </p>
+      </div>
+      <div style="display: flex; gap: var(--space-4); align-items: baseline;">
+        <div>
+          <span style="font-size: var(--text-xs); color: var(--text-muted); display: block;">Dự kiến chi</span>
+          <strong id="budget-estimated" style="font-size: var(--text-lg); color: var(--text);">0 đ</strong>
+        </div>
+        <div>
+          <span style="font-size: var(--text-xs); color: var(--text-muted); display: block;">Đã chi</span>
+          <strong id="budget-spent" style="font-size: var(--text-lg); color: var(--primary);">0 đ</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); flex-wrap: wrap; gap: var(--space-2);">
       <h2 style="margin: 0;">Nguyên liệu cần mua thêm</h2>
-      <div style="display: flex; gap: var(--space-2);">
+      <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+        <button class="btn btn-outline btn-sm" id="btn-add-custom-item" type="button">+ Thêm món tự do</button>
         <button class="btn btn-outline btn-sm" id="btn-clear-bought" type="button">Xóa các món đã chọn</button>
         <button class="btn btn-primary btn-sm" id="btn-add-to-pantry" type="button">Chuyển món đã mua vào tủ lạnh</button>
       </div>
@@ -22,6 +45,60 @@
         <div class="skeleton-title" style="width: 40%;"></div>
         <div class="skeleton-text" style="width: 60%;"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal thêm món tự do (B3) -->
+  <div id="custom-item-modal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 90%; max-width: 440px; max-height: 90vh; overflow-y: auto;">
+      <h3 style="margin-top: 0; margin-bottom: var(--space-3);">Thêm món cần mua ngoài kế hoạch</h3>
+      <form id="custom-item-form" novalidate>
+        <div class="form-group" style="margin-bottom: var(--space-2);">
+          <label for="custom-item-name">Tên món / nguyên liệu <span style="color: var(--danger);">*</span></label>
+          <input type="text" id="custom-item-name" required placeholder="Ví dụ: Giấy ăn, Nước ngọt, Dầu ăn...">
+        </div>
+        <div class="form-row" style="display: flex; gap: var(--space-2); margin-bottom: var(--space-2);">
+          <div class="form-group" style="flex: 1;">
+            <label for="custom-item-qty">Số lượng <span style="color: var(--danger);">*</span></label>
+            <input type="number" id="custom-item-qty" required step="any" min="0" value="1">
+          </div>
+          <div class="form-group" style="width: 100px;">
+            <label for="custom-item-unit">Đơn vị</label>
+            <select id="custom-item-unit">
+              <option value="piece" selected>cái / gói</option>
+              <option value="g">g</option>
+              <option value="kg">kg</option>
+              <option value="ml">ml</option>
+              <option value="l">l</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" style="display: flex; gap: var(--space-2); margin-bottom: var(--space-3);">
+          <div class="form-group" style="flex: 1;">
+            <label for="custom-item-cat">Quầy / Phân loại</label>
+            <select id="custom-item-cat">
+              <option value="khac" selected>Khác</option>
+              <option value="thit">Thịt</option>
+              <option value="gia_cam">Gia cầm</option>
+              <option value="hai_san">Hải sản</option>
+              <option value="trung_sua">Trứng & Sữa</option>
+              <option value="rau_cu">Rau củ</option>
+              <option value="cu_qua">Củ quả</option>
+              <option value="gao_bot_mi">Gạo, Bột & Mì</option>
+              <option value="gia_vi">Gia vị</option>
+              <option value="nuoc_cham_dau">Nước chấm & Dầu ăn</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label for="custom-item-price">Giá dự kiến (VNĐ)</label>
+            <input type="number" id="custom-item-price" min="0" step="1000" placeholder="Tự nhập giá...">
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: var(--space-2);">
+          <button type="button" class="btn btn-outline" id="btn-close-custom-modal">Huỷ</button>
+          <button type="submit" class="btn btn-primary">Thêm vào danh sách</button>
+        </div>
+      </form>
     </div>
   </div>
 {% endblock %}

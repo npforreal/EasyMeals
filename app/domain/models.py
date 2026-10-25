@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
-from uuid import UUID
+from uuid import UUID, uuid4
 
 
 class QuantityUnit(StrEnum):
@@ -194,3 +194,9 @@ class ShoppingItem:
     needed_quantity: Decimal
     unit: QuantityUnit
     dish_names: list[str] = field(default_factory=list)
+    category: str | None = "khac"
+    price: Decimal | None = None
+    is_bought: bool = False
+    bought_quantity: Decimal | None = None
+    source: str = "plan"
+    id: UUID = field(default_factory=uuid4)

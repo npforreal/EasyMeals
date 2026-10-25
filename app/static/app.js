@@ -33,15 +33,22 @@ import {
   addShoppingItem,
   replacePlanShoppingItems,
   toggleShoppingItemBought,
+  updateShoppingItem,
+  deleteShoppingItemsByIds,
   clearBoughtShoppingItems,
   executeBoughtToPantryAtomic,
   defaultExpiryDate,
   resolveIngredientCategory,
   CATALOGUE_SOURCE,
+  SHOPPING_SOURCE_MANUAL,
 } from "./js/storage.js";
 import {
   generatePeriodPlan as engineGeneratePeriodPlan,
   mergeNewPlansIntoExisting as engineMergeNewPlansIntoExisting,
+  regenerateSingleMeal as engineRegenerateSingleMeal,
+  recomputeShoppingList as engineRecomputeShoppingList,
+  calculateShoppingBudget as engineCalculateShoppingBudget,
+  groupShoppingItemsByCategory as engineGroupShoppingItemsByCategory,
   deductRecipeStockFifo as engineDeductRecipeStockFifo,
   deductRecipeStockAvailable as engineDeductRecipeStockAvailable,
   reverseStockMovements as engineReverseStockMovements,
@@ -1400,6 +1407,69 @@ async function initPlannerPage() {
 
           eatBtn.addEventListener("click", () => doEat(false));
           actionRow.appendChild(eatBtn);
+
+          // B1: Sinh lại 1 bữa đơn lẻ mà không ảnh hưởng các bữa khác
+          const regenBtn = document.createElement("button");
+          regenBtn.type = "button";
+          regenBtn.className = "btn btn-outline btn-sm";
+          regenBtn.textContent = "Sinh lại bữa này";
+          regenBtn.title = "Chọn lại món cân bằng cho bữa này, không lặp món với các bữa khác";
+          regenBtn.addEventListener("click", async () => {
+            if (
+              !confirm(
+                "Bạn có muốn đổi lại các món cho bữa ăn này? (Các bữa khác trong thực đơn sẽ được giữ nguyên)."
+              )
+            ) {
+              return;
+            }
+            regenBtn.disabled = true;
+            regenBtn.textContent = "Đang sinh lại...";
+            try {
+              const currentLots = await getPantryLots();
+              const catalogue = await getCachedCatalogue();
+              const allPlans = await getMealPlans();
+              const conversions = catalogue?.conversions || [];
+              const rawIngredientNames = {};
+              const ingredientCategories = {};
+              for (const ing of catalogue?.ingredients || []) {
+                rawIngredientNames[ing.id] = ing.name;
+                ingredientCategories[ing.id] = ing.category || "khac";
+              }
+
+              const updatedMeal = engineRegenerateSingleMeal(
+                meal.id,
+                allPlans,
+                catalogue.recipes,
+                currentLots,
+                { conversions }
+              );
+
+              const updatedPlans = allPlans.map((p) =>
+                p.id === meal.id ? updatedMeal : p
+              );
+              await saveMealPlans(updatedPlans);
+
+              const newShopping = engineRecomputeShoppingList(
+                updatedPlans,
+                currentLots,
+                catalogue.recipes,
+                {
+                  conversions,
+                  rawIngredientNames,
+                  ingredientCategories,
+                }
+              );
+              await replacePlanShoppingItems(newShopping);
+
+              showToast("Đã sinh lại bữa ăn và cập nhật danh sách đi chợ!", "success");
+              loadAndRenderPlans();
+            } catch (err) {
+              showToast(`Không thể sinh lại: ${err.message}`, "danger");
+              regenBtn.disabled = false;
+              regenBtn.textContent = "Sinh lại bữa này";
+            }
+          });
+          actionRow.appendChild(regenBtn);
         } else {
           const undoBtn = document.createElement("button");
           undoBtn.type = "button";
@@ -1794,10 +1864,37 @@ async function initShoppingPage() {
   let expiryOverrides = {};
   let cachedCatalogueForExpiry = null;
 
-  // A3: danh sách đi chợ giờ nằm trong kho versioned IndexedDB (store "shopping").
+  // B3 & B4: Nhãn nhóm quầy hàng & format tiền tệ
+  const SHOPPING_CAT_LABELS = {
+    thit: "Thịt",
+    gia_cam: "Gia cầm",
+    hai_san: "Hải sản",
+    trung_sua: "Trứng & Sữa",
+    rau_cu: "Rau củ",
+    cu_qua: "Củ quả",
+    gao_bot_mi: "Gạo, Bột & Mì",
+    gia_vi: "Gia vị",
+    nuoc_cham_dau: "Nước chấm & Dầu ăn",
+    khac: "Khác / Đồ dùng",
+  };
+
+  function formatVND(amount) {
+    const n = Number(amount);
+    if (!Number.isFinite(n) || n === 0) return "0 đ";
+    return new Intl.NumberFormat("vi-VN").format(n) + " đ";
+  }
+
+  // A3 & B3: danh sách đi chợ nằm trong kho versioned IndexedDB, nhóm theo quầy hàng.
   function renderList(items) {
     if (!container) return;
     container.innerHTML = "";
+
+    // B4: Cập nhật thẻ ngân sách & chi tiêu thực tế từ giá người dùng nhập
+    const budget = engineCalculateShoppingBudget(items);
+    const bEst = document.getElementById("budget-estimated");
+    const bSpent = document.getElementById("budget-spent");
+    if (bEst) bEst.textContent = formatVND(budget.total_estimated_budget);
+    if (bSpent) bSpent.textContent = formatVND(budget.total_spent);
 
     if (!items.length) {
       container.innerHTML = `
@@ -1810,91 +1907,172 @@ async function initShoppingPage() {
       return;
     }
 
+    const grouped = engineGroupShoppingItemsByCategory(items);
     const list = document.createElement("div");
     list.style.display = "grid";
-    list.style.gap = "var(--space-2)";
+    list.style.gap = "var(--space-4)";
 
-    items.forEach((item, idx) => {
-      const row = document.createElement("div");
-      row.style.display = "flex";
-      row.style.alignItems = "center";
-      row.style.gap = "var(--space-3)";
-      row.style.padding = "var(--space-2) var(--space-3)";
-      row.style.border = "1px solid var(--border)";
-      row.style.borderRadius = "var(--radius-sm)";
-      row.style.background = "var(--surface)";
+    for (const [catKey, groupItems] of Object.entries(grouped)) {
+      if (!groupItems.length) continue;
 
-      const check = document.createElement("input");
-      check.type = "checkbox";
-      check.checked = Boolean(item.bought);
-      check.addEventListener("change", async () => {
-        await toggleShoppingItemBought(item.id);
-        // Render lại hàng: khi đã mua có thêm trường lượng thực mua/hạn dùng (A4).
-        item.bought = check.checked;
-        renderList(items);
+      const groupSection = document.createElement("div");
+      groupSection.className = "shopping-category-group";
+
+      const catHeader = document.createElement("div");
+      catHeader.style.cssText =
+        "font-weight: 700; font-size: var(--text-sm); color: var(--primary); margin-bottom: var(--space-2); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 4px;";
+      const catTitleSpan = document.createElement("span");
+      catTitleSpan.textContent = `${SHOPPING_CAT_LABELS[catKey] || catKey} (${groupItems.length})`;
+      catHeader.appendChild(catTitleSpan);
+      groupSection.appendChild(catHeader);
+
+      const itemsGrid = document.createElement("div");
+      itemsGrid.style.display = "grid";
+      itemsGrid.style.gap = "var(--space-2)";
+
+      groupItems.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "shopping-item-row";
+        row.style.display = "flex";
+        row.style.alignItems = "center";
+        row.style.gap = "var(--space-2)";
+        row.style.padding = "var(--space-2) var(--space-3)";
+        row.style.border = "1px solid var(--border)";
+        row.style.borderRadius = "var(--radius-sm)";
+        row.style.background = item.bought ? "var(--surface-variant)" : "var(--surface)";
+
+        const check = document.createElement("input");
+        check.type = "checkbox";
+        check.checked = Boolean(item.bought);
+        check.addEventListener("change", async () => {
+          await toggleShoppingItemBought(item.id);
+          item.bought = check.checked;
+          renderList(items);
+        });
+
+        const label = document.createElement("div");
+        label.style.flex = "1";
+        const nameRow = document.createElement("div");
+        nameRow.style.display = "flex";
+        nameRow.style.alignItems = "center";
+        nameRow.style.gap = "var(--space-2)";
+
+        const name = document.createElement("span");
+        name.style.fontWeight = "600";
+        name.textContent = `${item.ingredient_name}: ${formatQty(item.needed_quantity)} ${item.unit}`;
+        if (item.bought) name.style.textDecoration = "line-through";
+        nameRow.appendChild(name);
+
+        if (item.source === "manual") {
+          const manualBadge = document.createElement("span");
+          manualBadge.className = "badge";
+          manualBadge.style.fontSize = "10px";
+          manualBadge.textContent = "Tự thêm";
+          nameRow.appendChild(manualBadge);
+        }
+
+        const dishes = document.createElement("div");
+        dishes.style.fontSize = "var(--text-xs)";
+        dishes.style.color = "var(--text-muted)";
+        dishes.textContent = item.dish_names && item.dish_names.length
+          ? `Dành cho: ${item.dish_names.join(", ")}`
+          : "Mục tự thêm ngoài kế hoạch";
+
+        label.appendChild(nameRow);
+        label.appendChild(dishes);
+
+        // B4: Ô nhập giá người dùng thực tế
+        const priceBox = document.createElement("div");
+        priceBox.style.cssText = "display: flex; flex-direction: column; gap: 2px;";
+        const priceInput = document.createElement("input");
+        priceInput.type = "text";
+        priceInput.inputMode = "numeric";
+        priceInput.className = "shopping-price-input";
+        priceInput.placeholder = "Giá (đ)";
+        priceInput.value = item.price || "";
+        priceInput.style.cssText = "width: 85px; padding: 4px 6px; font-size: var(--text-xs); border: 1px solid var(--border); border-radius: var(--radius-sm);";
+        priceInput.addEventListener("input", () => {
+          priceInput.value = priceInput.value.replace(/[^0-9]/g, "");
+        });
+        priceInput.addEventListener("change", async () => {
+          const val = priceInput.value.trim();
+          item.price = val || null;
+          await updateShoppingItem(item.id, { price: item.price });
+          // Cập nhật lại ngân sách
+          const b = engineCalculateShoppingBudget(items);
+          if (bEst) bEst.textContent = formatVND(b.total_estimated_budget);
+          if (bSpent) bSpent.textContent = formatVND(b.total_spent);
+        });
+        priceBox.appendChild(priceInput);
+
+        row.appendChild(check);
+        row.appendChild(label);
+        row.appendChild(priceBox);
+
+        // A4: khi đã tích "đã mua" cho phép nhập LƯỢNG THỰC MUA khác ước tính và hạn dùng.
+        const actualQty = actualQuantities[item.id] ?? item.needed_quantity;
+        const actualExp = expiryOverrides[item.id] ?? defaultExpiryDate(
+          item.category || resolveIngredientCategory(cachedCatalogueForExpiry, item.ingredient_id)
+        );
+        if (item.bought) {
+          const edit = document.createElement("div");
+          edit.style.cssText =
+            "display:flex;flex-direction:column;gap:4px;margin-right:var(--space-1);";
+
+          const qtyLabel = document.createElement("label");
+          qtyLabel.style.cssText = "font-size:10px;color:var(--text-muted);";
+          qtyLabel.textContent = "Thực mua";
+          const qtyInput = document.createElement("input");
+          qtyInput.type = "number";
+          qtyInput.min = "0";
+          qtyInput.step = "any";
+          qtyInput.value = actualQty;
+          qtyInput.style.cssText =
+            "width:70px;padding:3px 4px;font-size:11px;border:1px solid var(--border);border-radius:var(--radius-sm);";
+          qtyInput.addEventListener("input", () => {
+            actualQuantities[item.id] = qtyInput.value;
+          });
+          qtyLabel.appendChild(qtyInput);
+
+          const expLabel = document.createElement("label");
+          expLabel.style.cssText = "font-size:10px;color:var(--text-muted);";
+          expLabel.textContent = "Hạn dùng";
+          const expInput = document.createElement("input");
+          expInput.type = "date";
+          expInput.value = actualExp;
+          expInput.style.cssText =
+            "width:115px;padding:3px 4px;font-size:11px;border:1px solid var(--border);border-radius:var(--radius-sm);";
+          expInput.addEventListener("input", () => {
+            expiryOverrides[item.id] = expInput.value;
+          });
+          expLabel.appendChild(expInput);
+
+          edit.appendChild(qtyLabel);
+          edit.appendChild(expLabel);
+          row.appendChild(edit);
+        }
+
+        // B3: Nút xoá từng món
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "btn btn-outline btn-xs";
+        deleteBtn.style.cssText = "color: var(--danger); border-color: var(--border); padding: 4px 6px;";
+        deleteBtn.innerHTML = "✕";
+        deleteBtn.title = "Xoá món này";
+        deleteBtn.addEventListener("click", async () => {
+          await deleteShoppingItemsByIds([item.id]);
+          const newItems = items.filter((it) => it.id !== item.id);
+          renderList(newItems);
+          showToast(`Đã xoá "${item.ingredient_name}".`, "info");
+        });
+        row.appendChild(deleteBtn);
+
+        itemsGrid.appendChild(row);
       });
 
-      const label = document.createElement("div");
-      label.style.flex = "1";
-      const name = document.createElement("div");
-      name.style.fontWeight = "600";
-      name.textContent = `${item.ingredient_name}: ${formatQty(item.needed_quantity)} ${item.unit}`;
-
-      const dishes = document.createElement("div");
-      dishes.style.fontSize = "var(--text-xs)";
-      dishes.style.color = "var(--text-muted)";
-      dishes.textContent = `Dành cho: ${(item.dish_names || []).join(", ") || "Các món đã lên lịch"}`;
-
-      label.appendChild(name);
-      label.appendChild(dishes);
-
-      row.appendChild(check);
-      row.appendChild(label);
-
-      // A4: khi đã tích "đã mua" cho phép nhập LƯỢNG THỰC MUA khác ước tính.
-      const actualQty = actualQuantities[item.id] ?? item.needed_quantity;
-      const actualExp = expiryOverrides[item.id] ?? defaultExpiryDate(
-        resolveIngredientCategory(cachedCatalogueForExpiry, item.ingredient_id)
-      );
-      if (item.bought) {
-        const edit = document.createElement("div");
-        edit.style.cssText =
-          "display:flex;flex-direction:column;gap:4px;margin-right:var(--space-1);";
-
-        const qtyLabel = document.createElement("label");
-        qtyLabel.style.cssText = "font-size:10px;color:var(--text-muted);";
-        qtyLabel.textContent = "Thực mua (kg/g/ml/l/piece)";
-        const qtyInput = document.createElement("input");
-        qtyInput.type = "number";
-        qtyInput.min = "0";
-        qtyInput.step = "any";
-        qtyInput.value = actualQty;
-        qtyInput.style.cssText =
-          "width:92px;padding:4px 6px;border:1px solid var(--border);border-radius:var(--radius-sm);";
-        qtyInput.addEventListener("input", () => {
-          actualQuantities[item.id] = qtyInput.value;
-        });
-        qtyLabel.appendChild(qtyInput);
-
-        const expLabel = document.createElement("label");
-        expLabel.style.cssText = "font-size:10px;color:var(--text-muted);";
-        expLabel.textContent = "Hạn dùng (Nhóm mặc định)";
-        const expInput = document.createElement("input");
-        expInput.type = "date";
-        expInput.value = actualExp;
-        expInput.style.cssText =
-          "width:132px;padding:4px 6px;border:1px solid var(--border);border-radius:var(--radius-sm);";
-        expInput.addEventListener("input", () => {
-          expiryOverrides[item.id] = expInput.value;
-        });
-        expLabel.appendChild(expInput);
-
-        edit.appendChild(qtyLabel);
-        edit.appendChild(expLabel);
-        row.appendChild(edit);
-      }
-      list.appendChild(row);
-    });
+      groupSection.appendChild(itemsGrid);
+      list.appendChild(groupSection);
+    }
 
     container.appendChild(list);
   }
@@ -1953,6 +2131,51 @@ async function initShoppingPage() {
         expiryOverrides = {};
       }
       loadAndRender();
+    });
+  }
+
+  // B3: Thêm món tự do ngoài kế hoạch
+  const addCustomBtn = document.getElementById("btn-add-custom-item");
+  const customModal = document.getElementById("custom-item-modal");
+  const closeCustomBtn = document.getElementById("btn-close-custom-modal");
+  const customForm = document.getElementById("custom-item-form");
+
+  if (addCustomBtn && customModal) {
+    addCustomBtn.addEventListener("click", () => {
+      customModal.style.display = "flex";
+      const nameInput = document.getElementById("custom-item-name");
+      if (nameInput) nameInput.focus();
+    });
+  }
+  if (closeCustomBtn && customModal) {
+    closeCustomBtn.addEventListener("click", () => {
+      customModal.style.display = "none";
+    });
+  }
+  if (customForm) {
+    customForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("custom-item-name").value.trim();
+      const qty = document.getElementById("custom-item-qty").value;
+      const unit = document.getElementById("custom-item-unit").value;
+      const cat = document.getElementById("custom-item-cat").value;
+      const price = document.getElementById("custom-item-price").value;
+
+      if (!name) return;
+      await addShoppingItem(
+        {
+          ingredient_name: name,
+          needed_quantity: qty,
+          unit,
+          category: cat,
+          price: price ? price : null,
+        },
+        { source: SHOPPING_SOURCE_MANUAL }
+      );
+      showToast(`Đã thêm "${name}" vào danh sách đi chợ!`, "success");
+      customModal.style.display = "none";
+      customForm.reset();
+      await loadAndRender();
     });
   }
 

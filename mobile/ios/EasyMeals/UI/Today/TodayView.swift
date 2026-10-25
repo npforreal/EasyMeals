@@ -306,19 +306,36 @@ public struct TodayView: View {
             Divider()
 
             if plan.eatenAt == nil {
-                Button {
-                    handleEatMeal(planId: plan.id)
-                } label: {
-                    HStack {
-                        Image(systemName: "checkmark")
-                        Text("Đã ăn (Trừ kho)")
+                VStack(spacing: 8) {
+                    Button {
+                        handleEatMeal(planId: plan.id)
+                    } label: {
+                        HStack {
+                            Image(systemName: "checkmark")
+                            Text("Đã ăn (Trừ kho)")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(AppColors.primary)
+                        .cornerRadius(12)
                     }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(AppColors.primary)
-                    .cornerRadius(12)
+
+                    Button {
+                        try? storage.regenerateMeal(planId: plan.id)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                            Text("Sinh lại bữa này (Đổi món)")
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(AppColors.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(AppColors.secondarySurface)
+                        .cornerRadius(10)
+                    }
                 }
             } else {
                 Button {

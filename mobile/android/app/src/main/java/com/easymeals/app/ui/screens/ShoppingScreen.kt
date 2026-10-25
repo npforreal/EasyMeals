@@ -1,13 +1,17 @@
 package com.easymeals.app.ui.screens
 
 import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -24,9 +28,30 @@ import androidx.compose.ui.unit.sp
 import com.easymeals.app.data.ShoppingDefaults
 import com.easymeals.app.data.db.AppRepository
 import com.easymeals.app.data.db.PurchaseOverride
+import com.easymeals.app.domain.engine.EasyMealsEngine
 import com.easymeals.app.domain.model.ShoppingItem
+import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+private val CATEGORY_LABELS = mapOf(
+    "thit" to "Thịt tươi sống",
+    "gia_cam" to "Gia cầm & trứng",
+    "hai_san" to "Hải sản tươi sống",
+    "trung_sua" to "Trứng & Sữa",
+    "rau_cu" to "Rau tươi & nấm",
+    "cu_qua" to "Củ & quả",
+    "gao_bot_mi" to "Gạo, mì & bột",
+    "gia_vi" to "Gia vị & phụ liệu",
+    "nuoc_cham_dau" to "Nước chấm & dầu ăn",
+    "khac" to "Mặt hàng khác"
+)
+
+private fun formatVnd(amountStr: String): String {
+    val num = amountStr.toDoubleOrNull() ?: 0.0
+    return NumberFormat.getIntegerInstance(Locale("vi", "VN")).format(num.toLong()) + " đ"
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,14 +59,25 @@ fun ShoppingScreen(repository: AppRepository) {
     val shoppingItems by repository.shoppingItems.collectAsState()
     val context = LocalContext.current
     var showAddDialog by remember { mutableStateOf(false) }
-    // A4 - Vòng 13: hộp thoại xác nhận mua vào tủ (lượng thực mua + hạn dùng).
+    var editingPriceItem by remember { mutableStateOf<ShoppingItem?>(null) }
     var showPurchaseDialog by remember { mutableStateOf(false) }
+
+    val budget = remember(shoppingItems) { EasyMealsEngine.calculateShoppingBudget(shoppingItems) }
+    val groupedItems = remember(shoppingItems) { EasyMealsEngine.groupShoppingItemsByCategory(shoppingItems) }
 
     fun shareList() {
         val sb = StringBuilder("DANH SÁCH ĐI CHỢ - EASYMEALS\n\n")
-        shoppingItems.forEach { item ->
-            val mark = if (item.isBought) "[x]" else "[ ]"
-            sb.append("$mark ${item.ingredientName}: ${item.neededQuantity} ${item.unit}\n")
+        groupedItems.forEach { (catKey, itemsInCat) ->
+            sb.append("=== ${CATEGORY_LABELS[catKey] ?: "Mặt hàng khác"} ===\n")
+            itemsInCat.forEach { item ->
+                val mark = if (item.isBought) "[x]" else "[ ]"
+                val priceInfo = if (!item.price.isNullOrBlank()) " (~${formatVnd(item.price!!)})" else ""
+                sb.append("$mark ${item.ingredientName}: ${item.neededQuantity} ${item.unit}$priceInfo\n")
+            }
+            sb.append("\n")
+        }
+        if (budget.itemsWithPriceCount > 0) {
+            sb.append("Dự toán: ${formatVnd(budget.totalEstimatedBudget)} | Đã chi: ${formatVnd(budget.totalSpent)}\n")
         }
         val sendIntent = Intent().apply {
             action = Intent.ACTION_SEND
@@ -97,46 +133,154 @@ fun ShoppingScreen(repository: AppRepository) {
                     }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(16.dp)
+                // Card Ngân sách & Chi tiêu (B4)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    items(shoppingItems, key = { it.id }) { item ->
+                    Column(modifier = Modifier.padding(14.dp)) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { repository.toggleShoppingItem(item.id) }
-                                .padding(vertical = 10.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                if (item.isBought) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                                contentDescription = null,
-                                tint = if (item.isBought) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            Text(
+                                "Ngân sách & Chi tiêu",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.primary
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "${budget.itemsWithPriceCount}/${budget.totalItemsCount} món có giá",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Dự toán tổng", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
-                                    item.ingredientName,
-                                    fontSize = 16.sp,
-                                    textDecoration = if (item.isBought) TextDecoration.LineThrough else null,
-                                    color = if (item.isBought) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                                    formatVnd(budget.totalEstimatedBudget),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
                                 )
-                                if (item.dishNames.isNotEmpty()) {
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("Đã chi", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    formatVnd(budget.totalSpent),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                }
+
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    groupedItems.forEach { (catKey, itemsInCat) ->
+                        item(key = "header_$catKey") {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 12.dp, bottom = 4.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
                                     Text(
-                                        "Cho món: ${item.dishNames.joinToString(", ")}",
+                                        CATEGORY_LABELS[catKey] ?: "Mặt hàng khác",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        "${itemsInCat.size} món",
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
-                            Text(
-                                "${item.neededQuantity} ${item.unit}",
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
                         }
-                        HorizontalDivider()
+
+                        items(itemsInCat, key = { it.id }) { item ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { repository.toggleShoppingItem(item.id) }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    if (item.isBought) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                    contentDescription = null,
+                                    tint = if (item.isBought) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        item.ingredientName,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        textDecoration = if (item.isBought) TextDecoration.LineThrough else null,
+                                        color = if (item.isBought) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    if (item.dishNames.isNotEmpty()) {
+                                        Text(
+                                            "Cho món: ${item.dishNames.joinToString(", ")}",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                                Column(
+                                    horizontalAlignment = Alignment.End,
+                                    modifier = Modifier.padding(horizontal = 6.dp)
+                                ) {
+                                    Text(
+                                        "${item.neededQuantity} ${item.unit}",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = if (!item.price.isNullOrBlank()) formatVnd(item.price!!) else "+ Giá",
+                                        fontSize = 12.sp,
+                                        color = if (!item.price.isNullOrBlank()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.clickable { editingPriceItem = item }
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { repository.deleteShoppingItem(item.id) },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Xoá",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                            HorizontalDivider()
+                        }
                     }
                 }
 
@@ -169,14 +313,54 @@ fun ShoppingScreen(repository: AppRepository) {
             )
         }
 
+        // Dialog cập nhật giá từng món (B4)
+        editingPriceItem?.let { item ->
+            var priceInput by remember(item) { mutableStateOf(item.price ?: "") }
+            AlertDialog(
+                onDismissRequest = { editingPriceItem = null },
+                title = { Text("Giá món: ${item.ingredientName}") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Nhập giá thực tế người dùng chi trả (VNĐ):", fontSize = 13.sp)
+                        OutlinedTextField(
+                            value = priceInput,
+                            onValueChange = { priceInput = it.filter { ch -> ch.isDigit() } },
+                            label = { Text("Đơn giá (VNĐ)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            repository.updateShoppingItemPrice(item.id, priceInput)
+                            editingPriceItem = null
+                        }
+                    ) {
+                        Text("Lưu giá")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { editingPriceItem = null }) {
+                        Text("Đóng")
+                    }
+                }
+            )
+        }
+
+        // Dialog Thêm món tự do (B3)
         if (showAddDialog) {
             var name by remember { mutableStateOf("") }
             var qty by remember { mutableStateOf("200") }
             var unit by remember { mutableStateOf("g") }
+            var selectedCategory by remember { mutableStateOf("khac") }
+            var priceInput by remember { mutableStateOf("") }
+            var categoryExpanded by remember { mutableStateOf(false) }
 
             AlertDialog(
                 onDismissRequest = { showAddDialog = false },
-                title = { Text("Thêm món cần mua") },
+                title = { Text("Thêm món tự do") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         OutlinedTextField(
@@ -199,13 +383,50 @@ fun ShoppingScreen(repository: AppRepository) {
                                 modifier = Modifier.width(90.dp)
                             )
                         }
+                        // Quầy hàng
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            OutlinedButton(
+                                onClick = { categoryExpanded = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Quầy: ${CATEGORY_LABELS[selectedCategory] ?: "Khác"}")
+                            }
+                            DropdownMenu(
+                                expanded = categoryExpanded,
+                                onDismissRequest = { categoryExpanded = false }
+                            ) {
+                                CATEGORY_LABELS.forEach { (catKey, catLabel) ->
+                                    DropdownMenuItem(
+                                        text = { Text(catLabel) },
+                                        onClick = {
+                                            selectedCategory = catKey
+                                            categoryExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        // Đơn giá tuỳ chọn
+                        OutlinedTextField(
+                            value = priceInput,
+                            onValueChange = { priceInput = it.filter { ch -> ch.isDigit() } },
+                            label = { Text("Đơn giá VNĐ (tuỳ chọn)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 },
                 confirmButton = {
                     Button(
                         onClick = {
                             if (name.isNotBlank()) {
-                                repository.addCustomShoppingItem(name, qty, unit)
+                                repository.addCustomShoppingItem(
+                                    name = name,
+                                    quantity = qty,
+                                    unit = unit,
+                                    category = selectedCategory,
+                                    price = priceInput
+                                )
                                 showAddDialog = false
                             }
                         }

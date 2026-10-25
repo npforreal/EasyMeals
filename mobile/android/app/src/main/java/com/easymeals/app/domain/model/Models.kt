@@ -121,7 +121,10 @@ data class ShoppingItem(
     @SerialName("is_bought") @SerializedName("is_bought") var isBought: Boolean = false,
     // A3 - Vòng 13: nguồn phát sinh — người dùng tự thêm thì giữ khi kế hoạch đổi.
     @SerialName("is_manually_added") @SerializedName("is_manually_added") var isManuallyAdded: Boolean = false,
-    @SerialName("dish_names") @SerializedName("dish_names") val dishNames: MutableList<String> = mutableListOf()
+    @SerialName("dish_names") @SerializedName("dish_names") val dishNames: MutableList<String> = mutableListOf(),
+    val category: String? = "khac",
+    var price: String? = null,
+    @SerialName("bought_quantity") @SerializedName("bought_quantity") var boughtQuantity: String? = null
 ) {
     val id: String get() = "${ingredientId}_$unit"
 }

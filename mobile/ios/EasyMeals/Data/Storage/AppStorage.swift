@@ -230,22 +230,93 @@ public final class AppStorage: @unchecked Sendable {
         }
     }
 
-    /// Nhóm nguyên liệu trong catalogue (không thấy -> nil -> mặc định "khác").
+    public func updateShoppingItemPrice(id: String, price: String?) {
+        if let idx = shoppingItems.firstIndex(where: { $0.id == id }) {
+            let p = price?.trimmingCharacters(in: .whitespaces)
+            shoppingItems[idx].price = (p?.isEmpty == false) ? p : nil
+            persistState()
+        }
+    }
+
+    public func deleteShoppingItem(id: String) {
+        shoppingItems.removeAll { $0.id == id }
+        persistState()
+    }
+
+    /// Nhóm nguyên liệu trong catalogue (không thấy -> nil -> mặc định "khac").
     public func categoryOf(ingredientId: String) -> String? {
         return ingredients.first { $0.id == ingredientId }?.category
     }
 
-    public func addCustomShoppingItem(name: String, quantity: String, unit: String) {        let matchingIng = ingredients.first { $0.name.lowercased() == name.lowercased() }
+    public func addCustomShoppingItem(
+        name: String,
+        quantity: String,
+        unit: String,
+        category: String = "khac",
+        price: String? = nil
+    ) {
+        let matchingIng = ingredients.first { $0.name.lowercased() == name.lowercased() }
         let ingId = matchingIng?.id ?? UUID().uuidString
+        let p = price?.trimmingCharacters(in: .whitespaces)
         let item = ShoppingItem(
             ingredientId: ingId,
             ingredientName: name,
             neededQuantity: quantity,
             unit: unit,
-            // Người dùng tự thêm -> giữ khi kế hoạch đổi (A3).
-            isManuallyAdded: true
+            isBought: false,
+            isManuallyAdded: true,
+            dishNames: [],
+            category: category,
+            price: (p?.isEmpty == false) ? p : nil
         )
         shoppingItems.append(item)
+        persistState()
+    }
+
+    public func regenerateMeal(planId: String) throws {
+        guard let targetIdx = mealPlans.firstIndex(where: { $0.id == planId }) else {
+            throw MealPlanError("Không tìm thấy bữa ăn có ID \(planId)")
+        }
+        let targetPlan = mealPlans[targetIdx]
+        if targetPlan.eatenAt != nil {
+            throw MealPlanError("Bữa ăn này đã được đánh dấu ăn, không thể sinh lại.")
+        }
+        let updatedMeal = try EasyMealsEngine.regenerateSingleMeal(
+            targetMealPlanId: planId,
+            allMealPlans: mealPlans,
+            recipes: recipes,
+            currentPantryLots: pantryLots,
+            conversions: conversions
+        )
+        mealPlans[targetIdx] = updatedMeal
+
+        let rawNames = Dictionary(uniqueKeysWithValues: ingredients.map { ($0.id, $0.name) })
+        let ingCats = Dictionary(uniqueKeysWithValues: ingredients.map { ($0.id, $0.category) })
+        let planShopping = EasyMealsEngine.recomputeShoppingList(
+            mealPlans: mealPlans,
+            currentPantryLots: pantryLots,
+            recipes: recipes,
+            conversions: conversions,
+            rawIngredientNames: rawNames,
+            ingredientCategories: ingCats
+        )
+
+        let manual = shoppingItems.filter { $0.isManuallyAdded }
+        let manualKeys = Set(manual.map { $0.id })
+        let oldMap = Dictionary(uniqueKeysWithValues: shoppingItems.map { ($0.ingredientId + "_" + $0.unit, $0) })
+
+        let mergedPlanItems = planShopping.filter { !manualKeys.contains($0.id) }.map { item -> ShoppingItem in
+            let key = item.ingredientId + "_" + item.unit
+            if let old = oldMap[key] {
+                var copy = item
+                copy.price = old.price
+                copy.isBought = old.isBought
+                return copy
+            }
+            return item
+        }
+
+        self.shoppingItems = manual + mergedPlanItems
         persistState()
     }
 

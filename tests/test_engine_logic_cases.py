@@ -33,7 +33,11 @@ from app.domain.models import (
     StockMovement,
     StockMovementReason,
 )
-from app.domain.planner import generate_period_plan, merge_new_plans_into_existing
+from app.domain.planner import (
+    calculate_shopping_budget,
+    generate_period_plan,
+    merge_new_plans_into_existing,
+)
 
 CASES = json.loads(
     (Path(__file__).parent / "fixtures" / "engine_logic_cases.json").read_text(encoding="utf-8")
@@ -205,5 +209,11 @@ def test_logic_case(case):
             mode=case.get("mode", "replace"),
         )
         assert [str(p.id) for p in merged] == case["expect"]["kept_ids"]
+    elif op == "shopping_budget":
+        budget = calculate_shopping_budget(case["items"])
+        assert _norm(budget["total_estimated_budget"]) == case["expect"]["total_estimated"]
+        assert _norm(budget["total_spent"]) == case["expect"]["total_spent"]
+        assert budget["items_with_price_count"] == case["expect"]["items_with_price_count"]
+        assert budget["total_items_count"] == case["expect"]["total_items_count"]
     else:  # pragma: no cover
         raise AssertionError(op)

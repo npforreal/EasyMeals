@@ -313,23 +313,85 @@ class AppRepository(private val context: Context) {
         persistState()
     }
 
+    fun updateShoppingItemPrice(id: String, price: String?) {
+        val current = _shoppingItems.value.map {
+            if (it.id == id) it.copy(price = price?.takeIf { p -> p.isNotBlank() }) else it
+        }
+        _shoppingItems.value = current
+        persistState()
+    }
+
+    fun deleteShoppingItem(id: String) {
+        val current = _shoppingItems.value.filter { it.id != id }
+        _shoppingItems.value = current
+        persistState()
+    }
+
     /** Nhóm nguyên liệu trong catalogue (không thấy -> null -> mặc định "khác"). */
     fun categoryOf(ingredientId: String): String? =
         _ingredients.value.find { it.id == ingredientId }?.category
 
-    fun addCustomShoppingItem(name: String, quantity: String, unit: String) {        val matching = _ingredients.value.find { it.name.equals(name, ignoreCase = true) }
+    fun addCustomShoppingItem(
+        name: String,
+        quantity: String,
+        unit: String,
+        category: String = "khac",
+        price: String? = null
+    ) {
+        val matching = _ingredients.value.find { it.name.equals(name, ignoreCase = true) }
         val ingId = matching?.id ?: UUID.randomUUID().toString()
         val item = ShoppingItem(
             ingredientId = ingId,
             ingredientName = name,
             neededQuantity = quantity,
             unit = unit,
-            // Người dùng tự thêm -> giữ khi kế hoạch đổi (A3).
+            category = category,
+            price = price?.takeIf { it.isNotBlank() },
             isManuallyAdded = true
         )
         val current = _shoppingItems.value.toMutableList()
         current.add(item)
         _shoppingItems.value = current
+        persistState()
+    }
+
+    fun regenerateMeal(planId: String) {
+        val currentPlans = _mealPlans.value
+        val targetPlan = currentPlans.find { it.id == planId }
+            ?: throw IllegalArgumentException("Không tìm thấy bữa ăn có ID $planId")
+        if (targetPlan.eatenAt != null) {
+            throw IllegalStateException("Bữa ăn này đã được đánh dấu ăn, không thể sinh lại.")
+        }
+        val updatedMeal = EasyMealsEngine.regenerateSingleMeal(
+            targetMealPlanId = planId,
+            allMealPlans = currentPlans,
+            recipes = _recipes.value,
+            currentPantryLots = _pantryLots.value,
+            conversions = conversions
+        )
+        val newPlans = currentPlans.map { if (it.id == planId) updatedMeal else it }
+        _mealPlans.value = newPlans
+
+        val rawNames = _ingredients.value.associate { it.id to it.name }
+        val ingCats = _ingredients.value.associate { it.id to (it.category ?: "khac") }
+        val planShopping = EasyMealsEngine.recomputeShoppingList(
+            mealPlans = newPlans,
+            currentPantryLots = _pantryLots.value,
+            recipes = _recipes.value,
+            conversions = conversions,
+            rawIngredientNames = rawNames,
+            ingredientCategories = ingCats
+        )
+        val manualItems = _shoppingItems.value.filter { it.isManuallyAdded }
+        val oldPlanMap = _shoppingItems.value.filter { !it.isManuallyAdded }.associateBy { it.id }
+        for (p in planShopping) {
+            val old = oldPlanMap[p.id]
+            if (old != null) {
+                if (old.price != null && p.price == null) p.price = old.price
+                if (old.isBought) p.isBought = true
+            }
+        }
+        _shoppingItems.value = manualItems + planShopping
         persistState()
     }
 

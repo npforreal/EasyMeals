@@ -120,11 +120,17 @@ class MealPlanResponse(BaseModel):
 
 
 class ShoppingItemResponse(BaseModel):
+    id: UUID | None = None
     ingredient_id: UUID
     ingredient_name: str
     needed_quantity: Decimal
     unit: QuantityUnit
     dish_names: list[str] = Field(default_factory=list)
+    category: str | None = "khac"
+    price: Decimal | None = None
+    is_bought: bool = False
+    bought_quantity: Decimal | None = None
+    source: str = "plan"
 
 
 class StatelessGeneratePlanResponse(BaseModel):
@@ -199,3 +205,54 @@ class StatelessUndoEatResponse(BaseModel):
     success: bool
     pantry: list[PantryLotInput]
     reversal_movements: list[StockMovementResponse]
+
+
+# 4. Plan Editing & Recomputing Schemas (Round 13 Phase B)
+class PlannedDishInput(BaseModel):
+    id: UUID
+    meal_plan_id: UUID
+    recipe_id: UUID
+    recipe_name: str
+    category: DishCategory
+    is_leftover: bool = False
+    original_dish_id: UUID | None = None
+    servings: int = 1
+
+
+class MealPlanInput(BaseModel):
+    id: UUID
+    planned_for: date
+    meal_period: MealPeriod
+    period_id: UUID | None = None
+    eaten_at: datetime | None = None
+    notes: str | None = None
+    dishes: list[PlannedDishInput] = Field(default_factory=list)
+
+
+class StatelessRegenerateMealRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    target_meal_plan_id: UUID
+    all_meal_plans: list[MealPlanInput] = Field(max_length=50)
+    pantry: list[PantryLotInput] = Field(default_factory=list, max_length=500)
+    options: PlanOptions = Field(default_factory=PlanOptions)
+
+
+class StatelessRegenerateMealResponse(BaseModel):
+    success: bool
+    meal: MealPlanResponse
+
+
+class StatelessRecomputeShoppingRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    meal_plans: list[MealPlanInput] = Field(max_length=50)
+    pantry: list[PantryLotInput] = Field(default_factory=list, max_length=500)
+
+
+class StatelessRecomputeShoppingResponse(BaseModel):
+    shopping_list: list[ShoppingItemResponse]
+    total_estimated_budget: Decimal
+    total_spent: Decimal
+    items_with_price_count: int
+    total_items_count: int
