@@ -121,3 +121,11 @@ revoke insert, update, delete on public.ingredient_aliases from anon, authentica
 revoke insert, update, delete on public.recipes from anon, authenticated, public;
 revoke insert, update, delete on public.recipe_ingredients from anon, authenticated, public;
 revoke insert, update, delete on public.ingredient_conversions from anon, authenticated, public;
+
+-- Grant administrative rights to service_role for catalogue seeding
+grant all on public.ingredient_categories to service_role;
+grant all on public.ingredients to service_role;
+grant all on public.ingredient_aliases to service_role;
+grant all on public.recipes to service_role;
+grant all on public.recipe_ingredients to service_role;
+grant all on public.ingredient_conversions to service_role;
