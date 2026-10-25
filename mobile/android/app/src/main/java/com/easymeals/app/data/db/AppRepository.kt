@@ -392,6 +392,10 @@ class AppRepository(private val context: Context) {
             recipes = _recipes.value,
             currentPantryLots = _pantryLots.value,
             allowLeftovers = _allowLeftovers.value,
+            // A7 - Vòng 13: truyền quy đổi đơn vị/nguyên liệu (gạo -> cơm) kèm tên
+            // nguyên liệu gốc để danh sách mua nêu "Gạo", khớp mọi đường chạy khác.
+            conversions = conversions,
+            rawIngredientNames = _ingredients.value.associate { it.id to it.name },
             leftoverDays = _leftoverDays.value
         )
         _mealPlans.value = EasyMealsEngine.mergeNewPlansIntoExisting(
