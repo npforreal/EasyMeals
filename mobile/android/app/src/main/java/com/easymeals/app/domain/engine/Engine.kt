@@ -912,4 +912,150 @@ object EasyMealsEngine {
 
         return shoppingItemsMap.values.toList()
     }
+
+    fun swapDishInMeal(
+        mealPlan: MealPlan,
+        oldDishId: String,
+        newRecipe: Recipe,
+        allPlansInPeriod: List<MealPlan> = emptyList()
+    ): MealPlan {
+        if (mealPlan.eatenAt != null) {
+            throw IllegalStateException("Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn đổi món.")
+        }
+        val dishes = mealPlan.dishes.toMutableList()
+        val dishIdx = dishes.indexOfFirst { it.id == oldDishId }
+        if (dishIdx == -1) {
+            throw IllegalArgumentException("Không tìm thấy món có ID $oldDishId trong bữa ăn.")
+        }
+
+        if (allPlansInPeriod.isNotEmpty()) {
+            val otherRecipeIds = allPlansInPeriod
+                .flatMap { it.dishes }
+                .filter { !it.isLeftover && (it.mealPlanId != mealPlan.id || it.id != oldDishId) }
+                .map { it.recipeId }
+                .toSet()
+            if (otherRecipeIds.contains(newRecipe.id)) {
+                throw IllegalArgumentException("Món '${newRecipe.name}' đã được lên lịch trong chu kỳ thực đơn này.")
+            }
+        }
+
+        dishes[dishIdx] = PlannedDish(
+            id = UUID.randomUUID().toString(),
+            mealPlanId = mealPlan.id,
+            recipeId = newRecipe.id,
+            recipeName = newRecipe.name,
+            category = newRecipe.category,
+            servings = newRecipe.servings,
+            isLeftover = false
+        )
+        return mealPlan.copy(dishes = dishes)
+    }
+
+    fun addDishToMeal(
+        mealPlan: MealPlan,
+        recipe: Recipe,
+        servings: Int? = null
+    ): MealPlan {
+        if (mealPlan.eatenAt != null) {
+            throw IllegalStateException("Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn thêm món.")
+        }
+        if (mealPlan.dishes.any { it.recipeId == recipe.id }) {
+            throw IllegalArgumentException("Món '${recipe.name}' đã có trong bữa ăn này.")
+        }
+        val catCount = mealPlan.dishes.count { it.category == recipe.category }
+        if (catCount >= 2) {
+            throw IllegalArgumentException("Bữa ăn đã đạt giới hạn tối đa 2 món cho nhóm ${recipe.category}.")
+        }
+
+        val dishes = mealPlan.dishes.toMutableList()
+        dishes.add(
+            PlannedDish(
+                id = UUID.randomUUID().toString(),
+                mealPlanId = mealPlan.id,
+                recipeId = recipe.id,
+                recipeName = recipe.name,
+                category = recipe.category,
+                servings = servings ?: recipe.servings,
+                isLeftover = false
+            )
+        )
+        return mealPlan.copy(dishes = dishes)
+    }
+
+    fun removeDishFromMeal(
+        mealPlan: MealPlan,
+        dishId: String
+    ): MealPlan {
+        if (mealPlan.eatenAt != null) {
+            throw IllegalStateException("Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn bỏ món.")
+        }
+        val dishes = mealPlan.dishes.toMutableList()
+        val dishIdx = dishes.indexOfFirst { it.id == dishId }
+        if (dishIdx == -1) {
+            throw IllegalArgumentException("Không tìm thấy món có ID $dishId trong bữa ăn.")
+        }
+        if (dishes.size <= 1) {
+            throw IllegalArgumentException("Không thể bỏ món duy nhất còn lại trong bữa ăn.")
+        }
+        dishes.removeAt(dishIdx)
+        return mealPlan.copy(dishes = dishes)
+    }
+
+    fun rescheduleMeal(
+        mealPlan: MealPlan,
+        newDateStr: String,
+        newPeriod: String,
+        allMealPlans: List<MealPlan>
+    ): MealPlan {
+        if (mealPlan.eatenAt != null) {
+            throw IllegalStateException("Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. Hãy hoàn tác bữa ăn trước nếu bạn muốn chuyển ngày/bữa.")
+        }
+        val targetDate = newDateStr.substring(0, 10)
+        val conflict = allMealPlans.any {
+            it.id != mealPlan.id &&
+            it.plannedFor.substring(0, 10) == targetDate &&
+            it.mealPeriod == newPeriod
+        }
+        if (conflict) {
+            val periodVn = if (newPeriod == "lunch") "trưa" else "tối"
+            throw IllegalArgumentException("Đã có bữa ăn khác được lên lịch vào bữa $periodVn ngày $newDateStr.")
+        }
+        return mealPlan.copy(
+            plannedFor = targetDate,
+            mealPeriod = newPeriod
+        )
+    }
+
+    fun mergeCompatibleShoppingItems(items: List<ShoppingItem>): List<ShoppingItem> {
+        val mergedMap = mutableMapOf<String, ShoppingItem>()
+
+        for (it in items) {
+            val dim = UnitDimensions.dimension(it.unit)?.name ?: it.unit
+            val key = "${it.ingredientId}_$dim"
+
+            val existing = mergedMap[key]
+            if (existing == null) {
+                mergedMap[key] = it.copy(dishNames = it.dishNames.toMutableList())
+            } else {
+                val converted = UnitDimensions.convert(ExactDecimal(it.neededQuantity), it.unit, existing.unit)
+                existing.neededQuantity = (ExactDecimal(existing.neededQuantity) + converted).toString()
+
+                for (dn in it.dishNames) {
+                    if (!existing.dishNames.contains(dn)) {
+                        existing.dishNames.add(dn)
+                    }
+                }
+
+                if (it.price != null && existing.price == null) {
+                    existing.price = it.price
+                } else if (it.price != null && existing.price != null) {
+                    existing.price = (ExactDecimal(existing.price!!) + ExactDecimal(it.price!!)).toString()
+                }
+
+                existing.isBought = existing.isBought && it.isBought
+            }
+        }
+
+        return mergedMap.values.toList()
+    }
 }

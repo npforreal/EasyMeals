@@ -321,6 +321,31 @@ class AppRepository(private val context: Context) {
         persistState()
     }
 
+    fun updateShoppingItem(
+        id: String,
+        quantity: String? = null,
+        unit: String? = null,
+        price: String? = null
+    ) {
+        val current = _shoppingItems.value.map {
+            if (it.id == id) {
+                it.copy(
+                    neededQuantity = quantity?.takeIf { q -> q.isNotBlank() } ?: it.neededQuantity,
+                    unit = unit?.takeIf { u -> u.isNotBlank() } ?: it.unit,
+                    price = if (price != null) price.takeIf { p -> p.isNotBlank() } else it.price
+                )
+            } else it
+        }
+        _shoppingItems.value = current
+        persistState()
+    }
+
+    fun mergeShoppingItems() {
+        val merged = EasyMealsEngine.mergeCompatibleShoppingItems(_shoppingItems.value)
+        _shoppingItems.value = merged
+        persistState()
+    }
+
     fun deleteShoppingItem(id: String) {
         val current = _shoppingItems.value.filter { it.id != id }
         _shoppingItems.value = current
@@ -393,6 +418,98 @@ class AppRepository(private val context: Context) {
         }
         _shoppingItems.value = manualItems + planShopping
         persistState()
+    }
+
+    fun swapDish(mealPlanId: String, oldDishId: String, newRecipeId: String) {
+        val currentPlans = _mealPlans.value
+        val targetPlan = currentPlans.find { it.id == mealPlanId }
+            ?: throw IllegalArgumentException("Không tìm thấy bữa ăn có ID $mealPlanId")
+        val recipe = _recipes.value.find { it.id == newRecipeId }
+            ?: throw IllegalArgumentException("Không tìm thấy món có ID $newRecipeId")
+
+        val updatedMeal = EasyMealsEngine.swapDishInMeal(
+            mealPlan = targetPlan,
+            oldDishId = oldDishId,
+            newRecipe = recipe,
+            allPlansInPeriod = currentPlans
+        )
+        val newPlans = currentPlans.map { if (it.id == mealPlanId) updatedMeal else it }
+        _mealPlans.value = newPlans
+        updateShoppingListAfterPlanChange(newPlans)
+        persistState()
+    }
+
+    fun addDish(mealPlanId: String, recipeId: String, servings: Int? = null) {
+        val currentPlans = _mealPlans.value
+        val targetPlan = currentPlans.find { it.id == mealPlanId }
+            ?: throw IllegalArgumentException("Không tìm thấy bữa ăn có ID $mealPlanId")
+        val recipe = _recipes.value.find { it.id == recipeId }
+            ?: throw IllegalArgumentException("Không tìm thấy món có ID $recipeId")
+
+        val updatedMeal = EasyMealsEngine.addDishToMeal(
+            mealPlan = targetPlan,
+            recipe = recipe,
+            servings = servings
+        )
+        val newPlans = currentPlans.map { if (it.id == mealPlanId) updatedMeal else it }
+        _mealPlans.value = newPlans
+        updateShoppingListAfterPlanChange(newPlans)
+        persistState()
+    }
+
+    fun removeDish(mealPlanId: String, dishId: String) {
+        val currentPlans = _mealPlans.value
+        val targetPlan = currentPlans.find { it.id == mealPlanId }
+            ?: throw IllegalArgumentException("Không tìm thấy bữa ăn có ID $mealPlanId")
+
+        val updatedMeal = EasyMealsEngine.removeDishFromMeal(
+            mealPlan = targetPlan,
+            dishId = dishId
+        )
+        val newPlans = currentPlans.map { if (it.id == mealPlanId) updatedMeal else it }
+        _mealPlans.value = newPlans
+        updateShoppingListAfterPlanChange(newPlans)
+        persistState()
+    }
+
+    fun rescheduleMeal(mealPlanId: String, newDateStr: String, newPeriod: String) {
+        val currentPlans = _mealPlans.value
+        val targetPlan = currentPlans.find { it.id == mealPlanId }
+            ?: throw IllegalArgumentException("Không tìm thấy bữa ăn có ID $mealPlanId")
+
+        val updatedMeal = EasyMealsEngine.rescheduleMeal(
+            mealPlan = targetPlan,
+            newDateStr = newDateStr,
+            newPeriod = newPeriod,
+            allMealPlans = currentPlans
+        )
+        val newPlans = currentPlans.map { if (it.id == mealPlanId) updatedMeal else it }
+        _mealPlans.value = newPlans
+        updateShoppingListAfterPlanChange(newPlans)
+        persistState()
+    }
+
+    private fun updateShoppingListAfterPlanChange(newPlans: List<MealPlan>) {
+        val rawNames = _ingredients.value.associate { it.id to it.name }
+        val ingCats = _ingredients.value.associate { it.id to (it.category ?: "khac") }
+        val planShopping = EasyMealsEngine.recomputeShoppingList(
+            mealPlans = newPlans,
+            currentPantryLots = _pantryLots.value,
+            recipes = _recipes.value,
+            conversions = conversions,
+            rawIngredientNames = rawNames,
+            ingredientCategories = ingCats
+        )
+        val manualItems = _shoppingItems.value.filter { it.isManuallyAdded }
+        val oldPlanMap = _shoppingItems.value.filter { !it.isManuallyAdded }.associateBy { it.id }
+        for (p in planShopping) {
+            val old = oldPlanMap[p.id]
+            if (old != null) {
+                if (old.price != null && p.price == null) p.price = old.price
+                if (old.isBought) p.isBought = true
+            }
+        }
+        _shoppingItems.value = manualItems + planShopping
     }
 
     fun bulkAddBoughtToPantry(overrides: List<PurchaseOverride> = emptyList()): Int {
