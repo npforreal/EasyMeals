@@ -26,9 +26,9 @@ public struct RecipesView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         filterChip(title: "Tất cả", key: "all")
-                        filterChip(title: "Món mặn", key: "man")
-                        filterChip(title: "Món rau", key: "rau")
-                        filterChip(title: "Món canh", key: "canh")
+                        filterChip(title: GeneratedTokens.Labels.dish_categories["man"] ?? "Món mặn", key: "man")
+                        filterChip(title: GeneratedTokens.Labels.dish_categories["rau"] ?? "Món rau", key: "rau")
+                        filterChip(title: GeneratedTokens.Labels.dish_categories["canh"] ?? "Món canh", key: "canh")
 
                         Button {
                             canCookOnly.toggle()
@@ -105,9 +105,9 @@ public struct RecipeDetailView: View {
     @State private var showingCookingMode = false
     @State private var storage = AppStorage.shared
 
-    public init(recipe: Recipe) {
+    public init(recipe: Recipe, defaultServings: Int? = nil) {
         self.recipe = recipe
-        _servings = State(initialValue: recipe.servings)
+        _servings = State(initialValue: defaultServings ?? recipe.servings)
     }
 
     var multiplier: String {
@@ -144,21 +144,43 @@ public struct RecipeDetailView: View {
                         .font(.title3.bold())
 
                     ForEach(scaledRequirements, id: \.ingredientId) { req in
-                        let stock = EasyMealsEngine.getTotalIngredientStock(pantryLots: storage.pantryLots, ingredientId: req.ingredientId, targetUnit: req.unit)
+                        let stock = EasyMealsEngine.getTotalIngredientStock(
+                            pantryLots: storage.pantryLots,
+                            ingredientId: req.ingredientId,
+                            targetUnit: req.unit,
+                            conversions: storage.conversions
+                        )
                         let hasEnough = stock >= req.quantity
+                        let isPartial = stock > .zero && stock < req.quantity
 
-                        HStack {
-                            Image(systemName: hasEnough ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(hasEnough ? .green : .secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack {
+                                Image(systemName: hasEnough ? "checkmark.circle.fill" : "circle")
+                                    .foregroundColor(hasEnough ? .green : (isPartial ? .orange : .red))
 
-                            Text(req.name)
-                                .font(.body)
+                                Text(req.name)
+                                    .font(.body)
 
-                            Spacer()
+                                Spacer()
 
-                            Text("\(req.quantity.description) \(req.unit)")
-                                .font(.subheadline.bold())
-                                .foregroundColor(hasEnough ? AppColors.primary : AppColors.textPrimary)
+                                Text("\(req.quantity.description) \(req.unit)")
+                                    .font(.subheadline.bold())
+                                    .foregroundColor(hasEnough ? AppColors.primary : AppColors.textPrimary)
+                            }
+                            if hasEnough {
+                                Text("✓ Có sẵn trong tủ")
+                                    .font(.caption2)
+                                    .foregroundColor(.green)
+                            } else if isPartial {
+                                let missing = req.quantity - stock
+                                Text("⚠ Có \(stock.description), thiếu \(missing.description) \(req.unit)")
+                                    .font(.caption2)
+                                    .foregroundColor(.orange)
+                            } else {
+                                Text("✗ Chưa có trong tủ")
+                                    .font(.caption2)
+                                    .foregroundColor(.red)
+                            }
                         }
                         .padding(.vertical, 2)
                     }

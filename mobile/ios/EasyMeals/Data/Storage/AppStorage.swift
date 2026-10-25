@@ -7,6 +7,7 @@ public final class AppStorage: @unchecked Sendable {
 
     public var ingredients: [Ingredient] = []
     public var recipes: [Recipe] = []
+    public var conversions: [Conversion] = []
     public var pantryLots: [PantryLot] = []
     public var mealPlans: [MealPlan] = []
     public var stockMovements: [StockMovement] = []
@@ -35,6 +36,7 @@ public final class AppStorage: @unchecked Sendable {
         if let bundle = CatalogueLoader.shared.loadBundledCatalogue() {
             self.ingredients = bundle.ingredients
             self.recipes = bundle.recipes
+            self.conversions = bundle.conversions
             self.catalogueVersion = bundle.version
             self.loadError = nil
         } else {
@@ -77,33 +79,96 @@ public final class AppStorage: @unchecked Sendable {
     }
 
     // MARK: - Meal Plan & "Đã ăn" FIFO Action
-    public func eatMeal(planId: String) throws {
+    public func checkMealStock(planId: String) -> (canEat: Bool, deficits: [String: DeficitItem]) {
+        guard let plan = mealPlans.first(where: { $0.id == planId }) else { return (true, [:]) }
+        var allDeficits: [String: DeficitItem] = [:]
+
+        for dish in plan.dishes {
+            if dish.isLeftover { continue }
+            guard let recipe = recipes.first(where: { $0.id == dish.recipeId }) else { continue }
+            let mult = (ExactDecimal(dish.servings) / ExactDecimal(recipe.servings)).description
+            let (canCook, deficits) = EasyMealsEngine.checkRecipeStock(
+                recipe: recipe,
+                pantryLots: pantryLots,
+                multiplier: mult,
+                conversions: conversions
+            )
+            if !canCook {
+                for (k, v) in deficits {
+                    if let existing = allDeficits[k] {
+                        let sumMissing = ExactDecimal(existing.missingQuantity) + ExactDecimal(v.missingQuantity)
+                        allDeficits[k] = DeficitItem(
+                            ingredientName: existing.ingredientName,
+                            missingQuantity: sumMissing.description,
+                            unit: existing.unit
+                        )
+                    } else {
+                        allDeficits[k] = v
+                    }
+                }
+            }
+        }
+        return (allDeficits.isEmpty, allDeficits)
+    }
+
+    public func eatMeal(planId: String, allowPartial: Bool = false) throws {
         guard let planIdx = mealPlans.firstIndex(where: { $0.id == planId }) else { return }
         let plan = mealPlans[planIdx]
         if plan.eatenAt != nil { return } // Đã ăn rồi, bỏ qua bảo vệ double-tap
 
-        for dish in plan.dishes {
-            if dish.isLeftover { continue }
-            if let recipe = recipes.first(where: { $0.id == dish.recipeId }) {
-                let (updated, movs) = try EasyMealsEngine.deductRecipeStockFifo(
-                    pantryLots: pantryLots,
-                    recipe: recipe,
-                    mealPlanId: planId,
-                    idempotencyKey: "mobile_eat_\(planId)"
-                )
-                // Cập nhật tồn kho
-                for u in updated {
-                    if let idx = pantryLots.firstIndex(where: { $0.id == u.id }) {
-                        pantryLots[idx] = u
-                    }
-                }
-                stockMovements.append(contentsOf: movs)
+        if !allowPartial {
+            let (canEat, deficits) = checkMealStock(planId: planId)
+            if !canEat {
+                throw InsufficientStockError("Không đủ nguyên liệu để nấu bữa ăn này", deficits: deficits)
             }
         }
 
+        var currentPantry = pantryLots
+        var allMovs = stockMovements
+
+        for dish in plan.dishes {
+            if dish.isLeftover { continue }
+            if let recipe = recipes.first(where: { $0.id == dish.recipeId }) {
+                let mult = (ExactDecimal(dish.servings) / ExactDecimal(recipe.servings)).description
+                let outcome = try EasyMealsEngine.executeStockDeduction(
+                    pantryLots: currentPantry,
+                    recipe: recipe,
+                    mealPlanId: planId,
+                    idempotencyKey: "mobile_eat_\(planId)_\(dish.recipeId)",
+                    multiplier: mult,
+                    conversions: conversions,
+                    allowPartial: allowPartial
+                )
+                // Cập nhật tồn kho
+                for u in outcome.updatedLots {
+                    if let idx = currentPantry.firstIndex(where: { $0.id == u.id }) {
+                        currentPantry[idx] = u
+                    }
+                }
+                allMovs.append(contentsOf: outcome.movements)
+            }
+        }
+
+        pantryLots = currentPantry
+        stockMovements = allMovs
         mealPlans[planIdx].eatenAt = ISO8601DateFormatter().string(from: Date())
         lastActionPlanId = planId
         undoMessage = "Đã ghi nhận bữa ăn và trừ kho!"
+        persistState()
+    }
+
+    public func addDeficitsToShoppingList(deficits: [DeficitItem]) {
+        for d in deficits {
+            let matching = ingredients.first { $0.name.lowercased() == d.ingredientName.lowercased() }
+            let ingId = matching?.id ?? UUID().uuidString
+            let item = ShoppingItem(
+                ingredientId: ingId,
+                ingredientName: d.ingredientName,
+                neededQuantity: d.missingQuantity,
+                unit: d.unit
+            )
+            shoppingItems.append(item)
+        }
         persistState()
     }
 

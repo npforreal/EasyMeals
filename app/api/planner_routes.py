@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.api.deps import get_repo
 from app.domain.inventory import (
     InsufficientStockError,
+    deduct_recipe_stock_available,
     deduct_recipe_stock_fifo,
     reverse_stock_movements,
 )
@@ -166,13 +167,25 @@ def eat_stateless_meal(
         )
 
         try:
-            deduction = deduct_recipe_stock_fifo(
-                pantry_lots=current_lots,
-                recipe=recipe,
-                meal_plan_id=payload.meal_plan_id,
-                idempotency_key=payload.idempotency_key,
-                multiplier=multiplier,
-            )
+            conversions = repo.get_conversions()
+            if payload.allow_partial:
+                deduction, _ = deduct_recipe_stock_available(
+                    pantry_lots=current_lots,
+                    recipe=recipe,
+                    meal_plan_id=payload.meal_plan_id,
+                    idempotency_key=payload.idempotency_key,
+                    multiplier=multiplier,
+                    conversions=conversions,
+                )
+            else:
+                deduction = deduct_recipe_stock_fifo(
+                    pantry_lots=current_lots,
+                    recipe=recipe,
+                    meal_plan_id=payload.meal_plan_id,
+                    idempotency_key=payload.idempotency_key,
+                    multiplier=multiplier,
+                    conversions=conversions,
+                )
             # Update lot state in current_lots for next dish
             for updated_lot in deduction.updated_lots:
                 lots_map[updated_lot.id] = updated_lot

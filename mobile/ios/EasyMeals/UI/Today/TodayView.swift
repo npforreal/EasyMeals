@@ -2,9 +2,11 @@ import SwiftUI
 
 public struct TodayView: View {
     @State private var storage = AppStorage.shared
-    @State private var selectedMealPeriod = "lunch"
-    @State private var showingErrorAlert = false
-    @State private var errorMessage = ""
+    @State private var selectedRecipe: Recipe?
+    @State private var selectedServings: Int = 4
+    @State private var showingDeficitConfirmation = false
+    @State private var deficitPlanId: String?
+    @State private var deficits: [DeficitItem] = []
 
     var todayPlans: [MealPlan] {
         let todayStr = ISO8601DateFormatter().string(from: Date()).prefix(10).description
@@ -27,10 +29,29 @@ public struct TodayView: View {
                 .padding()
             }
             .navigationTitle("Hôm nay")
-            .alert("Không đủ nguyên liệu", isPresented: $showingErrorAlert) {
-                Button("Đã hiểu", role: .cancel) { }
+            .sheet(item: $selectedRecipe) { recipe in
+                NavigationStack {
+                    RecipeDetailView(recipe: recipe, defaultServings: selectedServings)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Đóng") { selectedRecipe = nil }
+                            }
+                        }
+                }
+            }
+            .confirmationDialog("Không đủ nguyên liệu", isPresented: $showingDeficitConfirmation, titleVisibility: .visible) {
+                Button("Thêm vào danh sách đi chợ") {
+                    storage.addDeficitsToShoppingList(deficits: deficits)
+                }
+                Button("Vẫn đánh dấu đã ăn (trừ phần đang có)") {
+                    if let planId = deficitPlanId {
+                        try? storage.eatMeal(planId: planId, allowPartial: true)
+                    }
+                }
+                Button("Huỷ", role: .cancel) { }
             } message: {
-                Text(errorMessage)
+                let list = deficits.map { "• \($0.ingredientName): thiếu \($0.missingQuantity) \($0.unit)" }.joined(separator: "\n")
+                Text("Bữa ăn còn thiếu các nguyên liệu sau trong kho:\n\(list)\n\nBạn muốn xử lý thế nào?")
             }
         }
     }
@@ -70,10 +91,11 @@ public struct TodayView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(periodTitle(plan.mealPeriod))
+                    let periodLabel = GeneratedTokens.Labels.meal_periods[plan.mealPeriod]?.uppercased() ?? periodTitle(plan.mealPeriod)
+                    Text(periodLabel)
                         .font(.caption.bold())
                         .foregroundColor(AppColors.primary)
-                    Text(plan.plannedFor)
+                    Text(AppDateFormatter.formatRelativeDate(plan.plannedFor))
                         .font(.headline)
                 }
                 Spacer()
@@ -88,12 +110,14 @@ public struct TodayView: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(plan.dishes) { dish in
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: categoryIcon(dish.category))
                             .foregroundColor(AppColors.primary)
                         Text(dish.recipeName)
                             .font(.body)
-                        Spacer()
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 4)
                         if dish.isLeftover {
                             Text("Ăn lại")
                                 .font(.caption2)
@@ -103,6 +127,20 @@ public struct TodayView: View {
                                 .foregroundColor(.orange)
                                 .cornerRadius(6)
                         }
+                        Button {
+                            if let recipe = storage.recipes.first(where: { $0.id == dish.recipeId }) {
+                                selectedRecipe = recipe
+                                selectedServings = dish.servings
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "book.pages")
+                                Text("Xem công thức")
+                            }
+                            .font(.caption)
+                            .foregroundColor(AppColors.primary)
+                        }
+                        .buttonStyle(.borderless)
                     }
                 }
             }
@@ -139,16 +177,15 @@ public struct TodayView: View {
     }
 
     private func handleEatMeal(planId: String) {
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.impactOccurred()
-        do {
-            try storage.eatMeal(planId: planId)
-        } catch let err as InsufficientStockError {
-            self.errorMessage = err.message
-            self.showingErrorAlert = true
-        } catch {
-            self.errorMessage = error.localizedDescription
-            self.showingErrorAlert = true
+        let (canEat, missing) = storage.checkMealStock(planId: planId)
+        if canEat {
+            let generator = UIImpactFeedbackGenerator(style: .medium)
+            generator.impactOccurred()
+            try? storage.eatMeal(planId: planId, allowPartial: false)
+        } else {
+            deficitPlanId = planId
+            deficits = Array(missing.values)
+            showingDeficitConfirmation = true
         }
     }
 

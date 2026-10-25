@@ -1,0 +1,43 @@
+{
+  "dish_categories": {
+    "man": "Mặn",
+    "rau": "Rau",
+    "canh": "Canh"
+  },
+  "ingredient_categories": {
+    "thit": "Thịt",
+    "gia_cam": "Gia cầm",
+    "hai_san": "Hải sản",
+    "trung_sua": "Trứng & Sữa",
+    "rau_cu": "Rau củ",
+    "cu_qua": "Củ quả",
+    "gao_bot_mi": "Gạo, bột & mì",
+    "gia_vi": "Gia vị",
+    "nuoc_cham_dau": "Nước chấm & dầu ăn",
+    "khac": "Khác"
+  },
+  "units": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "l": "l",
+    "piece": "cái"
+  },
+  "meal_periods": {
+    "breakfast": "Sáng",
+    "lunch": "Trưa",
+    "dinner": "Tối"
+  },
+  "palettes": {
+    "green": "Xanh lá",
+    "terracotta": "Cam đất",
+    "ocean": "Xanh biển",
+    "plum": "Tím mận",
+    "peach": "Hồng đào"
+  },
+  "themes": {
+    "light": "Sáng",
+    "dark": "Tối",
+    "system": "Theo hệ thống"
+  }
+}

@@ -43,6 +43,24 @@ class AppRepository(private val context: Context) {
     private val _catalogueError = MutableStateFlow<String?>(null)
     val catalogueError: StateFlow<String?> = _catalogueError.asStateFlow()
 
+    private val prefs = context.getSharedPreferences("easymeals_prefs", Context.MODE_PRIVATE)
+
+    private val _themeMode = MutableStateFlow(prefs.getString("theme_mode", "system") ?: "system")
+    val themeMode: StateFlow<String> = _themeMode.asStateFlow()
+
+    private val _palette = MutableStateFlow(prefs.getString("theme_palette", "green") ?: "green")
+    val palette: StateFlow<String> = _palette.asStateFlow()
+
+    fun setThemeMode(mode: String) {
+        _themeMode.value = mode
+        prefs.edit().putString("theme_mode", mode).apply()
+    }
+
+    fun setPalette(paletteName: String) {
+        _palette.value = paletteName
+        prefs.edit().putString("theme_palette", paletteName).apply()
+    }
+
     private var lastActionPlanId: String? = null
     var catalogueVersion: String = "2026.10.26"
         private set
@@ -56,11 +74,15 @@ class AppRepository(private val context: Context) {
         loadCatalogue()
     }
 
+    var conversions: List<com.easymeals.app.domain.model.Conversion> = emptyList()
+        private set
+
     private fun loadCatalogue() {
         val bundle = CatalogueLoader.loadBundledCatalogue(context)
         if (bundle != null) {
             _ingredients.value = bundle.ingredients
             _recipes.value = bundle.recipes
+            conversions = bundle.conversions
             catalogueVersion = bundle.version ?: catalogueVersion
             _catalogueError.value = null
         } else {
@@ -95,10 +117,52 @@ class AppRepository(private val context: Context) {
         persistState()
     }
 
-    fun eatMeal(planId: String) {
+    fun checkMealStock(planId: String): Pair<Boolean, Map<String, DeficitItem>> {
+        val plan = _mealPlans.value.find { it.id == planId } ?: return Pair(true, emptyMap())
+        val allDeficits = mutableMapOf<String, DeficitItem>()
+
+        // Collect requirements for all non-leftover dishes in the plan
+        for (dish in plan.dishes) {
+            if (dish.isLeftover) continue
+            val recipe = _recipes.value.find { it.id == dish.recipeId } ?: continue
+            val mult = (com.easymeals.app.domain.engine.ExactDecimal(dish.servings) /
+                    com.easymeals.app.domain.engine.ExactDecimal(recipe.servings)).toString()
+            val (canCook, deficits) = EasyMealsEngine.checkRecipeStock(
+                recipe = recipe,
+                pantryLots = _pantryLots.value,
+                multiplier = mult,
+                conversions = conversions
+            )
+            if (!canCook) {
+                for ((k, v) in deficits) {
+                    val existing = allDeficits[k]
+                    if (existing != null) {
+                        val sumMissing = com.easymeals.app.domain.engine.ExactDecimal(existing.missingQuantity) +
+                                com.easymeals.app.domain.engine.ExactDecimal(v.missingQuantity)
+                        allDeficits[k] = existing.copy(missingQuantity = sumMissing.toString())
+                    } else {
+                        allDeficits[k] = v
+                    }
+                }
+            }
+        }
+        return Pair(allDeficits.isEmpty(), allDeficits)
+    }
+
+    fun eatMeal(planId: String, allowPartial: Boolean = false) {
         val currentPlans = _mealPlans.value.map { it.copy(dishes = it.dishes.toMutableList()) }
         val plan = currentPlans.find { it.id == planId } ?: return
         if (plan.eatenAt != null) return
+
+        if (!allowPartial) {
+            val (canEat, deficits) = checkMealStock(planId)
+            if (!canEat) {
+                throw com.easymeals.app.domain.engine.InsufficientStockException(
+                    "Không đủ nguyên liệu để nấu bữa ăn này",
+                    deficits
+                )
+            }
+        }
 
         var updatedPantry = _pantryLots.value
         val allMovs = _stockMovements.value.toMutableList()
@@ -106,18 +170,23 @@ class AppRepository(private val context: Context) {
         for (dish in plan.dishes) {
             if (dish.isLeftover) continue
             val recipe = _recipes.value.find { it.id == dish.recipeId } ?: continue
-            val (updated, movs) = EasyMealsEngine.deductRecipeStockFifo(
+            val mult = (com.easymeals.app.domain.engine.ExactDecimal(dish.servings) /
+                    com.easymeals.app.domain.engine.ExactDecimal(recipe.servings)).toString()
+            val outcome = EasyMealsEngine.executeStockDeduction(
                 pantryLots = updatedPantry,
                 recipe = recipe,
                 mealPlanId = planId,
-                idempotencyKey = "android_eat_$planId"
+                idempotencyKey = "android_eat_${planId}_${dish.recipeId}",
+                multiplier = mult,
+                conversions = conversions,
+                allowPartial = allowPartial
             )
             val lotMap = updatedPantry.associateBy { it.id }.toMutableMap()
-            for (u in updated) {
+            for (u in outcome.updatedLots) {
                 lotMap[u.id] = u
             }
             updatedPantry = lotMap.values.toList()
-            allMovs.addAll(movs)
+            allMovs.addAll(outcome.movements)
         }
 
         plan.eatenAt = java.time.Instant.now().toString()
@@ -126,6 +195,24 @@ class AppRepository(private val context: Context) {
         _stockMovements.value = allMovs
         lastActionPlanId = planId
         _undoMessage.value = "Đã ghi nhận bữa ăn và trừ kho!"
+        persistState()
+    }
+
+    fun addDeficitsToShoppingList(deficits: Collection<DeficitItem>) {
+        val current = _shoppingItems.value.toMutableList()
+        for (d in deficits) {
+            val matching = _ingredients.value.find { it.name.equals(d.ingredientName, ignoreCase = true) }
+            val ingId = matching?.id ?: UUID.randomUUID().toString()
+            current.add(
+                ShoppingItem(
+                    ingredientId = ingId,
+                    ingredientName = d.ingredientName,
+                    neededQuantity = d.missingQuantity,
+                    unit = d.unit
+                )
+            )
+        }
+        _shoppingItems.value = current
         persistState()
     }
 

@@ -218,6 +218,24 @@ class Repository(ABC):
         """Get complete catalogue bundle for offline syncing with client IndexedDB."""
         pass
 
+    def get_conversions(self) -> list[Any]:
+        """Get conversions list as domain IngredientConversion objects."""
+        from app.domain.models import IngredientConversion, QuantityUnit
+
+        bundle = self.get_catalogue_bundle()
+        raw = bundle.get("conversions", STANDARD_CONVERSIONS)
+        return [
+            IngredientConversion(
+                from_ingredient_id=UUID(c["from_ingredient_id"]),
+                to_ingredient_id=UUID(c["to_ingredient_id"]),
+                ratio=Decimal(str(c["ratio"])),
+                from_unit=QuantityUnit(c.get("from_unit", "g")),
+                to_unit=QuantityUnit(c.get("to_unit", "g")),
+                note=c.get("note"),
+            )
+            for c in raw
+        ]
+
 
 class FixtureCatalogueRepository(Repository):
     """In-memory catalogue repository using canonical Vietnamese culinary seed data.

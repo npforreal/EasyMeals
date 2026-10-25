@@ -1,0 +1,210 @@
+/* TỰ SINH — KHÔNG SỬA TAY (scripts/generate_design_tokens.py) */
+
+:root {
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+
+  /* Typography */
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.625rem;
+  --text-2xl: 2.125rem;
+
+  /* Light Neutrals (default) */
+  --bg: #F6F1E7;
+  --surface: #FFFBF3;
+  --surface-sunken: #EDE6D6;
+  --ink: #2B2A22;
+  --ink-muted: #6B6554;
+  --line: #DDD3BF;
+  --accent: #B5532F;
+  --accent-soft: #F3DDD0;
+  --honey: #C9962B;
+  --danger: #9B2C2C;
+  --danger-soft: #F6DCDC;
+  --focus: #1F4FA3;
+
+  /* Default Palette (Green Light) */
+  --primary: #3F6B3A;
+  --primary-strong: #2F5530;
+  --on-primary: #FFFBF3;
+  --primary-soft: #DDE8D3;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1A1D16;
+    --surface: #232720;
+    --surface-sunken: #171A13;
+    --ink: #ECE6D6;
+    --ink-muted: #A7A28F;
+    --line: #383D31;
+    --accent: #E08A66;
+    --accent-soft: #42291F;
+    --honey: #D9AE4E;
+    --danger: #E07070;
+    --danger-soft: #3D2222;
+    --focus: #8AB4FF;
+    --primary: #8FBF82;
+    --primary-strong: #A9D49C;
+    --on-primary: #142013;
+    --primary-soft: #2E3A2A;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #1A1D16;
+  --surface: #232720;
+  --surface-sunken: #171A13;
+  --ink: #ECE6D6;
+  --ink-muted: #A7A28F;
+  --line: #383D31;
+  --accent: #E08A66;
+  --accent-soft: #42291F;
+  --honey: #D9AE4E;
+  --danger: #E07070;
+  --danger-soft: #3D2222;
+  --focus: #8AB4FF;
+  --primary: #8FBF82;
+  --primary-strong: #A9D49C;
+  --on-primary: #142013;
+  --primary-soft: #2E3A2A;
+  color-scheme: dark;
+}
+
+/* Palette: green (Xanh lá) */
+:root[data-palette="green"], [data-palette="green"] {
+  --primary: #3F6B3A;
+  --primary-strong: #2F5530;
+  --on-primary: #FFFBF3;
+  --primary-soft: #DDE8D3;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="green"]:not([data-theme="light"]) {
+    --primary: #8FBF82;
+    --primary-strong: #A9D49C;
+    --on-primary: #142013;
+    --primary-soft: #2E3A2A;
+  }
+}
+
+:root[data-theme="dark"][data-palette="green"], [data-theme="dark"][data-palette="green"] {
+  --primary: #8FBF82;
+  --primary-strong: #A9D49C;
+  --on-primary: #142013;
+  --primary-soft: #2E3A2A;
+}
+
+/* Palette: terracotta (Cam đất) */
+:root[data-palette="terracotta"], [data-palette="terracotta"] {
+  --primary: #A04A26;
+  --primary-strong: #7E3718;
+  --on-primary: #FFFBF3;
+  --primary-soft: #F6DEC6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="terracotta"]:not([data-theme="light"]) {
+    --primary: #E28D68;
+    --primary-strong: #F0A786;
+    --on-primary: #21140E;
+    --primary-soft: #42291F;
+  }
+}
+
+:root[data-theme="dark"][data-palette="terracotta"], [data-theme="dark"][data-palette="terracotta"] {
+  --primary: #E28D68;
+  --primary-strong: #F0A786;
+  --on-primary: #21140E;
+  --primary-soft: #42291F;
+}
+
+/* Palette: ocean (Xanh biển) */
+:root[data-palette="ocean"], [data-palette="ocean"] {
+  --primary: #285E86;
+  --primary-strong: #1B4563;
+  --on-primary: #FFFBF3;
+  --primary-soft: #D4E6F1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="ocean"]:not([data-theme="light"]) {
+    --primary: #7CB7DF;
+    --primary-strong: #9BCBEB;
+    --on-primary: #0E1B26;
+    --primary-soft: #1B3448;
+  }
+}
+
+:root[data-theme="dark"][data-palette="ocean"], [data-theme="dark"][data-palette="ocean"] {
+  --primary: #7CB7DF;
+  --primary-strong: #9BCBEB;
+  --on-primary: #0E1B26;
+  --primary-soft: #1B3448;
+}
+
+/* Palette: plum (Tím mận) */
+:root[data-palette="plum"], [data-palette="plum"] {
+  --primary: #6E396E;
+  --primary-strong: #532753;
+  --on-primary: #FFFBF3;
+  --primary-soft: #EAD7EA;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="plum"]:not([data-theme="light"]) {
+    --primary: #C68EC6;
+    --primary-strong: #D9ACD9;
+    --on-primary: #211121;
+    --primary-soft: #422142;
+  }
+}
+
+:root[data-theme="dark"][data-palette="plum"], [data-theme="dark"][data-palette="plum"] {
+  --primary: #C68EC6;
+  --primary-strong: #D9ACD9;
+  --on-primary: #211121;
+  --primary-soft: #422142;
+}
+
+/* Palette: peach (Hồng đào) */
+:root[data-palette="peach"], [data-palette="peach"] {
+  --primary: #9C435A;
+  --primary-strong: #7B2F43;
+  --on-primary: #FFFBF3;
+  --primary-soft: #F7D6DE;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-palette="peach"]:not([data-theme="light"]) {
+    --primary: #DF859B;
+    --primary-strong: #ECA5B6;
+    --on-primary: #240E14;
+    --primary-soft: #48222C;
+  }
+}
+
+:root[data-theme="dark"][data-palette="peach"], [data-theme="dark"][data-palette="peach"] {
+  --primary: #DF859B;
+  --primary-strong: #ECA5B6;
+  --on-primary: #240E14;
+  --primary-soft: #48222C;
+}

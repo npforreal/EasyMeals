@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -27,7 +28,10 @@ import com.easymeals.app.domain.model.Ingredient
 import com.easymeals.app.domain.model.PantryLot
 import com.easymeals.app.ui.theme.DangerRed
 import com.easymeals.app.ui.theme.ForestGreen
-import java.time.LocalDate
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
+import com.easymeals.app.ui.theme.GeneratedTokens
+import com.easymeals.app.util.DateFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +74,21 @@ fun PantryScreen(repository: AppRepository) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Lọc đồ trong tủ...") },
+                    placeholder = { Text("Tìm trong tủ") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Xoá tìm kiếm")
+                            }
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -153,17 +171,20 @@ fun PantryLotItem(lot: PantryLot, onDelete: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(lot.ingredientName, fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
                 lot.expiresAt?.let { exp ->
-                    val isSoon = remember(exp) {
-                        try {
-                            val d = LocalDate.parse(exp)
-                            java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), d) <= 2
-                        } catch (_: Exception) { false }
+                    val status = DateFormatter.formatExpiryStatus(exp)
+                    if (status != null) {
+                        Text(
+                            "Hạn dùng: ${status.text}",
+                            fontSize = 12.sp,
+                            color = if (status.isWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Text(
+                            "Hạn dùng: ${DateFormatter.formatDateVN(exp)}",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                    Text(
-                        "Hạn dùng: $exp",
-                        fontSize = 12.sp,
-                        color = if (isSoon) DangerRed else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
             Text(
@@ -176,6 +197,29 @@ fun PantryLotItem(lot: PantryLot, onDelete: () -> Unit) {
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Xoá", tint = Color.Gray)
             }
+        }
+    }
+}
+
+fun sensibleDefaultQuantity(ing: Ingredient): String {
+    val unit = ing.defaultUnit ?: "g"
+    val cat = ing.category ?: "khac"
+    val name = ing.name.lowercase()
+    return when (unit) {
+        "piece" -> when {
+            name.contains("trứng") -> "6"
+            name.contains("đậu hũ") || name.contains("tàu hũ") -> "2"
+            else -> "1"
+        }
+        "kg", "l" -> "1"
+        "ml" -> if (cat == "nuoc_cham_dau") "100" else "200"
+        else -> when (cat) {
+            "thit", "gia_cam", "hai_san" -> "400"
+            "rau_cu", "cu_qua" -> "300"
+            "gao_bot_mi" -> "500"
+            "gia_vi" -> "30"
+            "nuoc_cham_dau" -> "100"
+            else -> "200"
         }
     }
 }
@@ -200,129 +244,151 @@ fun AddPantryBottomSheet(
     }
 
     val filtered = remember(searchIngText, ingredients) {
-        if (searchIngText.isBlank()) ingredients.take(8)
-        else ingredients.filter { CatalogueLoader.matches(it.name, searchIngText) }.take(8)
+        if (searchIngText.isBlank()) ingredients.take(15)
+        else ingredients.filter { CatalogueLoader.matches(it.name, searchIngText) }.take(20)
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        modifier = Modifier.fillMaxHeight(0.9f)
+    ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
+                .imePadding()
                 .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp)
+                .padding(bottom = 16.dp)
         ) {
             Text("Thêm đồ vào tủ", fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (selectedIng == null) {
-                OutlinedTextField(
-                    value = searchIngText,
-                    onValueChange = { searchIngText = it },
-                    label = { Text("Tìm nguyên liệu (ba chỉ, đậu bắp...)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                if (selectedIng == null) {
+                    OutlinedTextField(
+                        value = searchIngText,
+                        onValueChange = { searchIngText = it },
+                        label = { Text("Tìm nguyên liệu (ba chỉ, đậu bắp...)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
 
-                if (recentIngs.isNotEmpty() && searchIngText.isBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Mua gần đây:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        recentIngs.forEach { ing ->
-                            SuggestionChip(
-                                onClick = {
-                                    selectedIng = ing
-                                    unit = ing.defaultUnit ?: "g"
-                                },
-                                label = { Text(ing.name) }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                LazyColumn(modifier = Modifier.heightIn(max = 160.dp)) {
-                    items(filtered) { ing ->
+                    if (recentIngs.isNotEmpty() && searchIngText.isBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Mua gần đây:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
-                                    selectedIng = ing
-                                    unit = ing.defaultUnit ?: "g"
-                                }
-                                .padding(vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(ing.name, fontWeight = FontWeight.Medium)
-                            Text(categoryLabel(ing.category), fontSize = 12.sp, color = Color.Gray)
+                            recentIngs.forEach { ing ->
+                                SuggestionChip(
+                                    onClick = {
+                                        selectedIng = ing
+                                        unit = ing.defaultUnit ?: "g"
+                                        quantityText = sensibleDefaultQuantity(ing)
+                                    },
+                                    label = { Text(ing.name) }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 240.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        filtered.forEach { ing ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        selectedIng = ing
+                                        unit = ing.defaultUnit ?: "g"
+                                        quantityText = sensibleDefaultQuantity(ing)
+                                    }
+                                    .padding(vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(ing.name, fontWeight = FontWeight.Medium)
+                                Text(categoryLabel(ing.category), fontSize = 12.sp, color = Color.Gray)
+                            }
+                            HorizontalDivider()
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            selectedIng!!.name,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        TextButton(onClick = { selectedIng = null }) {
+                            Text("Đổi")
                         }
                     }
                 }
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        selectedIng!!.name,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ForestGreen
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = quantityText,
+                        onValueChange = { quantityText = it },
+                        label = { Text("Số lượng") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.weight(1f)
                     )
-                    TextButton(onClick = { selectedIng = null }) {
-                        Text("Đổi")
+                    OutlinedTextField(
+                        value = unit,
+                        onValueChange = { unit = it },
+                        label = { Text("Đơn vị") },
+                        modifier = Modifier.width(100.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Hạn sử dụng:", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(Pair("3 ngày", 3), Pair("1 tuần", 7), Pair("2 tuần", 14), Pair("Không hạn", null)).forEach { (lbl, days) ->
+                        FilterChip(
+                            selected = selectedExpiryDays == days,
+                            onClick = { selectedExpiryDays = days },
+                            label = { Text(lbl) }
+                        )
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = quantityText,
-                    onValueChange = { quantityText = it },
-                    label = { Text("Số lượng") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.weight(1f)
-                )
-                OutlinedTextField(
-                    value = unit,
-                    onValueChange = { unit = it },
-                    label = { Text("Đơn vị") },
-                    modifier = Modifier.width(100.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Hạn sử dụng:", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf(Pair("3 ngày", 3), Pair("1 tuần", 7), Pair("2 tuần", 14), Pair("Không hạn", null)).forEach { (lbl, days) ->
-                    FilterChip(
-                        selected = selectedExpiryDays == days,
-                        onClick = { selectedExpiryDays = days },
-                        label = { Text(lbl) }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
+            // Sticky Save Button at Bottom
             Button(
                 onClick = {
-                    val exp = selectedExpiryDays?.let { LocalDate.now().plusDays(it.toLong()).toString() }
+                    val exp = selectedExpiryDays?.let { java.time.LocalDate.now().plusDays(it.toLong()).toString() }
                     selectedIng?.let { onSave(it, quantityText, unit, exp) }
                 },
                 enabled = selectedIng != null && quantityText.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("Lưu một chạm", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
@@ -330,16 +396,8 @@ fun AddPantryBottomSheet(
     }
 }
 
-
-/** Nhãn nhóm nguyên liệu bằng tiếng Việt (dữ liệu lưu mã tiếng Anh). */
-internal fun categoryLabel(category: String?): String = when (category) {
-    "meat" -> "Thịt"
-    "poultry" -> "Gia cầm"
-    "seafood" -> "Hải sản"
-    "egg" -> "Trứng"
-    "vegetable" -> "Rau củ"
-    "root" -> "Củ"
-    "spice" -> "Gia vị"
-    "tofu" -> "Đậu hũ"
-    else -> ""
+/** Nhãn nhóm nguyên liệu bằng tiếng Việt dùng chung từ GeneratedTokens. */
+internal fun categoryLabel(category: String?): String {
+    if (category.isNullOrBlank()) return ""
+    return GeneratedTokens.Labels.ingredient_categories[category] ?: category
 }

@@ -64,7 +64,7 @@ public struct AddPantrySheet: View {
                                     Text(ing.name)
                                         .foregroundColor(AppColors.textPrimary)
                                     Spacer()
-                                    Text(ing.category)
+                                    Text(GeneratedTokens.Labels.ingredient_categories[ing.category] ?? ing.category)
                                         .font(.caption2)
                                         .foregroundColor(AppColors.textSecondary)
                                 }
@@ -130,9 +130,35 @@ public struct AddPantrySheet: View {
         }
     }
 
+    private func sensibleDefaultQuantity(for ing: Ingredient) -> String {
+        let unit = ing.defaultUnit
+        let cat = ing.category
+        let name = ing.name.lowercased()
+        switch unit {
+        case "piece":
+            if name.contains("trứng") { return "6" }
+            if name.contains("đậu hũ") || name.contains("tàu hũ") { return "2" }
+            return "1"
+        case "kg", "l":
+            return "1"
+        case "ml":
+            return cat == "nuoc_cham_dau" ? "100" : "200"
+        default:
+            switch cat {
+            case "thit", "gia_cam", "hai_san": return "400"
+            case "rau_cu", "cu_qua": return "300"
+            case "gao_bot_mi": return "500"
+            case "gia_vi": return "30"
+            case "nuoc_cham_dau": return "100"
+            default: return "200"
+            }
+        }
+    }
+
     private func select(ingredient: Ingredient) {
         self.selectedIngredient = ingredient
         self.unit = ingredient.defaultUnit
+        self.quantityText = sensibleDefaultQuantity(for: ingredient)
         self.searchText = ingredient.name
     }
 
@@ -208,9 +234,15 @@ public struct PantryView: View {
                                     Text(lot.ingredientName)
                                         .font(.headline)
                                     if let exp = lot.expiresAt {
-                                        Text("Hạn dùng: \(exp)")
-                                            .font(.caption)
-                                            .foregroundColor(isExpiringSoon(exp) ? AppColors.danger : AppColors.textSecondary)
+                                        if let status = AppDateFormatter.formatExpiryStatus(exp) {
+                                            Text("Hạn dùng: \(status.text)")
+                                                .font(.caption)
+                                                .foregroundColor(status.isWarning ? AppColors.danger : AppColors.textSecondary)
+                                        } else {
+                                            Text("Hạn dùng: \(AppDateFormatter.formatDateVN(exp))")
+                                                .font(.caption)
+                                                .foregroundColor(AppColors.textSecondary)
+                                        }
                                     }
                                 }
                                 Spacer()
@@ -227,7 +259,7 @@ public struct PantryView: View {
                             }
                         }
                     }
-                    .searchable(text: $searchFilter, prompt: "Lọc đồ trong tủ...")
+                    .searchable(text: $searchFilter, prompt: "Tìm trong tủ")
                 }
 
                 // Nút nổi thêm đồ nhanh

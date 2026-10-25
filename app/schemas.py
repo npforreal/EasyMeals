@@ -142,6 +142,7 @@ class StatelessEatRequest(BaseModel):
         max_length=10, description="Các món ăn trong bữa cần trừ kho"
     )
     idempotency_key: str = Field(min_length=1, max_length=128, description="Khoá chống trừ đúp")
+    allow_partial: bool = Field(default=False, description="Cho phép trừ kho phần đang có dù thiếu")
 
 
 class StockMovementResponse(BaseModel):

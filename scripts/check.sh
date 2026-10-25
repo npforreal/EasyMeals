@@ -16,6 +16,9 @@ if ! python -m ruff --version >/dev/null 2>&1; then
   exit 1
 fi
 
+echo "==> 0. Kiểm tra đồng bộ design tokens (tokens.json & labels.json)"
+python scripts/generate_design_tokens.py --check
+
 echo "==> 1. ruff check (app, tests, scripts)"
 python -m ruff check app tests scripts
 

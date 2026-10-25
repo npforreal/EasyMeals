@@ -84,6 +84,109 @@ fun SettingsScreen(repository: AppRepository) {
                 }
             }
 
+            // Section: Appearance & Color Palette (F1)
+            val currentThemeMode by repository.themeMode.collectAsState()
+            val currentPalette by repository.palette.collectAsState()
+
+            Text(
+                "GIAO DIỆN & MÀU SẮC",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Chế độ hiển thị", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(
+                            "system" to "Hệ thống",
+                            "light" to "Sáng",
+                            "dark" to "Tối"
+                        ).forEach { (mode, label) ->
+                            FilterChip(
+                                selected = currentThemeMode == mode,
+                                onClick = { repository.setThemeMode(mode) },
+                                label = { Text(label) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text("Bảng màu nhấn", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(
+                                Triple("green", "Xanh lá", Color(0xFF3F6B3A)),
+                                Triple("terracotta", "Cam đất", Color(0xFFA04A26)),
+                                Triple("ocean", "Xanh biển", Color(0xFF285E86))
+                            ).forEach { (id, label, color) ->
+                                FilterChip(
+                                    selected = currentPalette == id,
+                                    onClick = { repository.setPalette(id) },
+                                    leadingIcon = {
+                                        Surface(
+                                            modifier = Modifier.size(14.dp),
+                                            shape = RoundedCornerShape(7.dp),
+                                            color = color
+                                        ) {}
+                                    },
+                                    label = { Text(label) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                )
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(
+                                Triple("plum", "Tím mận", Color(0xFF6E396E)),
+                                Triple("peach", "Hồng đào", Color(0xFF9C435A))
+                            ).forEach { (id, label, color) ->
+                                FilterChip(
+                                    selected = currentPalette == id,
+                                    onClick = { repository.setPalette(id) },
+                                    leadingIcon = {
+                                        Surface(
+                                            modifier = Modifier.size(14.dp),
+                                            shape = RoundedCornerShape(7.dp),
+                                            color = color
+                                        ) {}
+                                    },
+                                    label = { Text(label) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // Section: Backup & Restore
             Text(
                 "SAO LƯU & KHÔI PHỤC",

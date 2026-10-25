@@ -1,8 +1,52 @@
 import SwiftUI
 
+public class ThemeManager: ObservableObject {
+    public static let shared = ThemeManager()
+
+    @AppStorage("theme_mode") public var themeMode: String = "system"
+    @AppStorage("theme_palette") public var palette: String = "green"
+
+    public var preferredColorScheme: ColorScheme? {
+        switch themeMode.lowercased() {
+        case "light": return .light
+        case "dark": return .dark
+        default: return nil
+        }
+    }
+
+    public func paletteColors(isDark: Bool) -> PaletteColors {
+        switch palette.lowercased() {
+        case "terracotta":
+            return isDark ? GeneratedTokens.Palettes.Terracotta.dark : GeneratedTokens.Palettes.Terracotta.light
+        case "ocean":
+            return isDark ? GeneratedTokens.Palettes.Ocean.dark : GeneratedTokens.Palettes.Ocean.light
+        case "plum":
+            return isDark ? GeneratedTokens.Palettes.Plum.dark : GeneratedTokens.Palettes.Plum.light
+        case "peach":
+            return isDark ? GeneratedTokens.Palettes.Peach.dark : GeneratedTokens.Palettes.Peach.light
+        default:
+            return isDark ? GeneratedTokens.Palettes.Green.dark : GeneratedTokens.Palettes.Green.light
+        }
+    }
+
+    public func neutrals(isDark: Bool) -> NeutralColors {
+        isDark ? GeneratedTokens.Neutrals.dark : GeneratedTokens.Neutrals.light
+    }
+}
+
 public enum AppColors {
-    public static let primary = Color(red: 0.18, green: 0.49, blue: 0.20) // #2E7D32 Emerald
-    public static let primaryLight = Color(red: 0.78, green: 0.90, blue: 0.79)
+    public static var primary: Color {
+        let pal = UserDefaults.standard.string(forKey: "theme_palette") ?? "green"
+        let isDark = (UserDefaults.standard.string(forKey: "theme_mode") == "dark")
+        return ThemeManager.shared.paletteColors(isDark: isDark).primary
+    }
+
+    public static var primaryLight: Color {
+        let pal = UserDefaults.standard.string(forKey: "theme_palette") ?? "green"
+        let isDark = (UserDefaults.standard.string(forKey: "theme_mode") == "dark")
+        return ThemeManager.shared.paletteColors(isDark: isDark).primarySoft
+    }
+
     public static let accent = Color(red: 0.96, green: 0.50, blue: 0.09) // Warm orange
     public static let surface = Color(UIColor.systemBackground)
     public static let secondarySurface = Color(UIColor.secondarySystemBackground)
@@ -26,5 +70,11 @@ public struct CardModifier: ViewModifier {
 public extension View {
     func cardStyle() -> some View {
         modifier(CardModifier())
+    }
+}
+
+public extension Font {
+    static func fraunces(size: CGFloat) -> Font {
+        Font.custom("Fraunces", size: size)
     }
 }

@@ -21,7 +21,8 @@ let package = Package(
             path: "EasyMeals",
             exclude: ["UI", "EasyMealsApp.swift"],
             resources: [
-                .process("Resources/catalogue.json")
+                .process("Resources/catalogue.json"),
+                .process("Resources/Fonts")
             ]
         ),
         .testTarget(

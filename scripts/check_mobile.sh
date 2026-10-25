@@ -10,6 +10,9 @@ if [ -d "$ROOT_DIR/.venv" ] && [ -z "${VIRTUAL_ENV:-}" ]; then
   source "$ROOT_DIR/.venv/bin/activate"
 fi
 
+echo "==> 0. Kiểm tra đồng bộ design tokens (tokens.json & labels.json)"
+python scripts/generate_design_tokens.py --check
+
 echo "==> 1. Kiểm tra tính toàn vẹn asset catalogue & engine test cases"
 python scripts/sync_mobile_assets.py --check
 

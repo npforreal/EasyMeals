@@ -37,7 +37,9 @@ class MainActivity : ComponentActivity() {
         repository = AppRepository(applicationContext)
 
         setContent {
-            EasyMealsTheme {
+            val themeMode by repository.themeMode.collectAsState()
+            val palette by repository.palette.collectAsState()
+            EasyMealsTheme(themeMode = themeMode, palette = palette) {
                 MainContent(repository = repository)
             }
         }
@@ -82,9 +84,9 @@ fun MainContent(repository: AppRepository) {
                         icon = { Icon(tab.icon, contentDescription = tab.title) },
                         label = { Text(tab.title) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = ForestGreen,
-                            selectedTextColor = ForestGreen,
-                            indicatorColor = ForestGreen.copy(alpha = 0.15f)
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer
                         )
                     )
                 }

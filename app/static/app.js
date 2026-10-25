@@ -32,8 +32,15 @@ import {
 import {
   generatePeriodPlan as engineGeneratePeriodPlan,
   deductRecipeStockFifo as engineDeductRecipeStockFifo,
+  deductRecipeStockAvailable as engineDeductRecipeStockAvailable,
   reverseStockMovements as engineReverseStockMovements,
+  getTotalIngredientStock as engineGetTotalIngredientStock,
 } from "./js/engine.js";
+import {
+  formatDateVN,
+  formatRelativeDate,
+  formatExpiryStatus,
+} from "./js/formatters.js";
 
 // ==========================================
 // Toast & Utility Helpers
@@ -58,23 +65,234 @@ export function formatQty(num) {
   return Number.isInteger(n) ? n.toString() : n.toFixed(1);
 }
 
-function formatDateVN(dateStr) {
-  if (!dateStr) return "";
-  const parts = dateStr.split("-");
-  if (parts.length === 3) {
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+export function sensibleDefaultQuantity(ing) {
+  const unit = ing.default_unit || "g";
+  const cat = ing.category || "khac";
+  const name = (ing.name || "").toLowerCase();
+  switch (unit) {
+    case "piece":
+      if (name.includes("trứng")) return "6";
+      if (name.includes("đậu hũ") || name.includes("tàu hũ")) return "2";
+      return "1";
+    case "kg":
+    case "l":
+      return "1";
+    case "ml":
+      return cat === "nuoc_cham_dau" ? "100" : "200";
+    default:
+      switch (cat) {
+        case "thit":
+        case "gia_cam":
+        case "hai_san":
+          return "400";
+        case "rau_cu":
+        case "cu_qua":
+          return "300";
+        case "gao_bot_mi":
+          return "500";
+        case "gia_vi":
+          return "30";
+        case "nuoc_cham_dau":
+          return "100";
+        default:
+          return "200";
+      }
   }
-  return dateStr;
 }
 
 const CAT_LABELS = { man: "Món Mặn", rau: "Món Rau", canh: "Món Canh" };
 const PERIOD_LABELS = { breakfast: "Bữa Sáng", lunch: "Bữa Trưa", dinner: "Bữa Tối" };
 
 // ==========================================
-// Recipe Modal
+// Recipe Modal & Cooking Mode
 // ==========================================
 
-export async function openRecipeModal(recipeId) {
+export function startCookingMode(recipe) {
+  let overlay = document.getElementById("cooking-mode-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "cooking-mode-overlay";
+    overlay.style.position = "fixed";
+    overlay.style.top = "0";
+    overlay.style.left = "0";
+    overlay.style.width = "100vw";
+    overlay.style.height = "100vh";
+    overlay.style.zIndex = "9999";
+    overlay.style.background = "var(--surface)";
+    overlay.style.display = "flex";
+    overlay.style.flexDirection = "column";
+    overlay.style.padding = "var(--space-4)";
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = "flex";
+  let step = 0;
+  const steps = recipe.instructions || [];
+
+  let wakeLock = null;
+  if ("wakeLock" in navigator) {
+    navigator.wakeLock.request("screen").then((wl) => { wakeLock = wl; }).catch(() => {});
+  }
+
+  function renderStep() {
+    overlay.innerHTML = "";
+
+    const topBar = document.createElement("div");
+    topBar.style.display = "flex";
+    topBar.style.justifyContent = "space-between";
+    topBar.style.alignItems = "center";
+    topBar.style.borderBottom = "1px solid var(--border)";
+    topBar.style.paddingBottom = "var(--space-3)";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "btn btn-outline btn-sm";
+    closeBtn.textContent = "Thoát chế độ nấu";
+    closeBtn.addEventListener("click", () => {
+      if (wakeLock) { wakeLock.release(); wakeLock = null; }
+      overlay.style.display = "none";
+    });
+
+    const modeLabel = document.createElement("span");
+    modeLabel.style.fontWeight = "bold";
+    modeLabel.style.color = "var(--accent)";
+    modeLabel.textContent = "CHẾ ĐỘ NẤU";
+
+    const stepCounter = document.createElement("span");
+    stepCounter.style.fontWeight = "bold";
+    stepCounter.textContent = `${steps.length ? step + 1 : 1} / ${steps.length || 1}`;
+
+    topBar.appendChild(closeBtn);
+    topBar.appendChild(modeLabel);
+    topBar.appendChild(stepCounter);
+    overlay.appendChild(topBar);
+
+    const midBox = document.createElement("div");
+    midBox.style.flex = "1";
+    midBox.style.display = "flex";
+    midBox.style.flexDirection = "column";
+    midBox.style.justifyContent = "center";
+    midBox.style.alignItems = "center";
+    midBox.style.textAlign = "center";
+    midBox.style.padding = "var(--space-6)";
+
+    const titleH2 = document.createElement("h2");
+    titleH2.style.marginBottom = "var(--space-2)";
+    titleH2.textContent = recipe.name;
+
+    const stepText = document.createElement("div");
+    stepText.style.fontSize = "1.4rem";
+    stepText.style.lineHeight = "1.6";
+    stepText.style.margin = "var(--space-4) 0";
+    stepText.style.maxWidth = "600px";
+    stepText.textContent = steps[step] || "Không có hướng dẫn chi tiết.";
+
+    midBox.appendChild(titleH2);
+    midBox.appendChild(stepText);
+    overlay.appendChild(midBox);
+
+    const bottomBar = document.createElement("div");
+    bottomBar.style.display = "flex";
+    bottomBar.style.gap = "var(--space-3)";
+    bottomBar.style.borderTop = "1px solid var(--border)";
+    bottomBar.style.paddingTop = "var(--space-3)";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "btn btn-outline";
+    prevBtn.style.flex = "1";
+    prevBtn.textContent = "Bước trước";
+    prevBtn.disabled = step === 0;
+    prevBtn.addEventListener("click", () => {
+      if (step > 0) { step--; renderStep(); }
+    });
+
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "btn btn-primary";
+    nextBtn.style.flex = "1";
+    nextBtn.textContent = step >= steps.length - 1 ? "Hoàn thành" : "Bước tiếp theo";
+    nextBtn.addEventListener("click", () => {
+      if (step < steps.length - 1) {
+        step++;
+        renderStep();
+      } else {
+        if (wakeLock) { wakeLock.release(); wakeLock = null; }
+        overlay.style.display = "none";
+        showToast("Đã hoàn thành nấu món ăn!", "success");
+      }
+    });
+
+    bottomBar.appendChild(prevBtn);
+    bottomBar.appendChild(nextBtn);
+    overlay.appendChild(bottomBar);
+  }
+
+  renderStep();
+}
+
+export function showDeficitDialog(deficitsList, onEatPartial, onAddToShopping) {
+  let dlgOverlay = document.getElementById("deficit-modal-overlay");
+  if (!dlgOverlay) {
+    dlgOverlay = document.createElement("div");
+    dlgOverlay.id = "deficit-modal-overlay";
+    dlgOverlay.className = "modal-overlay";
+    dlgOverlay.style.zIndex = "9998";
+    dlgOverlay.innerHTML = `
+      <div class="modal" style="max-width: 480px; padding: var(--space-4);">
+        <h3 style="margin-top: 0; color: var(--danger);">Không đủ nguyên liệu</h3>
+        <p>Bữa ăn còn thiếu các nguyên liệu sau trong kho:</p>
+        <ul id="deficit-list" style="padding-left: var(--space-4); margin: var(--space-3) 0;"></ul>
+        <p style="margin-bottom: var(--space-4);">Bạn muốn xử lý thế nào?</p>
+        <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+          <button type="button" class="btn btn-primary" id="btn-add-shopping">Thêm phần thiếu vào danh sách đi chợ</button>
+          <button type="button" class="btn btn-outline" id="btn-eat-partial">Vẫn đánh dấu đã ăn (trừ phần đang có)</button>
+          <button type="button" class="btn btn-outline" id="btn-cancel-deficit">Huỷ</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(dlgOverlay);
+  }
+  const ul = dlgOverlay.querySelector("#deficit-list");
+  ul.innerHTML = "";
+  deficitsList.forEach((d) => {
+    const li = document.createElement("li");
+    li.style.color = "var(--danger)";
+    li.textContent = `• ${d.name}: thiếu ${formatQty(d.missing)} ${d.unit}`;
+    ul.appendChild(li);
+  });
+  dlgOverlay.style.display = "flex";
+
+  const closeDlg = () => { dlgOverlay.style.display = "none"; };
+  dlgOverlay.querySelector("#btn-cancel-deficit").onclick = closeDlg;
+  dlgOverlay.querySelector("#btn-add-shopping").onclick = () => {
+    onAddToShopping();
+    closeDlg();
+  };
+  dlgOverlay.querySelector("#btn-eat-partial").onclick = () => {
+    onEatPartial();
+    closeDlg();
+  };
+}
+
+export function addDeficitsToShoppingList(deficits) {
+  let existing = [];
+  try {
+    const raw = localStorage.getItem("easymeals_shopping_list");
+    if (raw) existing = JSON.parse(raw);
+  } catch (_) {}
+  for (const d of deficits) {
+    existing.push({
+      ingredient_id: d.ingredient_id || d.id || ("custom_" + Date.now()),
+      ingredient_name: d.ingredient_name || d.name,
+      needed_quantity: String(d.missing_quantity || d.missing || d.quantity || "200"),
+      unit: d.unit || "g",
+      dish_names: [],
+    });
+  }
+  localStorage.setItem("easymeals_shopping_list", JSON.stringify(existing));
+}
+
+export async function openRecipeModal(recipeId, initialServings = null) {
   const modalOverlay = document.getElementById("recipe-modal-overlay");
   const modalContent = document.getElementById("recipe-modal-content");
   if (!modalOverlay || !modalContent) return;
@@ -87,7 +305,6 @@ export async function openRecipeModal(recipeId) {
 
   try {
     let recipe = null;
-    // Check local catalogue cache first
     const catalogue = await getCachedCatalogue();
     if (catalogue && catalogue.recipes) {
       recipe = catalogue.recipes.find((r) => r.id === recipeId);
@@ -99,86 +316,207 @@ export async function openRecipeModal(recipeId) {
       recipe = await res.json();
     }
 
-    modalContent.innerHTML = "";
+    const currentLots = await getPantryLots();
+    const conversions = catalogue?.conversions || [];
+    let curServings = initialServings || recipe.servings || 4;
 
-    // Header
-    const header = document.createElement("div");
-    header.className = "modal-header";
-    const titleBox = document.createElement("div");
-    const h2 = document.createElement("h2");
-    h2.textContent = recipe.name;
-    const badge = document.createElement("span");
-    badge.className = `badge badge-${recipe.category}`;
-    badge.textContent = CAT_LABELS[recipe.category] || recipe.category;
-    const servings = document.createElement("span");
-    servings.style.fontSize = "0.85rem";
-    servings.style.color = "var(--ink-muted)";
-    servings.style.marginLeft = "0.5rem";
-    servings.textContent = `Khẩu phần: ${recipe.servings} người`;
+    function renderModalBody() {
+      modalContent.innerHTML = "";
 
-    titleBox.appendChild(h2);
-    titleBox.appendChild(badge);
-    titleBox.appendChild(servings);
+      // Header
+      const header = document.createElement("div");
+      header.className = "modal-header";
+      const titleBox = document.createElement("div");
+      const h2 = document.createElement("h2");
+      h2.textContent = recipe.name;
+      const badge = document.createElement("span");
+      badge.className = `badge badge-${recipe.category}`;
+      badge.textContent = CAT_LABELS[recipe.category] || recipe.category;
 
-    const closeBtn = document.createElement("button");
-    closeBtn.type = "button";
-    closeBtn.className = "btn btn-outline btn-sm";
-    closeBtn.textContent = "Đóng";
-    closeBtn.addEventListener("click", closeRecipeModal);
+      titleBox.appendChild(h2);
+      titleBox.appendChild(badge);
 
-    header.appendChild(titleBox);
-    header.appendChild(closeBtn);
-    modalContent.appendChild(header);
+      const closeBtn = document.createElement("button");
+      closeBtn.type = "button";
+      closeBtn.className = "btn btn-outline btn-sm";
+      closeBtn.textContent = "Đóng";
+      closeBtn.addEventListener("click", closeRecipeModal);
 
-    // Body
-    const body = document.createElement("div");
-    body.style.marginTop = "1rem";
+      header.appendChild(titleBox);
+      header.appendChild(closeBtn);
+      modalContent.appendChild(header);
 
-    const ingTitle = document.createElement("h3");
-    ingTitle.style.fontSize = "1rem";
-    ingTitle.style.marginBottom = "0.5rem";
-    ingTitle.textContent = "Nguyên liệu cần chuẩn bị:";
-    const ingList = document.createElement("ul");
-    ingList.style.paddingLeft = "1.25rem";
-    ingList.style.fontSize = "0.95rem";
-    ingList.style.marginBottom = "1.25rem";
+      // Portions Stepper
+      const stepperRow = document.createElement("div");
+      stepperRow.style.display = "flex";
+      stepperRow.style.alignItems = "center";
+      stepperRow.style.justifyContent = "space-between";
+      stepperRow.style.padding = "var(--space-2) var(--space-3)";
+      stepperRow.style.background = "var(--surface-variant)";
+      stepperRow.style.borderRadius = "var(--radius-sm)";
+      stepperRow.style.margin = "var(--space-3) 0";
 
-    (recipe.ingredients || []).forEach((i) => {
-      const li = document.createElement("li");
-      const strong = document.createElement("strong");
-      strong.textContent = i.ingredient_name;
-      li.appendChild(strong);
-      li.appendChild(document.createTextNode(`: ${formatQty(i.quantity)} ${i.unit}`));
-      ingList.appendChild(li);
-    });
+      const stepperLeft = document.createElement("div");
+      const strongTitle = document.createElement("strong");
+      strongTitle.textContent = "Khẩu phần ăn";
+      const subNote = document.createElement("div");
+      subNote.style.fontSize = "0.8rem";
+      subNote.style.color = "var(--text-muted)";
+      subNote.textContent = "Tự động tính lại định lượng nguyên liệu";
+      stepperLeft.appendChild(strongTitle);
+      stepperLeft.appendChild(subNote);
 
-    const stepTitle = document.createElement("h3");
-    stepTitle.style.fontSize = "1rem";
-    stepTitle.style.marginBottom = "0.5rem";
-    stepTitle.textContent = "Hướng dẫn các bước nấu:";
-    const stepList = document.createElement("ol");
-    stepList.style.listStyle = "none";
-    stepList.style.padding = "0";
-    stepList.style.fontSize = "0.95rem";
-    stepList.style.display = "flex";
-    stepList.style.flexDirection = "column";
-    stepList.style.gap = "0.5rem";
+      const stepperControls = document.createElement("div");
+      stepperControls.style.display = "flex";
+      stepperControls.style.alignItems = "center";
+      stepperControls.style.gap = "var(--space-2)";
 
-    (recipe.instructions || []).forEach((step, idx) => {
-      const li = document.createElement("li");
-      const num = document.createElement("span");
-      num.className = "step-num";
-      num.textContent = `${idx + 1}. `;
-      li.appendChild(num);
-      li.appendChild(document.createTextNode(step));
-      stepList.appendChild(li);
-    });
+      const decBtn = document.createElement("button");
+      decBtn.type = "button";
+      decBtn.className = "btn btn-outline btn-sm";
+      decBtn.textContent = "-";
+      decBtn.disabled = curServings <= 1;
+      decBtn.addEventListener("click", () => {
+        if (curServings > 1) {
+          curServings--;
+          renderModalBody();
+        }
+      });
 
-    body.appendChild(ingTitle);
-    body.appendChild(ingList);
-    body.appendChild(stepTitle);
-    body.appendChild(stepList);
-    modalContent.appendChild(body);
+      const sSpan = document.createElement("span");
+      sSpan.style.fontWeight = "bold";
+      sSpan.style.minWidth = "2.5rem";
+      sSpan.style.textAlign = "center";
+      sSpan.textContent = `${curServings} người`;
+
+      const incBtn = document.createElement("button");
+      incBtn.type = "button";
+      incBtn.className = "btn btn-outline btn-sm";
+      incBtn.textContent = "+";
+      incBtn.disabled = curServings >= 20;
+      incBtn.addEventListener("click", () => {
+        if (curServings < 20) {
+          curServings++;
+          renderModalBody();
+        }
+      });
+
+      stepperControls.appendChild(decBtn);
+      stepperControls.appendChild(sSpan);
+      stepperControls.appendChild(incBtn);
+
+      stepperRow.appendChild(stepperLeft);
+      stepperRow.appendChild(stepperControls);
+      modalContent.appendChild(stepperRow);
+
+      // Body
+      const body = document.createElement("div");
+
+      const ingTitle = document.createElement("h3");
+      ingTitle.style.fontSize = "1rem";
+      ingTitle.style.marginBottom = "0.5rem";
+      ingTitle.textContent = "Nguyên liệu cần chuẩn bị:";
+      body.appendChild(ingTitle);
+
+      const ingList = document.createElement("ul");
+      ingList.style.listStyle = "none";
+      ingList.style.padding = "0";
+      ingList.style.display = "flex";
+      ingList.style.flexDirection = "column";
+      ingList.style.gap = "var(--space-2)";
+      ingList.style.marginBottom = "var(--space-4)";
+
+      const factor = curServings / (recipe.servings || 4);
+
+      (recipe.ingredients || []).forEach((i) => {
+        const scaledQty = parseFloat(i.quantity) * factor;
+        const available = engineGetTotalIngredientStock(currentLots, i.ingredient_id, i.unit, conversions);
+        const hasEnough = available >= scaledQty;
+        const isPartial = available > 0 && available < scaledQty;
+
+        const li = document.createElement("li");
+        li.style.display = "flex";
+        li.style.justifyContent = "space-between";
+        li.style.alignItems = "center";
+        li.style.padding = "var(--space-2)";
+        li.style.borderRadius = "var(--radius-sm)";
+        li.style.background = "var(--surface)";
+        li.style.border = "1px solid var(--border)";
+
+        const nameBox = document.createElement("div");
+        const ingStrong = document.createElement("strong");
+        ingStrong.textContent = `• ${i.ingredient_name}`;
+        nameBox.appendChild(ingStrong);
+
+        const statusNote = document.createElement("div");
+        statusNote.style.fontSize = "0.75rem";
+        if (hasEnough) {
+          statusNote.style.color = "var(--primary)";
+          statusNote.textContent = `✓ Có sẵn trong tủ (${formatQty(available)} ${i.unit})`;
+        } else if (isPartial) {
+          statusNote.style.color = "var(--accent)";
+          statusNote.textContent = `⚠ Có ${formatQty(available)}, thiếu ${formatQty(scaledQty - available)} ${i.unit}`;
+        } else {
+          statusNote.style.color = "var(--danger)";
+          statusNote.textContent = "✗ Chưa có trong tủ";
+        }
+        nameBox.appendChild(statusNote);
+
+        const qtyBox = document.createElement("span");
+        qtyBox.style.fontWeight = "bold";
+        qtyBox.style.color = hasEnough ? "var(--primary)" : "var(--text)";
+        qtyBox.textContent = `${formatQty(scaledQty)} ${i.unit}`;
+
+        li.appendChild(nameBox);
+        li.appendChild(qtyBox);
+        ingList.appendChild(li);
+      });
+      body.appendChild(ingList);
+
+      const stepTitle = document.createElement("h3");
+      stepTitle.style.fontSize = "1rem";
+      stepTitle.style.marginBottom = "0.5rem";
+      stepTitle.textContent = "Hướng dẫn các bước nấu:";
+      body.appendChild(stepTitle);
+
+      const stepList = document.createElement("ol");
+      stepList.style.listStyle = "none";
+      stepList.style.padding = "0";
+      stepList.style.fontSize = "0.95rem";
+      stepList.style.display = "flex";
+      stepList.style.flexDirection = "column";
+      stepList.style.gap = "0.5rem";
+      stepList.style.marginBottom = "var(--space-4)";
+
+      (recipe.instructions || []).forEach((step, idx) => {
+        const li = document.createElement("li");
+        const num = document.createElement("span");
+        num.className = "step-num";
+        num.style.fontWeight = "bold";
+        num.style.color = "var(--primary)";
+        num.style.marginRight = "6px";
+        num.textContent = `${idx + 1}.`;
+        li.appendChild(num);
+        li.appendChild(document.createTextNode(step));
+        stepList.appendChild(li);
+      });
+      body.appendChild(stepList);
+
+      // Cooking Mode Button
+      const cookBtn = document.createElement("button");
+      cookBtn.type = "button";
+      cookBtn.className = "btn btn-primary";
+      cookBtn.style.width = "100%";
+      cookBtn.textContent = "Bật chế độ nấu";
+      cookBtn.addEventListener("click", () => {
+        startCookingMode(recipe);
+      });
+      body.appendChild(cookBtn);
+
+      modalContent.appendChild(body);
+    }
+
+    renderModalBody();
   } catch (err) {
     modalContent.innerHTML = "";
     const p = document.createElement("p");
@@ -295,6 +633,15 @@ function setupAutocomplete(inputId, dropdownId, hiddenId) {
             hidden.value = item.id;
             input.value = item.name;
             dropdown.style.display = "none";
+
+            const unitSelect = document.getElementById("lot-unit");
+            const qtyInput = document.getElementById("lot-quantity");
+            if (unitSelect && item.default_unit) {
+              unitSelect.value = item.default_unit;
+            }
+            if (qtyInput) {
+              qtyInput.value = sensibleDefaultQuantity(item);
+            }
           });
           dropdown.appendChild(el);
         });
@@ -386,8 +733,22 @@ async function initPantryPage() {
       sub.style.fontSize = "var(--text-xs)";
       sub.style.color = "var(--text-muted)";
       let subText = `Còn: ${formatQty(lot.remaining_quantity)} ${lot.unit}`;
-      if (lot.expires_at) subText += ` • HSD: ${formatDateVN(lot.expires_at)}`;
       sub.textContent = subText;
+      if (lot.expires_at) {
+        const expStatus = formatExpiryStatus(lot.expires_at);
+        const expSpan = document.createElement("span");
+        expSpan.style.marginLeft = "6px";
+        if (expStatus && expStatus.isWarning) {
+          expSpan.style.color = "var(--danger)";
+          expSpan.style.fontWeight = "bold";
+          expSpan.textContent = `• HSD: ${expStatus.text}`;
+        } else if (expStatus) {
+          expSpan.textContent = `• HSD: ${expStatus.text}`;
+        } else {
+          expSpan.textContent = `• HSD: ${formatDateVN(lot.expires_at)}`;
+        }
+        sub.appendChild(expSpan);
+      }
 
       info.appendChild(name);
       info.appendChild(sub);
@@ -566,7 +927,7 @@ async function initPlannerPage() {
       const dayTitle = document.createElement("h2");
       dayTitle.style.fontSize = "var(--text-base)";
       dayTitle.style.margin = "0";
-      dayTitle.textContent = `Ngày: ${formatDateVN(d)}`;
+      dayTitle.textContent = formatRelativeDate(d);
 
       dayHeader.appendChild(dayTitle);
       daySection.appendChild(dayHeader);
@@ -622,21 +983,46 @@ async function initPlannerPage() {
           item.style.justifyContent = "space-between";
           item.style.alignItems = "center";
           item.style.fontSize = "var(--text-sm)";
+          item.style.gap = "var(--space-2)";
+
+          const left = document.createElement("div");
+          left.style.display = "flex";
+          left.style.alignItems = "center";
+          left.style.gap = "var(--space-2)";
+          left.style.flex = "1";
 
           const dName = document.createElement("span");
           dName.textContent = dish.recipe_name || "Món ăn";
           if (dish.is_leftover) {
-            dName.textContent += " (Đồ ăn dư tái dùng)";
+            dName.textContent += " (Ăn lại)";
             dName.style.color = "var(--text-muted)";
           }
+          left.appendChild(dName);
 
           const catBadge = document.createElement("span");
           catBadge.className = `badge badge-${dish.category}`;
           catBadge.style.fontSize = "0.75rem";
           catBadge.textContent = CAT_LABELS[dish.category] || dish.category;
+          left.appendChild(catBadge);
 
-          item.appendChild(dName);
-          item.appendChild(catBadge);
+          const right = document.createElement("div");
+          right.style.display = "flex";
+          right.style.alignItems = "center";
+          right.style.gap = "var(--space-2)";
+
+          const viewBtn = document.createElement("button");
+          viewBtn.type = "button";
+          viewBtn.className = "btn btn-outline btn-xs";
+          viewBtn.style.padding = "2px 8px";
+          viewBtn.style.fontSize = "0.75rem";
+          viewBtn.textContent = "Xem công thức";
+          viewBtn.addEventListener("click", () => {
+            openRecipeModal(dish.recipe_id, dish.servings || 4);
+          });
+          right.appendChild(viewBtn);
+
+          item.appendChild(left);
+          item.appendChild(right);
           dishList.appendChild(item);
         });
 
@@ -652,7 +1038,8 @@ async function initPlannerPage() {
           eatBtn.type = "button";
           eatBtn.className = "btn btn-primary btn-sm";
           eatBtn.textContent = "Đánh dấu Đã ăn (Trừ kho)";
-          eatBtn.addEventListener("click", async () => {
+
+          async function doEat(allowPartial) {
             eatBtn.disabled = true;
             eatBtn.textContent = "Đang trừ kho...";
 
@@ -673,16 +1060,32 @@ async function initPlannerPage() {
                   if (!recipe) {
                     throw new Error(`Không tìm thấy công thức "${d.recipe_name || d.recipe_id}" trong danh mục.`);
                   }
-                  const deduction = engineDeductRecipeStockFifo(
-                    updatedLots,
-                    recipe,
-                    meal.id,
-                    `eat_${meal.id}_${Date.now()}`,
-                    d.servings ? String(d.servings / recipe.servings) : "1"
-                  );
-                  const updatedMap = new Map(deduction.updatedLots.map((l) => [l.id, l]));
-                  updatedLots = updatedLots.map((l) => updatedMap.get(l.id) || l);
-                  allMovements = allMovements.concat(deduction.movements);
+                  const mult = d.servings ? String(d.servings / recipe.servings) : "1";
+                  if (allowPartial) {
+                    const deduction = engineDeductRecipeStockAvailable(
+                      updatedLots,
+                      recipe,
+                      meal.id,
+                      `eat_${meal.id}_${d.recipe_id}_${Date.now()}`,
+                      mult,
+                      catalogue.conversions || []
+                    );
+                    const updatedMap = new Map(deduction.updatedLots.map((l) => [l.id, l]));
+                    updatedLots = updatedLots.map((l) => updatedMap.get(l.id) || l);
+                    allMovements = allMovements.concat(deduction.movements);
+                  } else {
+                    const deduction = engineDeductRecipeStockFifo(
+                      updatedLots,
+                      recipe,
+                      meal.id,
+                      `eat_${meal.id}_${d.recipe_id}_${Date.now()}`,
+                      mult,
+                      catalogue.conversions || []
+                    );
+                    const updatedMap = new Map(deduction.updatedLots.map((l) => [l.id, l]));
+                    updatedLots = updatedLots.map((l) => updatedMap.get(l.id) || l);
+                    allMovements = allMovements.concat(deduction.movements);
+                  }
                 }
 
                 await executeEatMealAtomic(meal.id, updatedLots, allMovements);
@@ -690,7 +1093,23 @@ async function initPlannerPage() {
                 loadAndRenderPlans();
                 return;
               } catch (err) {
-                showToast(`Lỗi: ${err.message}`, "danger");
+                if (err.deficits) {
+                  const defList = Object.values(err.deficits).map((v) => ({
+                    name: v.ingredientName || v.name,
+                    missing: v.missingQuantity || v.missing,
+                    unit: v.unit,
+                  }));
+                  showDeficitDialog(
+                    defList,
+                    () => doEat(true),
+                    () => {
+                      addDeficitsToShoppingList(defList);
+                      showToast("Đã thêm nguyên liệu thiếu vào danh sách đi chợ!", "success");
+                    }
+                  );
+                } else {
+                  showToast(`Lỗi: ${err.message}`, "danger");
+                }
                 eatBtn.disabled = false;
                 eatBtn.textContent = "Đánh dấu Đã ăn (Trừ kho)";
                 return;
@@ -702,13 +1121,13 @@ async function initPlannerPage() {
               const payload = {
                 pantry: currentLots,
                 meal_plan_id: meal.id,
-                // Không gửi servings khi thiếu: server hiểu là nấu trọn công thức (khớp bản offline)
                 dishes: (meal.dishes || []).map((d) => ({
                   recipe_id: d.recipe_id,
                   is_leftover: d.is_leftover,
                   ...(d.servings ? { servings: d.servings } : {}),
                 })),
                 idempotency_key: `eat_${meal.id}_${Date.now()}`,
+                allow_partial: allowPartial,
               };
 
               const res = await fetch("/api/planner/eat", {
@@ -719,6 +1138,20 @@ async function initPlannerPage() {
 
               if (!res.ok) {
                 const errData = await res.json();
+                if (res.status === 422 && errData.detail && errData.detail.deficits) {
+                  const defList = Object.values(errData.detail.deficits);
+                  showDeficitDialog(
+                    defList,
+                    () => doEat(true),
+                    () => {
+                      addDeficitsToShoppingList(defList);
+                      showToast("Đã thêm nguyên liệu thiếu vào danh sách đi chợ!", "success");
+                    }
+                  );
+                  eatBtn.disabled = false;
+                  eatBtn.textContent = "Đánh dấu Đã ăn (Trừ kho)";
+                  return;
+                }
                 throw new Error(errData.detail?.message || errData.detail || "Không thể trừ kho.");
               }
 
@@ -731,7 +1164,9 @@ async function initPlannerPage() {
               eatBtn.disabled = false;
               eatBtn.textContent = "Đánh dấu Đã ăn (Trừ kho)";
             }
-          });
+          }
+
+          eatBtn.addEventListener("click", () => doEat(false));
           actionRow.appendChild(eatBtn);
         } else {
           const undoBtn = document.createElement("button");
@@ -1201,6 +1636,69 @@ async function initSettingsPage() {
   }
   refreshBackupBadge();
 
+  // Theme mode & Palette selection (F1)
+  function updateThemeUI() {
+    let savedTheme = "system";
+    try {
+      savedTheme = localStorage.getItem("theme") || "system";
+    } catch (e) {}
+
+    let savedPalette = "green";
+    try {
+      savedPalette = localStorage.getItem("palette") || "green";
+    } catch (e) {}
+
+    document.querySelectorAll(".theme-mode-btn").forEach((btn) => {
+      const mode = btn.dataset.mode;
+      if (mode === savedTheme) {
+        btn.classList.add("btn-primary");
+        btn.classList.remove("btn-secondary");
+      } else {
+        btn.classList.remove("btn-primary");
+        btn.classList.add("btn-secondary");
+      }
+    });
+
+    document.querySelectorAll(".palette-btn").forEach((btn) => {
+      const pal = btn.dataset.palette;
+      if (pal === savedPalette) {
+        btn.classList.add("btn-primary");
+        btn.classList.remove("btn-secondary");
+      } else {
+        btn.classList.remove("btn-primary");
+        btn.classList.add("btn-secondary");
+      }
+    });
+  }
+
+  updateThemeUI();
+
+  document.querySelectorAll(".theme-mode-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const mode = btn.dataset.mode;
+      try {
+        localStorage.setItem("theme", mode);
+      } catch (e) {}
+      if (mode === "light" || mode === "dark") {
+        document.documentElement.setAttribute("data-theme", mode);
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+      }
+      updateThemeUI();
+    });
+  });
+
+  document.querySelectorAll(".palette-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const pal = btn.dataset.palette;
+      try {
+        localStorage.setItem("palette", pal);
+      } catch (e) {}
+      document.documentElement.setAttribute("data-palette", pal);
+      updateThemeUI();
+    });
+  });
+
   // Sync catalogue
   if (syncBtn) {
     syncBtn.addEventListener("click", async () => {
@@ -1364,10 +1862,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // 3. Theme toggle
   document.querySelectorAll("[data-theme-toggle]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const current = document.documentElement.getAttribute("data-theme") || "light";
+      const isDarkPreferred = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const current = document.documentElement.getAttribute("data-theme") || (isDarkPreferred ? "dark" : "light");
       const next = current === "dark" ? "light" : "dark";
       document.documentElement.setAttribute("data-theme", next);
-      localStorage.setItem("theme", next);
+      try {
+        localStorage.setItem("theme", next);
+      } catch (e) {}
     });
   });
 

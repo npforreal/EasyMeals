@@ -40,6 +40,7 @@ import com.easymeals.app.ui.theme.WarmOrange
 @Composable
 fun RecipesScreen(repository: AppRepository) {
     val recipes by repository.recipes.collectAsState()
+    val pantryLots by repository.pantryLots.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Tất cả") }
     var selectedRecipe by remember { mutableStateOf<Recipe?>(null) }
@@ -61,10 +62,12 @@ fun RecipesScreen(repository: AppRepository) {
 
     val filteredRecipes = remember(recipes, searchQuery, selectedCategory) {
         recipes.filter { recipe ->
+            val catLabel = com.easymeals.app.ui.theme.GeneratedTokens.Labels.dish_categories[recipe.category] ?: recipe.category
             val matchCat = selectedCategory == "Tất cả" || recipe.category == selectedCategory
             val matchQuery = searchQuery.isBlank() ||
                     CatalogueLoader.matches(recipe.name, searchQuery) ||
-                    CatalogueLoader.matches(recipe.category, searchQuery)
+                    CatalogueLoader.matches(recipe.category, searchQuery) ||
+                    CatalogueLoader.matches(catLabel, searchQuery)
             matchCat && matchQuery
         }
     }
@@ -84,6 +87,9 @@ fun RecipesScreen(repository: AppRepository) {
     if (selectedRecipe != null) {
         RecipeDetailScreen(
             recipe = selectedRecipe!!,
+            initialServings = selectedRecipe!!.servings,
+            pantryLots = pantryLots,
+            conversions = repository.conversions,
             onBack = { selectedRecipe = null },
             onStartCooking = { isCookingMode = true }
         )
@@ -134,10 +140,11 @@ fun RecipesScreen(repository: AppRepository) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(categories) { cat ->
+                    val label = if (cat == "Tất cả") "Tất cả" else (com.easymeals.app.ui.theme.GeneratedTokens.Labels.dish_categories[cat] ?: cat)
                     FilterChip(
                         selected = selectedCategory == cat,
                         onClick = { selectedCategory = cat },
-                        label = { Text(cat) },
+                        label = { Text(label) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = ForestGreen,
                             selectedLabelColor = Color.White
@@ -196,12 +203,13 @@ fun RecipeCard(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
+                val catLabel = com.easymeals.app.ui.theme.GeneratedTokens.Labels.dish_categories[recipe.category] ?: recipe.category
                 Badge(
                     containerColor = ForestGreen.copy(alpha = 0.15f),
                     contentColor = ForestGreen
                 ) {
                     Text(
-                        text = recipe.category,
+                        text = catLabel,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         fontWeight = FontWeight.Medium
                     )
@@ -265,10 +273,13 @@ fun RecipeCard(
 @Composable
 fun RecipeDetailScreen(
     recipe: Recipe,
+    initialServings: Int = recipe.servings,
+    pantryLots: List<com.easymeals.app.domain.model.PantryLot> = emptyList(),
+    conversions: List<com.easymeals.app.domain.model.Conversion>? = null,
     onBack: () -> Unit,
     onStartCooking: () -> Unit
 ) {
-    var servings by remember { mutableIntStateOf(recipe.servings) }
+    var servings by remember { mutableIntStateOf(initialServings) }
     val factor = remember(servings, recipe.servings) {
         ExactDecimal(servings) / ExactDecimal(recipe.servings)
     }
@@ -366,23 +377,67 @@ fun RecipeDetailScreen(
 
             items(recipe.ingredients) { ing ->
                 val baseQty = ExactDecimal(ing.quantity)
-                val scaledQty = (baseQty * factor).toString()
-                Row(
+                val scaledQty = (baseQty * factor)
+                val available = if (pantryLots.isNotEmpty()) {
+                    com.easymeals.app.domain.engine.EasyMealsEngine.getTotalIngredientStock(
+                        pantryLots,
+                        ing.ingredientId,
+                        ing.unit,
+                        conversions
+                    )
+                } else null
+
+                val isEnough = available != null && available >= scaledQty
+                val isPartial = available != null && available > ExactDecimal.ZERO && available < scaledQty
+
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(vertical = 4.dp)
                 ) {
-                    Text(
-                        text = "• ${ing.ingredientName}",
-                        fontSize = 15.sp,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = "$scaledQty ${ing.unit}",
-                        fontWeight = FontWeight.SemiBold,
-                        color = ForestGreen
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "• ${ing.ingredientName}",
+                            fontSize = 15.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "$scaledQty ${ing.unit}",
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isEnough) ForestGreen else if (available != null) MaterialTheme.colorScheme.error else ForestGreen
+                        )
+                    }
+                    if (available != null) {
+                        Row(
+                            modifier = Modifier.padding(start = 12.dp, top = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (isEnough) {
+                                Text(
+                                    "✓ Trong tủ có sẵn: $available ${ing.unit}",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF2E7D32)
+                                )
+                            } else if (isPartial) {
+                                val missing = scaledQty - available
+                                Text(
+                                    "⚠ Có $available, còn thiếu $missing ${ing.unit}",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFD32F2F)
+                                )
+                            } else {
+                                Text(
+                                    "✗ Chưa có trong tủ",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                    }
                 }
             }
 

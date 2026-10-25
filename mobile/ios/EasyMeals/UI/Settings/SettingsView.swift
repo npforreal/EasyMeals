@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 public struct SettingsView: View {
     @State private var storage = AppStorage.shared
+    @ObservedObject private var theme = ThemeManager.shared
     @State private var showingWipeAlert = false
     @State private var showingShareSheet = false
     @State private var backupData: Data?
@@ -12,6 +13,23 @@ public struct SettingsView: View {
     public var body: some View {
         NavigationStack {
             Form {
+                Section("Giao diện & Màu sắc") {
+                    Picker("Chế độ hiển thị", selection: $theme.themeMode) {
+                        Text("Theo hệ thống").tag("system")
+                        Text("Sáng").tag("light")
+                        Text("Tối").tag("dark")
+                    }
+                    .pickerStyle(.segmented)
+
+                    Picker("Bảng màu nhấn", selection: $theme.palette) {
+                        Text("Xanh lá").tag("green")
+                        Text("Cam đất").tag("terracotta")
+                        Text("Xanh biển").tag("ocean")
+                        Text("Tím mận").tag("plum")
+                        Text("Hồng đào").tag("peach")
+                    }
+                }
+
                 Section("Dữ liệu & Quyền riêng tư") {
                     VStack(alignment: .leading, spacing: 6) {
                         Label("100% Offline & Riêng tư", systemImage: "lock.shield.fill")

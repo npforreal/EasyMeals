@@ -20,6 +20,53 @@
       </p>
     </div>
 
+    <!-- Tuỳ biến giao diện & màu sắc (F1) -->
+    <div class="card" id="theme-settings-card">
+      <h2 style="margin-bottom: var(--space-3); font-size: var(--text-lg); display: flex; align-items: center; gap: var(--space-2);">
+        <svg class="ico" width="20" height="20" aria-hidden="true"><use href="/static/icons.svg#i-sun"></use></svg>
+        Giao diện & Bảng màu
+      </h2>
+      <div style="margin-bottom: var(--space-4);">
+        <label style="font-weight: 600; font-size: var(--text-sm); display: block; margin-bottom: var(--space-2);">Chế độ hiển thị</label>
+        <div class="theme-mode-options" style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+          <button type="button" class="btn btn-secondary theme-mode-btn" data-mode="system">
+            Theo hệ thống
+          </button>
+          <button type="button" class="btn btn-secondary theme-mode-btn" data-mode="light">
+            Sáng
+          </button>
+          <button type="button" class="btn btn-secondary theme-mode-btn" data-mode="dark">
+            Tối
+          </button>
+        </div>
+      </div>
+      <div>
+        <label style="font-weight: 600; font-size: var(--text-sm); display: block; margin-bottom: var(--space-2);">Bảng màu nhấn</label>
+        <div class="palette-options" style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+          <button type="button" class="btn btn-secondary palette-btn" data-palette="green">
+            <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #3F6B3A; vertical-align: -2px; margin-right: 6px;"></span>
+            Xanh lá
+          </button>
+          <button type="button" class="btn btn-secondary palette-btn" data-palette="terracotta">
+            <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #A04A26; vertical-align: -2px; margin-right: 6px;"></span>
+            Cam đất
+          </button>
+          <button type="button" class="btn btn-secondary palette-btn" data-palette="ocean">
+            <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #285E86; vertical-align: -2px; margin-right: 6px;"></span>
+            Xanh biển
+          </button>
+          <button type="button" class="btn btn-secondary palette-btn" data-palette="plum">
+            <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #6E396E; vertical-align: -2px; margin-right: 6px;"></span>
+            Tím mận
+          </button>
+          <button type="button" class="btn btn-secondary palette-btn" data-palette="peach">
+            <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: #9C435A; vertical-align: -2px; margin-right: 6px;"></span>
+            Hồng đào
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Trạng thái lưu trữ & Đồng bộ -->
     <div class="card">
       <h2 style="margin-bottom: var(--space-3); font-size: var(--text-lg);">Trạng thái hệ thống</h2>
