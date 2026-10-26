@@ -247,7 +247,7 @@ fun SettingsScreen(repository: AppRepository) {
             val currentSkipDates by repository.skipDates.collectAsState()
 
             Text(
-                "HỘ GIA ĐÊNH",
+                "HỘ GIA ĐÌNH",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
