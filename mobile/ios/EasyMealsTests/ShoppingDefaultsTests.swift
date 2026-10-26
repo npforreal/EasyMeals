@@ -29,7 +29,7 @@ final class ShoppingDefaultsTests: XCTestCase {
         XCTAssertEqual(ShoppingDefaults.expiryDate(category: "thit", purchasedAt: bought), "2026-10-28")
         XCTAssertEqual(ShoppingDefaults.expiryDate(category: "hai_san", purchasedAt: bought), "2026-10-27")
         XCTAssertTrue(
-            ShoppingDefaults.expiryDate(category: "nhom-lại purch").hasPrefix("2026-11-01"),
+            ShoppingDefaults.expiryDate(category: "nhom-khong-tim-thay", purchasedAt: bought).hasPrefix("2026-11-01"),
             "Nhóm lạ = 7 ngày: 25/10 + 7 = 01/11"
         )
     }
