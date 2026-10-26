@@ -260,6 +260,14 @@ class AppRepository(private val context: Context) {
         return Pair(allDeficits.isEmpty(), allDeficits)
     }
 
+    fun updateMealNotes(planId: String, notes: String) {
+        if (notes.length > 500) return
+        _mealPlans.value = _mealPlans.value.map { plan ->
+            if (plan.id == planId && plan.eatenAt == null) plan.copy(notes = notes.takeIf { it.isNotBlank() }) else plan
+        }
+        persistState()
+    }
+
     fun eatMeal(planId: String, allowPartial: Boolean = false) {
         val currentPlans = _mealPlans.value.map { it.copy(dishes = it.dishes.toMutableList()) }
         val plan = currentPlans.find { it.id == planId } ?: return

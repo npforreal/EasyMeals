@@ -275,6 +275,11 @@ public struct TodayView: View {
                             .font(.body)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
+                        if let reason = dish.selectionReason, !reason.isEmpty {
+                            Text(reason)
+                                .font(.caption)
+                                .foregroundColor(AppColors.textSecondary)
+                        }
                         Spacer(minLength: 4)
                         if dish.isLeftover {
                             Text("Ăn lại")
@@ -301,6 +306,24 @@ public struct TodayView: View {
                         .buttonStyle(.borderless)
                     }
                 }
+            }
+
+            if plan.eatenAt == nil {
+                TextField(
+                    "Ghi chú bữa ăn",
+                    text: Binding(
+                        get: { storage.mealPlans.first(where: { $0.id == plan.id })?.notes ?? "" },
+                        set: { storage.updateMealNotes(planId: plan.id, notes: String($0.prefix(500))) }
+                    ),
+                    axis: .vertical
+                )
+                .lineLimit(1...3)
+                .textFieldStyle(.roundedBorder)
+                .accessibilityLabel("Ghi chú bữa ăn")
+            } else if let notes = plan.notes, !notes.isEmpty {
+                Text("Ghi chú: \(notes)")
+                    .font(.footnote)
+                    .foregroundColor(AppColors.textSecondary)
             }
 
             Divider()

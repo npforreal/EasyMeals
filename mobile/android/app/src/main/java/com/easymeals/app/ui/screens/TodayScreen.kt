@@ -299,6 +299,7 @@ fun TodayScreen(repository: AppRepository) {
                     items(mealPlans, key = { it.id }) { plan ->
                         MealPlanCard(
                             plan = plan,
+                            onNotesChange = { repository.updateMealNotes(plan.id, it) },
                             onViewRecipe = { recipeId, servings ->
                                 val found = recipes.find { it.id == recipeId }
                                 if (found != null) {
@@ -450,6 +451,7 @@ internal fun PlanConflictDialog(
 @Composable
 fun MealPlanCard(
     plan: MealPlan,
+    onNotesChange: (String) -> Unit,
     onViewRecipe: (String, Int) -> Unit,
     onEat: () -> Unit,
     onUndo: () -> Unit,
@@ -506,6 +508,9 @@ fun MealPlanCard(
                             .weight(1f)
                             .padding(end = 8.dp)
                     )
+                    dish.selectionReason?.let { reason ->
+                        Text(reason, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -526,6 +531,25 @@ fun MealPlanCard(
                         }
                     }
                 }
+            }
+
+            var notes by remember(plan.id, plan.notes) { mutableStateOf(plan.notes.orEmpty()) }
+            if (plan.eatenAt == null) {
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { value ->
+                        if (value.length <= 500) {
+                            notes = value
+                            onNotesChange(value)
+                        }
+                    },
+                    label = { Text("Ghi chú bữa ăn") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 1,
+                    maxLines = 3
+                )
+            } else if (!plan.notes.isNullOrBlank()) {
+                Text("Ghi chú: ${plan.notes}", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))

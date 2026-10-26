@@ -110,6 +110,7 @@ data class MealPlan(
     @SerialName("meal_period") @SerializedName("meal_period") val mealPeriod: String,
     @SerialName("period_id") @SerializedName("period_id") val periodId: String? = null,
     @SerialName("eaten_at") @SerializedName("eaten_at") var eatenAt: String? = null,
+    val notes: String? = null,
     val dishes: MutableList<PlannedDish> = mutableListOf()
 )
 

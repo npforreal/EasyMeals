@@ -118,6 +118,14 @@ public final class AppStorage: @unchecked Sendable {
         }
     }
 
+    public func updateMealNotes(planId: String, notes: String) {
+        guard notes.count <= 500,
+              let index = mealPlans.firstIndex(where: { $0.id == planId }),
+              mealPlans[index].eatenAt == nil else { return }
+        mealPlans[index].notes = notes.isEmpty ? nil : notes
+        persistState()
+    }
+
     // MARK: - Meal Plan & "Đã ăn" FIFO Action
     public func checkMealStock(planId: String) -> (canEat: Bool, deficits: [String: DeficitItem]) {
         guard let plan = mealPlans.first(where: { $0.id == planId }) else { return (true, [:]) }

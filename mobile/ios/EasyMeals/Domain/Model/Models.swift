@@ -292,6 +292,7 @@ public struct MealPlan: Identifiable, Codable, Equatable, Sendable {
     public let mealPeriod: String
     public let periodId: String?
     public var eatenAt: String?
+    public var notes: String?
     public var dishes: [PlannedDish]
 
     public init(
@@ -300,6 +301,7 @@ public struct MealPlan: Identifiable, Codable, Equatable, Sendable {
         mealPeriod: String,
         periodId: String? = nil,
         eatenAt: String? = nil,
+        notes: String? = nil,
         dishes: [PlannedDish] = []
     ) {
         self.id = id
@@ -307,6 +309,7 @@ public struct MealPlan: Identifiable, Codable, Equatable, Sendable {
         self.mealPeriod = mealPeriod
         self.periodId = periodId
         self.eatenAt = eatenAt
+        self.notes = notes
         self.dishes = dishes
     }
 
@@ -316,6 +319,7 @@ public struct MealPlan: Identifiable, Codable, Equatable, Sendable {
         case mealPeriod = "meal_period"
         case periodId = "period_id"
         case eatenAt = "eaten_at"
+        case notes
         case dishes
     }
 }
