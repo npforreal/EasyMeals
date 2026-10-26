@@ -409,3 +409,61 @@ def test_stateless_dish_editing_and_reschedule_api(client, repo):
     assert float(merged_items[0]["needed_quantity"]) == 500.0  # 200g + 300g
     assert merged_items[0]["unit"] == "g"
     assert float(merged_items[0]["price"]) == 50000.0
+
+
+def test_generate_plan_respects_avoided_ingredient_ids(client, repo):
+    recipe = next(iter(repo.get_recipes()))
+    avoided_id = recipe.ingredients[0].ingredient_id
+    response = client.post(
+        "/api/planner/generate",
+        json={
+            "start_date": "2026-10-26",
+            "days": 1,
+            "options": {"avoided_ingredient_ids": [str(avoided_id)]},
+        },
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    recipe_by_id = {str(item.id): item for item in repo.get_recipes()}
+    assert all(
+        str(avoided_id)
+        not in {
+            str(ingredient.ingredient_id)
+            for ingredient in recipe_by_id[dish["recipe_id"]].ingredients
+        }
+        for meal in data["meals"]
+        for dish in meal["dishes"]
+    )
+    assert "warnings" in data
+    assert "excluded_recipe_count" in data
+
+
+def test_generate_plan_does_not_log_avoided_ingredient_ids(client, repo, caplog):
+    avoided_id = uuid4()
+    caplog.set_level("DEBUG")
+    response = client.post(
+        "/api/planner/generate",
+        json={
+            "start_date": "2026-10-26",
+            "days": 1,
+            "options": {"avoided_ingredient_ids": [str(avoided_id)]},
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert str(avoided_id) not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "avoided_ids",
+    [[str(uuid4()) for _ in range(201)], ["not-an-id"], [123]],
+)
+def test_generate_plan_rejects_invalid_avoided_ingredient_ids(client, avoided_ids):
+    response = client.post(
+        "/api/planner/generate",
+        json={
+            "start_date": "2026-10-26",
+            "days": 1,
+            "options": {"avoided_ingredient_ids": avoided_ids},
+        },
+    )
+    assert response.status_code == 422

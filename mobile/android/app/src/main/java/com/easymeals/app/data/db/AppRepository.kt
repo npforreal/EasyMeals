@@ -44,6 +44,9 @@ class AppRepository(private val context: Context) {
     private val _mealPlans = MutableStateFlow<List<MealPlan>>(emptyList())
     val mealPlans: StateFlow<List<MealPlan>> = _mealPlans.asStateFlow()
 
+    private val _excludedRecipeCount = MutableStateFlow(0)
+    val excludedRecipeCount: StateFlow<Int> = _excludedRecipeCount.asStateFlow()
+
     private val _shoppingItems = MutableStateFlow<List<ShoppingItem>>(emptyList())
     val shoppingItems: StateFlow<List<ShoppingItem>> = _shoppingItems.asStateFlow()
 
@@ -455,7 +458,9 @@ class AppRepository(private val context: Context) {
             allMealPlans = currentPlans,
             recipes = _recipes.value,
             currentPantryLots = _pantryLots.value,
-            conversions = conversions
+            conversions = conversions,
+            avoidedIngredientIds = context.getSharedPreferences("recipe_preferences", Context.MODE_PRIVATE)
+                .getStringSet("avoided_ingredient_ids", emptySet()).orEmpty()
         )
         val newPlans = currentPlans.map { if (it.id == planId) updatedMeal else it }
         _mealPlans.value = newPlans
@@ -483,12 +488,13 @@ class AppRepository(private val context: Context) {
         persistState()
     }
 
-    fun swapDish(mealPlanId: String, oldDishId: String, newRecipeId: String) {
+    fun swapDish(mealPlanId: String, oldDishId: String, newRecipeId: String, confirmedAvoidance: Boolean = false) {
         val currentPlans = _mealPlans.value
         val targetPlan = currentPlans.find { it.id == mealPlanId }
             ?: throw IllegalArgumentException("Không tìm thấy bữa ăn có ID $mealPlanId")
         val recipe = _recipes.value.find { it.id == newRecipeId }
             ?: throw IllegalArgumentException("Không tìm thấy món có ID $newRecipeId")
+        requireAvoidanceConfirmation(recipe, confirmedAvoidance)
 
         val updatedMeal = EasyMealsEngine.swapDishInMeal(
             mealPlan = targetPlan,
@@ -502,12 +508,13 @@ class AppRepository(private val context: Context) {
         persistState()
     }
 
-    fun addDish(mealPlanId: String, recipeId: String, servings: Int? = null) {
+    fun addDish(mealPlanId: String, recipeId: String, servings: Int? = null, confirmedAvoidance: Boolean = false) {
         val currentPlans = _mealPlans.value
         val targetPlan = currentPlans.find { it.id == mealPlanId }
             ?: throw IllegalArgumentException("Không tìm thấy bữa ăn có ID $mealPlanId")
         val recipe = _recipes.value.find { it.id == recipeId }
             ?: throw IllegalArgumentException("Không tìm thấy món có ID $recipeId")
+        requireAvoidanceConfirmation(recipe, confirmedAvoidance)
 
         val updatedMeal = EasyMealsEngine.addDishToMeal(
             mealPlan = targetPlan,
@@ -518,6 +525,15 @@ class AppRepository(private val context: Context) {
         _mealPlans.value = newPlans
         updateShoppingListAfterPlanChange(newPlans)
         persistState()
+    }
+
+    private fun requireAvoidanceConfirmation(recipe: Recipe, confirmed: Boolean) {
+        if (confirmed) return
+        val avoided = context.getSharedPreferences("recipe_preferences", Context.MODE_PRIVATE)
+            .getStringSet("avoided_ingredient_ids", emptySet()).orEmpty()
+        val violation = recipe.ingredients.firstOrNull { it.ingredientId in avoided } ?: return
+        val name = _ingredients.value.firstOrNull { it.id == violation.ingredientId }?.name ?: "nguyên liệu đã chọn"
+        throw IllegalStateException("Món này chứa $name mà bạn đã đặt cần tránh. Vẫn thêm?")
     }
 
     fun removeDish(mealPlanId: String, dishId: String) {
@@ -624,6 +640,9 @@ class AppRepository(private val context: Context) {
      * Bữa đã ăn và bữa ngoài khoảng ngày được giữ nguyên, không xoá lịch sử kho.
      */
     fun generateNewPlan(days: Int = 3, mergeMode: String = "replace") {
+        val avoidedIds = context.getSharedPreferences("recipe_preferences", Context.MODE_PRIVATE)
+            .getStringSet("avoided_ingredient_ids", emptySet()).orEmpty()
+        _excludedRecipeCount.value = _recipes.value.count { recipe -> recipe.ingredients.any { it.ingredientId in avoidedIds } }
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         val start = LocalDate.now()
         val end = start.plusDays((days - 1).toLong())
@@ -650,7 +669,8 @@ class AppRepository(private val context: Context) {
             recentlyCookedRecipeIds = _mealPlans.value
                 .filter { it.eatenAt != null && runCatching { LocalDate.parse(it.plannedFor) }.getOrNull()?.let { d -> !d.isBefore(start.minusDays(7)) && d.isBefore(start) } == true }
                 .flatMap { it.dishes.filterNot(PlannedDish::isLeftover).map(PlannedDish::recipeId) }
-                .toSet()
+                .toSet(),
+            avoidedIngredientIds = avoidedIds
         )
         _mealPlans.value = EasyMealsEngine.mergeNewPlansIntoExisting(
             _mealPlans.value, meals, mergeMode
@@ -666,12 +686,14 @@ class AppRepository(private val context: Context) {
 
     fun exportBackupJson(): String {
         val payload = BackupPayload(
+            schemaVersion = 2,
             appVersion = "2.0.0",
             exportedAt = java.time.Instant.now().toString(),
             pantryLots = _pantryLots.value,
             mealPlans = _mealPlans.value,
             stockMovements = _stockMovements.value,
-            shoppingItems = _shoppingItems.value
+            shoppingItems = _shoppingItems.value,
+            recipePreferences = recipePreferencesSnapshot()
         )
         return BackupManager.encode(payload)
     }
@@ -684,6 +706,7 @@ class AppRepository(private val context: Context) {
             _mealPlans.value = payload.mealPlans
             _stockMovements.value = payload.stockMovements
             _shoppingItems.value = payload.shoppingItems
+            restoreRecipePreferences(payload.recipePreferences ?: com.easymeals.app.data.backup.RecipePreferences())
         } else {
             val existingLotIds = _pantryLots.value.map { it.id }.toSet()
             val newLots = _pantryLots.value.toMutableList()
@@ -696,6 +719,25 @@ class AppRepository(private val context: Context) {
             _shoppingItems.value = newShop
         }
         persistState()
+    }
+
+    private fun recipePreferencesSnapshot(): com.easymeals.app.data.backup.RecipePreferences {
+        val source = context.getSharedPreferences("recipe_preferences", Context.MODE_PRIVATE)
+        return com.easymeals.app.data.backup.RecipePreferences(
+            avoidedIngredientIds = source.getStringSet("avoided_ingredient_ids", emptySet()).orEmpty(),
+            preferredIngredientIds = source.getStringSet("preferred_ingredient_ids", emptySet()).orEmpty(),
+            dietaryFilter = source.getString("dietary_filter", "").orEmpty(),
+            maxSpice = source.getString("max_spice", "").orEmpty()
+        )
+    }
+
+    private fun restoreRecipePreferences(value: com.easymeals.app.data.backup.RecipePreferences) {
+        context.getSharedPreferences("recipe_preferences", Context.MODE_PRIVATE).edit()
+            .putStringSet("avoided_ingredient_ids", value.avoidedIngredientIds)
+            .putStringSet("preferred_ingredient_ids", value.preferredIngredientIds)
+            .putString("dietary_filter", value.dietaryFilter)
+            .putString("max_spice", value.maxSpice)
+            .apply()
     }
 
     fun wipeAllData() {

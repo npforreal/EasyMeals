@@ -116,6 +116,7 @@ class PlanOptions(BaseModel):
         default=None, description="Cài đặt hộ gia đình cục bộ (không lưu lên server)."
     )
     recently_cooked_recipe_ids: list[UUID] = Field(default_factory=list, max_length=500)
+    avoided_ingredient_ids: list[UUID] = Field(default_factory=list, max_length=200)
 
 
 class StatelessGeneratePlanRequest(BaseModel):
@@ -155,6 +156,7 @@ class MealPlanResponse(BaseModel):
     eaten_at: datetime | None = None
     notes: str | None = Field(default=None, max_length=500)
     dishes: list[PlannedDishResponse]
+    warnings: list[dict[str, str]] = Field(default_factory=list)
 
 
 class ShoppingItemResponse(BaseModel):
@@ -177,6 +179,8 @@ class StatelessGeneratePlanResponse(BaseModel):
     end_date: date
     meals: list[MealPlanResponse]
     shopping_list: list[ShoppingItemResponse]
+    warnings: list[dict[str, str]] = Field(default_factory=list)
+    excluded_recipe_count: int = 0
 
 
 # 3. Stateless Eat & Undo-Eat Schemas
@@ -265,6 +269,7 @@ class MealPlanInput(BaseModel):
     eaten_at: datetime | None = None
     notes: str | None = None
     dishes: list[PlannedDishInput] = Field(default_factory=list)
+    warnings: list[dict[str, str]] = Field(default_factory=list)
 
 
 class StatelessRegenerateMealRequest(BaseModel):
@@ -279,6 +284,7 @@ class StatelessRegenerateMealRequest(BaseModel):
 class StatelessRegenerateMealResponse(BaseModel):
     success: bool
     meal: MealPlanResponse
+    excluded_recipe_count: int = 0
 
 
 class StatelessRecomputeShoppingRequest(BaseModel):

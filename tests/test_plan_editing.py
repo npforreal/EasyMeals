@@ -88,6 +88,32 @@ def test_regenerate_single_meal_respects_no_repeat():
             assert d.recipe_id not in other_recipe_ids
 
 
+def test_regenerate_single_meal_respects_avoided_canonical_ids():
+    repo = InMemoryRepository()
+    recipes = repo.get_recipes()
+    avoided_id = recipes[0].ingredients[0].ingredient_id
+    plans, _ = generate_period_plan(
+        start_date=date(2026, 10, 26),
+        end_date=date(2026, 10, 26),
+        recipes=recipes,
+        current_pantry_lots=[],
+        allow_leftovers=False,
+    )
+    updated = regenerate_single_meal(
+        target_meal_plan_id=plans[0].id,
+        all_meal_plans=plans,
+        recipes=recipes,
+        current_pantry_lots=[],
+        allow_leftovers=False,
+        avoided_ingredient_ids={avoided_id},
+    )
+    recipe_by_id = {recipe.id: recipe for recipe in recipes}
+    assert all(
+        avoided_id not in {item.ingredient_id for item in recipe_by_id[dish.recipe_id].ingredients}
+        for dish in updated.dishes
+    )
+
+
 def test_recompute_shopping_list_reflects_updated_plan():
     """B1 & B3 - Tính lại danh sách mua khi kế hoạch thay đổi."""
     repo = InMemoryRepository()

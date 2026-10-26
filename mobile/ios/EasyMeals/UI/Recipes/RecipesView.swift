@@ -65,7 +65,7 @@ public struct RecipesView: View {
                 }
                 .pickerStyle(.menu)
                 .padding(.horizontal)
-                Button("Dị ứng / tránh nguyên liệu (\(avoidedIDs.count))") {
+                Button("Nguyên liệu cần tránh (chọn thủ công) (\(avoidedIDs.count))") {
                     editingPreferencesAsLikes = false
                     showingAvoidIngredients = true
                 }
@@ -75,10 +75,16 @@ public struct RecipesView: View {
                     showingAvoidIngredients = true
                 }
                 .padding(.horizontal)
-                Text("Nguyên liệu tránh được lọc theo ID. Món thiếu xác minh không được coi là phù hợp; danh mục không chứng nhận an toàn dị ứng hoặc nhiễm chéo.")
+                Text("Ứng dụng chỉ loại món chứa chính xác các nguyên liệu bạn chọn. Thông tin dị ứng của nguyên liệu và món chưa được xác minh, nên nguyên liệu ẩn trong sốt, bánh hay đồ chế biến có thể không bị phát hiện. Hãy luôn đọc nhãn và hỏi người nấu.")
                     .font(.footnote)
                     .foregroundColor(AppColors.textSecondary)
                     .padding(.horizontal)
+                if !avoidedIDs.subtracting(storage.ingredients.map(\.id)).isEmpty {
+                    Text("Một số nguyên liệu đã chọn không còn trong danh mục; sẽ được bỏ qua cho đến khi dữ liệu trở lại.")
+                        .font(.footnote)
+                        .foregroundColor(AppColors.textSecondary)
+                        .padding(.horizontal)
+                }
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         filterChip(title: "Tất cả", key: "all")

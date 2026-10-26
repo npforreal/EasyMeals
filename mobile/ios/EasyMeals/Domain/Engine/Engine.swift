@@ -524,7 +524,8 @@ public enum EasyMealsEngine {
         rawIngredientNames: [String: String]? = nil,
         leftoverDays: Int = PlanLimits.leftoverDefaultDays,
         householdSettings: HouseholdSettings? = nil,
-        recentlyCookedRecipeIds: Set<String> = []
+        recentlyCookedRecipeIds: Set<String> = [],
+        avoidedIngredientIds: Set<String> = []
     ) throws -> (periodId: String, meals: [MealPlan], shoppingList: [ShoppingItem]) {
         try validateLeftoverDays(leftoverDays)
         let formatter = DateFormatter()
@@ -545,10 +546,12 @@ public enum EasyMealsEngine {
         }
 
         let periodId = UUID().uuidString
+        let eligibleRecipes = recipes.filter { recipe in !recipe.ingredients.contains { avoidedIngredientIds.contains($0.ingredientId) } }
+        let excludedRecipes = recipes.filter { recipe in recipe.ingredients.contains { avoidedIngredientIds.contains($0.ingredientId) } }
         let recipesByCat: [String: [Recipe]] = [
-            "man": recipes.filter { $0.category == "man" },
-            "rau": recipes.filter { $0.category == "rau" },
-            "canh": recipes.filter { $0.category == "canh" }
+            "man": eligibleRecipes.filter { $0.category == "man" },
+            "rau": eligibleRecipes.filter { $0.category == "rau" },
+            "canh": eligibleRecipes.filter { $0.category == "canh" }
         ]
 
         let simulatedLots = currentPantryLots
@@ -595,6 +598,7 @@ public enum EasyMealsEngine {
             for p in resolvedPeriods {
                 let planId = UUID().uuidString
                 var plannedDishes: [PlannedDish] = []
+                var planWarnings: [PlanWarning] = []
 
                 for cat in ["man", "rau", "canh"] {
                     var dishChosen: PlannedDish?
@@ -739,6 +743,10 @@ public enum EasyMealsEngine {
                         }
                     }
 
+                    if dishChosen == nil && planWarnings.isEmpty && excludedRecipes.contains(where: { $0.category == cat }) {
+                        planWarnings.append(PlanWarning(type: "not_enough_dishes", plannedFor: dateStr, mealPeriod: p, reason: "avoided_ingredients"))
+                    }
+
                     if let d = dishChosen {
                         plannedDishes.append(d)
                     }
@@ -749,7 +757,8 @@ public enum EasyMealsEngine {
                     plannedFor: dateStr,
                     mealPeriod: p,
                     periodId: periodId,
-                    dishes: plannedDishes
+                    dishes: plannedDishes,
+                    warnings: planWarnings
                 )
                 mealPlans.append(plan)
             }
@@ -880,7 +889,8 @@ public enum EasyMealsEngine {
         allMealPlans: [MealPlan],
         recipes: [Recipe],
         currentPantryLots: [PantryLot] = [],
-        conversions: [Conversion] = []
+        conversions: [Conversion] = [],
+        avoidedIngredientIds: Set<String> = []
     ) throws -> MealPlan {
         guard let targetPlan = allMealPlans.first(where: { $0.id == targetMealPlanId }) else {
             throw MealPlanError("Không tìm thấy bữa ăn có ID \(targetMealPlanId)")
@@ -900,10 +910,12 @@ public enum EasyMealsEngine {
             }
         }
 
+        let eligibleRecipes = recipes.filter { recipe in !recipe.ingredients.contains { avoidedIngredientIds.contains($0.ingredientId) } }
+        let excludedRecipes = recipes.filter { recipe in recipe.ingredients.contains { avoidedIngredientIds.contains($0.ingredientId) } }
         let recipesByCat: [String: [Recipe]] = [
-            "man": recipes.filter { $0.category == "man" },
-            "rau": recipes.filter { $0.category == "rau" },
-            "canh": recipes.filter { $0.category == "canh" }
+            "man": eligibleRecipes.filter { $0.category == "man" },
+            "rau": eligibleRecipes.filter { $0.category == "rau" },
+            "canh": eligibleRecipes.filter { $0.category == "canh" }
         ]
 
         let planDateStr = String(targetPlan.plannedFor.prefix(10))
@@ -958,13 +970,17 @@ public enum EasyMealsEngine {
             }
         }
 
+        let warnings = excludedRecipes.contains { excluded in newDishes.allSatisfy { $0.category != excluded.category } }
+            ? [PlanWarning(type: "not_enough_dishes", plannedFor: targetPlan.plannedFor, mealPeriod: targetPlan.mealPeriod, reason: "avoided_ingredients")]
+            : []
         return MealPlan(
             id: targetPlan.id,
             plannedFor: targetPlan.plannedFor,
             mealPeriod: targetPlan.mealPeriod,
             periodId: targetPlan.periodId,
             eatenAt: nil,
-            dishes: newDishes
+            dishes: newDishes,
+            warnings: warnings
         )
     }
 

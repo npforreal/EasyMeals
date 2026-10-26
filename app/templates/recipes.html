@@ -25,14 +25,15 @@
           <option value="4">4</option><option value="5">5 — Rất cay</option>
         </select>
       </label>
-      <label for="recipe-avoid-ingredients">Dị ứng / nguyên liệu cần tránh (chọn nhiều)
+      <label for="recipe-avoid-ingredients">Nguyên liệu cần tránh (chọn thủ công; chọn nhiều)
         <select id="recipe-avoid-ingredients" multiple size="3" aria-describedby="recipe-filter-note"></select>
       </label>
       <label for="recipe-preferred-ingredients">Nguyên liệu ưa thích (chọn nhiều)
         <select id="recipe-preferred-ingredients" multiple size="3"></select>
       </label>
     </div>
-    <p id="recipe-filter-note" role="status">Nguyên liệu cần tránh được loại theo ID chính tắc. Nhãn chế độ ăn/độ cay chỉ lọc món đã xác minh; dữ liệu thiếu không được coi là phù hợp. Danh mục không xác nhận an toàn dị ứng hoặc nhiễm chéo.</p>
+    <p id="recipe-filter-note" role="status">Ứng dụng chỉ loại món chứa chính xác các nguyên liệu bạn chọn. Thông tin dị ứng của nguyên liệu và món chưa được xác minh, nên nguyên liệu ẩn trong sốt, bánh hay đồ chế biến có thể không bị phát hiện. Hãy luôn đọc nhãn và hỏi người nấu.</p>
+    <p id="recipe-stale-avoid-note" class="text-muted" role="status" hidden>Một số nguyên liệu đã chọn không còn trong danh mục; sẽ được bỏ qua cho đến khi dữ liệu trở lại.</p>
     <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
       <button class="btn btn-primary btn-sm filter-btn active" data-cat="" type="button">Tất cả các món</button>
       <button class="btn btn-outline btn-sm filter-btn" data-cat="man" type="button">

@@ -1647,6 +1647,282 @@
     "items_with_price_count": 2,
     "total_items_count": 3
    }
+  },
+  {
+   "name": "plan_avoid_ids_exclude_recipes_and_warn_when_insufficient",
+   "op": "plan_avoided",
+   "start": "2026-10-26",
+   "days": 1,
+   "allow_leftovers": false,
+   "avoided_ingredient_ids": [
+    "11111111-0001-0000-0000-000000000801"
+   ],
+   "recipes": [
+    {
+     "id": "22222222-0001-0000-0000-000000000802",
+     "name": "Món tránh 1",
+     "category": "man",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000801",
+       "name": "Nguyên liệu 1",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "22222222-0001-0000-0000-000000000803",
+     "name": "Món hợp lệ 2",
+     "category": "man",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000902",
+       "name": "Nguyên liệu 2",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "22222222-0001-0000-0000-000000000804",
+     "name": "Món hợp lệ 3",
+     "category": "rau",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000903",
+       "name": "Nguyên liệu 3",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "22222222-0001-0000-0000-000000000805",
+     "name": "Món hợp lệ 4",
+     "category": "rau",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000904",
+       "name": "Nguyên liệu 4",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "22222222-0001-0000-0000-000000000806",
+     "name": "Món hợp lệ 5",
+     "category": "canh",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000905",
+       "name": "Nguyên liệu 5",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "22222222-0001-0000-0000-000000000807",
+     "name": "Món hợp lệ 6",
+     "category": "canh",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000906",
+       "name": "Nguyên liệu 6",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    }
+   ],
+   "pantry": [],
+   "expect": {
+    "excluded_recipe_count": 1,
+    "warning_count": 1
+   }
+  },
+  {
+   "name": "plan_avoid_common_ingredient_warns_without_relaxing",
+   "op": "plan_avoided",
+   "start": "2026-10-26",
+   "days": 1,
+   "allow_leftovers": false,
+   "avoided_ingredient_ids": [
+    "11111111-0001-0000-0000-000000000801"
+   ],
+   "recipes": [
+    {
+     "id": "22222222-0001-0000-0000-000000000812",
+     "name": "Món tránh 11",
+     "category": "man",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000801",
+       "name": "Nguyên liệu 11",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "22222222-0001-0000-0000-000000000813",
+     "name": "Món tránh 12",
+     "category": "rau",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000801",
+       "name": "Nguyên liệu 12",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "22222222-0001-0000-0000-000000000814",
+     "name": "Món tránh 13",
+     "category": "canh",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000801",
+       "name": "Nguyên liệu 13",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    }
+   ],
+   "pantry": [],
+   "expect": {
+    "excluded_recipe_count": 3,
+    "warning_count": 2
+   }
+  },
+  {
+   "name": "plan_avoid_empty_list_preserves_existing_choices",
+   "op": "plan_avoided",
+   "start": "2026-10-26",
+   "days": 1,
+   "allow_leftovers": false,
+   "avoided_ingredient_ids": [],
+   "recipes": [
+    {
+     "id": "22222222-0001-0000-0000-000000000822",
+     "name": "Món hợp lệ 21",
+     "category": "man",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000921",
+       "name": "Nguyên liệu 21",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "22222222-0001-0000-0000-000000000823",
+     "name": "Món hợp lệ 22",
+     "category": "rau",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000922",
+       "name": "Nguyên liệu 22",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "22222222-0001-0000-0000-000000000824",
+     "name": "Món hợp lệ 23",
+     "category": "canh",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000923",
+       "name": "Nguyên liệu 23",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    }
+   ],
+   "pantry": [],
+   "expect": {
+    "excluded_recipe_count": 0,
+    "warning_count": 0
+   }
+  },
+  {
+   "name": "plan_avoid_unknown_ids_are_ignored",
+   "op": "plan_avoided",
+   "start": "2026-10-26",
+   "days": 1,
+   "allow_leftovers": false,
+   "avoided_ingredient_ids": [
+    "11111111-0001-0000-0000-000000000899"
+   ],
+   "recipes": [
+    {
+     "id": "22222222-0001-0000-0000-000000000832",
+     "name": "Món hợp lệ 31",
+     "category": "man",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000931",
+       "name": "Nguyên liệu 31",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "22222222-0001-0000-0000-000000000833",
+     "name": "Món hợp lệ 32",
+     "category": "rau",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000932",
+       "name": "Nguyên liệu 32",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    },
+    {
+     "id": "22222222-0001-0000-0000-000000000834",
+     "name": "Món hợp lệ 33",
+     "category": "canh",
+     "servings": 2,
+     "ingredients": [
+      {
+       "ingredient_id": "11111111-0001-0000-0000-000000000933",
+       "name": "Nguyên liệu 33",
+       "quantity": "100",
+       "unit": "g"
+      }
+     ]
+    }
+   ],
+   "pantry": [],
+   "expect": {
+    "excluded_recipe_count": 0,
+    "warning_count": 0
+   }
   }
  ]
 }

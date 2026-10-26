@@ -130,7 +130,7 @@ describe("Ca logic dùng chung Python/JS", () => {
         assert.equal(norm(budget.total_spent), c.expect.total_spent);
         assert.equal(budget.items_with_price_count, c.expect.items_with_price_count);
         assert.equal(budget.total_items_count, c.expect.total_items_count);
-      } else if (c.op === "plan") {
+      } else if (c.op === "plan" || c.op === "plan_avoided") {
         const end = new Date(`${c.start}T00:00:00Z`);
         end.setUTCDate(end.getUTCDate() + c.days - 1);
         const endStr = end.toISOString().slice(0, 10);
@@ -162,9 +162,23 @@ describe("Ca logic dùng chung Python/JS", () => {
             allow_leftovers: c.allow_leftovers,
             leftover_days: c.leftover_days,
             conversions: c.conversions,
+            avoided_ingredient_ids: c.op === "plan_avoided" ? c.avoided_ingredient_ids : [],
           }
         );
         const dishes = plan.meals.flatMap((m) => m.dishes);
+        if (c.op === "plan_avoided") {
+          const blocked = new Set(c.avoided_ingredient_ids);
+          assert.equal(
+            dishes.some((dish) => {
+              const recipe = c.recipes.find((r) => r.id === dish.recipe_id);
+              return recipe.ingredients.some((ingredient) => blocked.has(ingredient.ingredient_id));
+            }),
+            false,
+          );
+          assert.equal(plan.excluded_recipe_count, c.expect.excluded_recipe_count);
+          assert.equal(plan.warnings.length, c.expect.warning_count);
+          return;
+        }
         assert.deepEqual(
           dishes.map((d) => d.recipe_name),
           c.expect.dishes

@@ -269,4 +269,22 @@ final class EngineTests: XCTestCase {
             XCTAssertTrue(error is IncompatibleUnitError)
         }
     }
+
+    func testRegenerateMealHonorsAvoidedIngredientIDs() throws {
+        let recipes = [
+            Recipe(id: "blocked", name: "Món tránh", category: "man", ingredients: [RecipeIngredient(ingredientId: "avoid-id", ingredientName: "X", quantity: "1", unit: "g")]),
+            Recipe(id: "allowed", name: "Món khác", category: "man", ingredients: [RecipeIngredient(ingredientId: "keep-id", ingredientName: "Y", quantity: "1", unit: "g")]),
+            Recipe(id: "greens", name: "Rau", category: "rau"),
+            Recipe(id: "soup", name: "Canh", category: "canh")
+        ]
+        let plan = MealPlan(id: "target", plannedFor: "2026-10-26", mealPeriod: "lunch")
+        let regenerated = try EasyMealsEngine.regenerateSingleMeal(
+            targetMealPlanId: plan.id,
+            allMealPlans: [plan],
+            recipes: recipes,
+            avoidedIngredientIds: ["avoid-id"]
+        )
+        XCTAssertFalse(regenerated.dishes.contains { $0.recipeId == "blocked" })
+        XCTAssertTrue(regenerated.dishes.contains { $0.recipeId == "allowed" })
+    }
 }

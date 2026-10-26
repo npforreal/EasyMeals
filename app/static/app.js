@@ -1198,6 +1198,13 @@ async function initPlannerPage() {
         mHeader.appendChild(mTitle);
         mHeader.appendChild(statusBadge);
         mealCard.appendChild(mHeader);
+        if ((meal.warnings || []).some((warning) => warning.reason === "avoided_ingredients")) {
+          const warning = document.createElement("p");
+          warning.className = "text-warning";
+          warning.setAttribute("role", "status");
+          warning.textContent = "Không đủ món phù hợp với nguyên liệu bạn tránh cho bữa này.";
+          mealCard.appendChild(warning);
+        }
 
         // Dishes
         const dishList = document.createElement("div");
@@ -1287,6 +1294,13 @@ async function initPlannerPage() {
               const selectedIdx = parseInt(input, 10) - 1;
               if (isNaN(selectedIdx) || selectedIdx < 0 || selectedIdx >= candidates.length) return;
               const chosenRecipe = candidates[selectedIdx];
+              const prefs = (await getLocalSetting("recipe_preferences_v1")) || {};
+              const avoided = new Set(prefs.avoidedIngredientIds || []);
+              const violation = (chosenRecipe.ingredients || []).find((item) => avoided.has(item.ingredient_id));
+              if (violation) {
+                const ingredientName = (catalogue.ingredients || []).find((item) => item.id === violation.ingredient_id)?.name || "nguyên liệu đã chọn";
+                if (!confirm(`Món này chứa ${ingredientName} mà bạn đã đặt cần tránh. Vẫn thêm?`)) return;
+              }
 
               try {
                 const updatedMeal = engineSwapDishInMeal(meal, dish.id, chosenRecipe, allPlans);
@@ -1567,7 +1581,10 @@ async function initPlannerPage() {
                 allPlans,
                 catalogue.recipes,
                 currentLots,
-                { conversions }
+                {
+                  conversions,
+                  avoided_ingredient_ids: ((await getLocalSetting("recipe_preferences_v1")) || {}).avoidedIngredientIds || [],
+                }
               );
 
               const updatedPlans = allPlans.map((p) =>
@@ -1742,6 +1759,19 @@ async function initPlannerPage() {
   }
   restoreLeftoverPreferences();
   restoreHouseholdSettings();
+  const savedAvoidPreferences = (await getLocalSetting("recipe_preferences_v1")) || {};
+  const savedAvoidIds = Array.isArray(savedAvoidPreferences.avoidedIngredientIds) ? savedAvoidPreferences.avoidedIngredientIds : [];
+  const avoidanceDisclaimer = document.getElementById("avoid-ingredients-disclaimer");
+  const avoidanceWarning = document.getElementById("avoid-ingredients-warning");
+  if (avoidanceDisclaimer) avoidanceDisclaimer.hidden = savedAvoidIds.length === 0;
+  if (savedAvoidIds.length && avoidanceWarning) {
+    const catalogue = await getCachedCatalogue();
+    const validIds = new Set((catalogue?.ingredients || []).map((ingredient) => ingredient.id));
+    const stale = savedAvoidIds.some((id) => !validIds.has(id));
+    avoidanceWarning.hidden = !stale;
+    avoidanceWarning.textContent = stale
+      ? "Một số nguyên liệu đã chọn không còn trong danh mục; sẽ được bỏ qua cho đến khi dữ liệu trở lại." : "";
+  }
 
   // C1 - Vòng 13: đọc cài đặt hộ gia đình cục bộ từ localStorage (không lưu lên server).
   // Trả về đối tượng khớp schema HouseholdSettingsInput; giá trị rỗng -> engine dùng mặc định.
@@ -1852,6 +1882,19 @@ async function initPlannerPage() {
       }
 
       const leftoverPrefs = readAndPersistLeftoverPreferences();
+      const avoidancePreferences = (await getLocalSetting("recipe_preferences_v1")) || {};
+      const avoidedIngredientIds = Array.isArray(avoidancePreferences.avoidedIngredientIds)
+        ? avoidancePreferences.avoidedIngredientIds : [];
+      const avoidanceDisclaimer = document.getElementById("avoid-ingredients-disclaimer");
+      const avoidanceWarning = document.getElementById("avoid-ingredients-warning");
+      if (avoidanceDisclaimer) avoidanceDisclaimer.hidden = avoidedIngredientIds.length === 0;
+      const presentIngredients = new Set(((await getCachedCatalogue())?.ingredients || []).map((item) => item.id));
+      const staleAvoidedIds = avoidedIngredientIds.filter((id) => !presentIngredients.has(id));
+      if (avoidanceWarning) {
+        avoidanceWarning.hidden = staleAvoidedIds.length === 0;
+        avoidanceWarning.textContent = staleAvoidedIds.length
+          ? "Một số nguyên liệu đã chọn không còn trong danh mục; sẽ được bỏ qua cho đến khi dữ liệu trở lại." : "";
+      }
       // C1 - Vòng 13: lưu cài đặt hộ gia đình trước khi tính toán.
       persistHouseholdSettingsFromDom();
 
@@ -1901,6 +1944,7 @@ async function initPlannerPage() {
             // C1 - Vòng 13: truyền cài đặt hộ gia đình cục bộ (mặc định 1 người, trưa+tối).
             household_settings: readHouseholdSettings(),
             recently_cooked_recipe_ids: recentlyCookedRecipeIds,
+            avoided_ingredient_ids: avoidedIngredientIds.filter((id) => presentIngredients.has(id)),
             // A7 - Vòng 13: đường offline/bundled cũng phải nhận quy đổi (gạo -> cơm)
             // kèm tên nguyên liệu gốc, khớp đường API.
             conversions: catalogue.conversions || [],
@@ -1921,7 +1965,9 @@ async function initPlannerPage() {
             if (alertBox) alertBox.style.display = "none";
           }
 
-          showToast("Đã tạo thực đơn thành công!", "success");
+          showToast(avoidedIngredientIds.length
+            ? `Đã tạo thực đơn thành công! Đã loại ${data.excluded_recipe_count || 0} món theo nguyên liệu cần tránh.`
+            : "Đã tạo thực đơn thành công!", "success");
           loadAndRenderPlans();
           return;
         } catch (err) {
@@ -1947,6 +1993,7 @@ async function initPlannerPage() {
             // C1 - Vòng 13: truyền cài đặt hộ gia đình cục bộ (mặc định 1 người, trưa+tối).
             household_settings: readHouseholdSettings(),
             recently_cooked_recipe_ids: recentlyCookedRecipeIds,
+            avoided_ingredient_ids: avoidedIngredientIds.filter((id) => presentIngredients.has(id)),
           },
         };
 
@@ -1975,7 +2022,9 @@ async function initPlannerPage() {
           if (alertBox) alertBox.style.display = "none";
         }
 
-        showToast("Đã tạo thực đơn thành công!", "success");
+        showToast(avoidedIngredientIds.length
+          ? `Đã tạo thực đơn thành công! Đã loại ${data.excluded_recipe_count || 0} món theo nguyên liệu cần tránh.`
+          : "Đã tạo thực đơn thành công!", "success");
         loadAndRenderPlans();
       } catch (err) {
         showToast(`Lỗi: ${err.message}`, "danger");
@@ -2015,6 +2064,11 @@ async function initRecipesPage() {
       const response = await fetch("/api/ingredients");
       if (response.ok) availableIngredients = await response.json();
     } catch { /* Catalogue filters remain usable when offline cache exists. */ }
+  }
+  const staleAvoidNote = document.getElementById("recipe-stale-avoid-note");
+  if (staleAvoidNote) {
+    const availableIds = new Set(availableIngredients.map((ingredient) => ingredient.id));
+    staleAvoidNote.hidden = !(preferences.avoidedIngredientIds || []).some((id) => !availableIds.has(id));
   }
   if (avoidFilter || preferredFilter) {
     availableIngredients.slice().sort((a, b) => a.name.localeCompare(b.name, "vi")).forEach((ingredient) => {

@@ -228,7 +228,7 @@ final class EngineLogicTests: XCTestCase {
                 XCTAssertEqual(budget.itemsWithPriceCount, exp["items_with_price_count"] as! Int, "[\(name)] items with price")
                 XCTAssertEqual(budget.totalItemsCount, exp["total_items_count"] as! Int, "[\(name)] total items")
 
-            case "plan":
+            case "plan", "plan_avoided":
                 let rawRecipes = c["recipes"] as! [[String: Any]]
                 let recipes = rawRecipes.map { toRecipe($0) }
                 let pantry = toLots(c["pantry"] as! [[String: Any]])
@@ -262,15 +262,34 @@ final class EngineLogicTests: XCTestCase {
                     continue
                 }
 
-                let (_, plans, shopping) = try EasyMealsEngine.generatePeriodPlan(
+                let generated = try EasyMealsEngine.generatePeriodPlan(
                     startDateStr: startStr,
                     endDateStr: endStr,
                     recipes: recipes,
                     currentPantryLots: pantry,
                     allowLeftovers: allowLeftovers,
                     conversions: convs,
-                    leftoverDays: leftoverDays
+                    leftoverDays: leftoverDays,
+                    avoidedIngredientIds: Set((c["avoided_ingredient_ids"] as? [String]) ?? [])
                 )
+                let plans = generated.meals
+                let shopping = generated.shoppingList
+
+                if op == "plan_avoided" {
+                    let blocked = Set((c["avoided_ingredient_ids"] as? [String]) ?? [])
+                    let recipesById = Dictionary(uniqueKeysWithValues: recipes.map { ($0.id, $0) })
+                    XCTAssertFalse(plans.flatMap(\.dishes).contains { dish in
+                        recipesById[dish.recipeId]?.ingredients.contains { blocked.contains($0.ingredientId) } ?? false
+                    }, "[\(name)] no avoided ingredient in plan")
+                    let excluded = recipes.filter { recipe in recipe.ingredients.contains { blocked.contains($0.ingredientId) } }
+                    XCTAssertEqual(excluded.count, exp["excluded_recipe_count"] as? Int)
+                    let excludedCategories = Set(excluded.map(\.category))
+                    let warningCount = plans.filter { plan in
+                        excludedCategories.contains { category in !plan.dishes.contains { $0.category == category } }
+                    }.count
+                    XCTAssertEqual(warningCount, exp["warning_count"] as? Int)
+                    continue
+                }
 
                 let expDishes = exp["dishes"] as! [String]
                 let actualDishes = plans.flatMap { $0.dishes }.map { $0.recipeName }

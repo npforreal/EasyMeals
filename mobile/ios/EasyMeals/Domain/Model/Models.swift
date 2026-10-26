@@ -334,6 +334,7 @@ public struct MealPlan: Identifiable, Codable, Equatable, Sendable {
     public var eatenAt: String?
     public var notes: String?
     public var dishes: [PlannedDish]
+    public var warnings: [PlanWarning]?
 
     public init(
         id: String = UUID().uuidString,
@@ -342,7 +343,8 @@ public struct MealPlan: Identifiable, Codable, Equatable, Sendable {
         periodId: String? = nil,
         eatenAt: String? = nil,
         notes: String? = nil,
-        dishes: [PlannedDish] = []
+        dishes: [PlannedDish] = [],
+        warnings: [PlanWarning]? = nil
     ) {
         self.id = id
         self.plannedFor = plannedFor
@@ -351,6 +353,7 @@ public struct MealPlan: Identifiable, Codable, Equatable, Sendable {
         self.eatenAt = eatenAt
         self.notes = notes
         self.dishes = dishes
+        self.warnings = warnings
     }
 
     enum CodingKeys: String, CodingKey {
@@ -361,6 +364,21 @@ public struct MealPlan: Identifiable, Codable, Equatable, Sendable {
         case eatenAt = "eaten_at"
         case notes
         case dishes
+        case warnings
+    }
+}
+
+public struct PlanWarning: Codable, Equatable, Sendable {
+    public let type: String
+    public let plannedFor: String
+    public let mealPeriod: String
+    public let reason: String
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case plannedFor = "planned_for"
+        case mealPeriod = "meal_period"
+        case reason
     }
 }
 

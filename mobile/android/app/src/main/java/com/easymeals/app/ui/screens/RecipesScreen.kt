@@ -120,7 +120,7 @@ fun RecipesScreen(repository: AppRepository) {
     if (showAvoidDialog) {
         AlertDialog(
             onDismissRequest = { showAvoidDialog = false },
-            title = { Text("Dị ứng / nguyên liệu cần tránh") },
+            title = { Text("Nguyên liệu cần tránh (chọn thủ công)") },
             text = {
                 LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
                     items(ingredients, key = { it.id }) { ingredient ->
@@ -232,11 +232,20 @@ fun RecipesScreen(repository: AppRepository) {
                 )
             }
             Text(
-                text = "Nguyên liệu tránh được lọc theo ID. Món thiếu xác minh không được coi là phù hợp; danh mục không chứng nhận an toàn dị ứng hoặc nhiễm chéo.",
+                text = "Ứng dụng chỉ loại món chứa chính xác các nguyên liệu bạn chọn. Thông tin dị ứng của nguyên liệu và món chưa được xác minh, nên nguyên liệu ẩn trong sốt, bánh hay đồ chế biến có thể không bị phát hiện. Hãy luôn đọc nhãn và hỏi người nấu.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
+            val staleAvoided = avoidedIngredientIds - ingredients.map { it.id }.toSet()
+            if (staleAvoided.isNotEmpty()) {
+                Text(
+                    "Một số nguyên liệu đã chọn không còn trong danh mục; sẽ được bỏ qua cho đến khi dữ liệu trở lại.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+            }
             // Search field
             OutlinedTextField(
                 value = searchQuery,

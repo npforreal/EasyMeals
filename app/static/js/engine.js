@@ -597,6 +597,12 @@ export function generatePeriodPlan(
   const conversions = options.conversions || [];
   const rawIngredientNames = options.raw_ingredient_names || options.rawIngredientNames || {};
   const recentlyCooked = new Set(options.recently_cooked_recipe_ids || options.recentlyCookedRecipeIds || []);
+  const avoidedIngredientIds = new Set(options.avoided_ingredient_ids || options.avoidedIngredientIds || []);
+  const excludedRecipes = (recipes || []).filter((recipe) =>
+    (recipe.ingredients || []).some((ingredient) => avoidedIngredientIds.has(ingredient.ingredient_id))
+  );
+  const excludedRecipeIds = new Set(excludedRecipes.map((recipe) => recipe.id));
+  const eligibleRecipes = (recipes || []).filter((recipe) => !excludedRecipeIds.has(recipe.id));
 
   // C1 - Vòng 13: cài đặt hộ gia đình cục bộ (không lưu lên server).
   const hs = options.household_settings || {};
@@ -610,9 +616,9 @@ export function generatePeriodPlan(
   const skipDates = new Set((hs.skip_dates || []).map(String));
 
   const recipesByCat = {
-    man: recipes.filter((r) => r.category === "man"),
-    rau: recipes.filter((r) => r.category === "rau"),
-    canh: recipes.filter((r) => r.category === "canh"),
+    man: eligibleRecipes.filter((r) => r.category === "man"),
+    rau: eligibleRecipes.filter((r) => r.category === "rau"),
+    canh: eligibleRecipes.filter((r) => r.category === "canh"),
   };
 
   // Simulated lots for planning evaluation
@@ -627,6 +633,7 @@ export function generatePeriodPlan(
   const availableLeftovers = []; // { dish, portionsRemaining, deadline (Date) }
   const mealPlans = [];
   const shoppingItemsMap = new Map(); // khoá: `${ingredient_id}|${thứ nguyên}`
+  const warnings = [];
 
   const curr = new Date(start);
 
@@ -649,6 +656,7 @@ export function generatePeriodPlan(
         period_id: periodId,
         eaten_at: null,
         dishes: [],
+        warnings: [],
       };
 
       for (const cat of ["man", "rau", "canh"]) {
@@ -793,6 +801,20 @@ export function generatePeriodPlan(
         }
       }
 
+      if (["man", "rau", "canh"].some((cat) =>
+        !mealPlan.dishes.some((dish) => dish.category === cat) &&
+        excludedRecipes.some((recipe) => recipe.category === cat)
+      )) {
+        const warning = {
+          type: "not_enough_dishes",
+          planned_for: dateStr,
+          meal_period: period,
+          reason: "avoided_ingredients",
+        };
+        warnings.push(warning);
+        mealPlan.warnings.push(warning);
+      }
+
       mealPlans.push(mealPlan);
     }
 
@@ -805,6 +827,8 @@ export function generatePeriodPlan(
     end_date: endDateStr,
     meals: mealPlans,
     shopping_list: Array.from(shoppingItemsMap.values()),
+    warnings,
+    excluded_recipe_count: excludedRecipeIds.size,
   };
 }
 
@@ -881,6 +905,13 @@ export function regenerateSingleMeal(
   options = {}
 ) {
   const conversions = options.conversions || [];
+  const avoidedIngredientIds = new Set(options.avoided_ingredient_ids || options.avoidedIngredientIds || []);
+  const excludedRecipes = (recipes || []).filter((recipe) =>
+    (recipe.ingredients || []).some((ingredient) => avoidedIngredientIds.has(ingredient.ingredient_id))
+  );
+  const eligibleRecipes = (recipes || []).filter((recipe) =>
+    !excludedRecipes.some((excluded) => excluded.id === recipe.id)
+  );
 
   const targetPlan = (allMealPlans || []).find(
     (p) => String(p.id) === String(targetMealPlanId)
@@ -906,9 +937,9 @@ export function regenerateSingleMeal(
   }
 
   const recipesByCat = {
-    man: (recipes || []).filter((r) => r.category === "man"),
-    rau: (recipes || []).filter((r) => r.category === "rau"),
-    canh: (recipes || []).filter((r) => r.category === "canh"),
+    man: eligibleRecipes.filter((r) => r.category === "man"),
+    rau: eligibleRecipes.filter((r) => r.category === "rau"),
+    canh: eligibleRecipes.filter((r) => r.category === "canh"),
   };
 
   const planDateStr = String(targetPlan.planned_for).slice(0, 10);
@@ -917,6 +948,7 @@ export function regenerateSingleMeal(
     .map((l) => ({ ...l }));
 
   const newDishes = [];
+  const warnings = [];
   for (const cat of ["man", "rau", "canh"]) {
     let candidates = (recipesByCat[cat] || []).filter(
       (r) => !otherCookedRecipeIds.has(r.id)
@@ -959,6 +991,14 @@ export function regenerateSingleMeal(
         is_leftover: false,
         servings: chosenRecipe.servings || 1,
       });
+    } else if (excludedRecipes.some((recipe) => recipe.category === cat)) {
+      const warning = {
+        type: "not_enough_dishes",
+        planned_for: planDateStr,
+        meal_period: targetPlan.meal_period,
+        reason: "avoided_ingredients",
+      };
+      if (!warnings.some((item) => item.meal_period === warning.meal_period)) warnings.push(warning);
     }
   }
 
@@ -966,6 +1006,8 @@ export function regenerateSingleMeal(
     ...targetPlan,
     eaten_at: null,
     dishes: newDishes,
+    warnings,
+    excluded_recipe_count: excludedRecipes.length,
   };
 }
 

@@ -162,7 +162,7 @@ def test_logic_case(case):
         assert {str(lot.id): _norm(lot.remaining_quantity) for lot in lots} == case["expect"][
             "remaining"
         ]
-    elif op == "plan":
+    elif op in {"plan", "plan_avoided"}:
         start = date.fromisoformat(case["start"])
         end_date = date.fromordinal(start.toordinal() + case["days"] - 1)
         leftover_days = case.get("leftover_days", LEFTOVER_DEFAULT_DAYS)
@@ -179,7 +179,7 @@ def test_logic_case(case):
                 )
             return
 
-        plans, shopping = generate_period_plan(
+        result = generate_period_plan(
             start_date=start,
             end_date=end_date,
             recipes=[_recipe(r) for r in case["recipes"]],
@@ -187,7 +187,30 @@ def test_logic_case(case):
             allow_leftovers=case["allow_leftovers"],
             leftover_days=leftover_days,
             conversions=convs,
+            **(
+                {
+                    "avoided_ingredient_ids": [
+                        UUID(i) for i in case.get("avoided_ingredient_ids", [])
+                    ]
+                }
+                if op == "plan_avoided"
+                else {}
+            ),
         )
+        plans, shopping = result
+        if op == "plan_avoided":
+            assert all(
+                not {str(i.ingredient_id) for i in _recipe(r).ingredients}.intersection(
+                    case["avoided_ingredient_ids"]
+                )
+                for plan in plans
+                for dish in plan.dishes
+                for r in case["recipes"]
+                if str(dish.recipe_id) == r["id"]
+            )
+            assert result.excluded_recipe_count == case["expect"]["excluded_recipe_count"]
+            assert len(result.warnings) == case["expect"]["warning_count"]
+            return
         dishes = [d for p in plans for d in p.dishes]
         assert [d.recipe_name for d in dishes] == case["expect"]["dishes"]
         assert [d.servings for d in dishes] == case["expect"]["servings"]

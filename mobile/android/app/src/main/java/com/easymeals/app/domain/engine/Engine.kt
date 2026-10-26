@@ -492,8 +492,9 @@ object EasyMealsEngine {
         rawIngredientNames: Map<String, String>? = null,
         leftoverDays: Int = GeneratedTokens.PlanLimits.LEFTOVER_DEFAULT_DAYS,
         householdSettings: HouseholdSettings? = null,
-        recentlyCookedRecipeIds: Set<String> = emptySet()
-    ): Triple<String, List<MealPlan>, List<ShoppingItem>> {
+        recentlyCookedRecipeIds: Set<String> = emptySet(),
+        avoidedIngredientIds: Set<String> = emptySet()
+    ): PlanGenerationResult {
         validateLeftoverDays(leftoverDays)
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         val start = LocalDate.parse(startDateStr, formatter)
@@ -505,10 +506,12 @@ object EasyMealsEngine {
         }
 
         val periodId = UUID.randomUUID().toString()
+        val eligibleRecipes = recipes.filter { recipe -> recipe.ingredients.none { it.ingredientId in avoidedIngredientIds } }
+        val excludedRecipes = recipes.filter { recipe -> recipe.ingredients.any { it.ingredientId in avoidedIngredientIds } }
         val recipesByCat = mapOf(
-            "man" to recipes.filter { it.category == "man" },
-            "rau" to recipes.filter { it.category == "rau" },
-            "canh" to recipes.filter { it.category == "canh" }
+            "man" to eligibleRecipes.filter { it.category == "man" },
+            "rau" to eligibleRecipes.filter { it.category == "rau" },
+            "canh" to eligibleRecipes.filter { it.category == "canh" }
         )
 
         val simulatedLots = currentPantryLots.map { it.copy() }.toMutableList()
@@ -550,6 +553,7 @@ object EasyMealsEngine {
             for (p in periods) {
                 val planId = UUID.randomUUID().toString()
                 val plannedDishes = mutableListOf<PlannedDish>()
+                val warnings = mutableListOf<PlanWarning>()
 
                 for (cat in listOf("man", "rau", "canh")) {
                     var dishChosen: PlannedDish? = null
@@ -696,6 +700,8 @@ object EasyMealsEngine {
 
                     if (dishChosen != null) {
                         plannedDishes.add(dishChosen)
+                    } else if (warnings.isEmpty() && excludedRecipes.any { it.category == cat }) {
+                        warnings.add(PlanWarning("not_enough_dishes", dateStr, p, "avoided_ingredients"))
                     }
                 }
 
@@ -704,14 +710,21 @@ object EasyMealsEngine {
                     plannedFor = dateStr,
                     mealPeriod = p,
                     periodId = periodId,
-                    dishes = plannedDishes
+                    dishes = plannedDishes,
+                    warnings = warnings
                 )
                 mealPlans.add(plan)
             }
             curr = curr.plusDays(1)
         }
 
-        return Triple(periodId, mealPlans, shoppingItemsMap.values.toList())
+        return PlanGenerationResult(
+            periodId,
+            mealPlans,
+            shoppingItemsMap.values.toList(),
+            excludedRecipes.size,
+            mealPlans.flatMap { it.warnings.orEmpty() }
+        )
     }
 
     /**
@@ -813,7 +826,8 @@ object EasyMealsEngine {
         allMealPlans: List<MealPlan>,
         recipes: List<Recipe>,
         currentPantryLots: List<PantryLot> = emptyList(),
-        conversions: List<Conversion>? = null
+        conversions: List<Conversion>? = null,
+        avoidedIngredientIds: Set<String> = emptySet()
     ): MealPlan {
         val targetPlan = allMealPlans.find { it.id == targetMealPlanId }
             ?: throw IllegalArgumentException("Không tìm thấy bữa ăn có ID $targetMealPlanId")
@@ -832,10 +846,12 @@ object EasyMealsEngine {
             }
         }
 
+        val eligibleRecipes = recipes.filter { recipe -> recipe.ingredients.none { it.ingredientId in avoidedIngredientIds } }
+        val excludedRecipes = recipes.filter { recipe -> recipe.ingredients.any { it.ingredientId in avoidedIngredientIds } }
         val recipesByCat = mapOf(
-            "man" to recipes.filter { it.category == "man" },
-            "rau" to recipes.filter { it.category == "rau" },
-            "canh" to recipes.filter { it.category == "canh" }
+            "man" to eligibleRecipes.filter { it.category == "man" },
+            "rau" to eligibleRecipes.filter { it.category == "rau" },
+            "canh" to eligibleRecipes.filter { it.category == "canh" }
         )
 
         val planDate = LocalDate.parse(targetPlan.plannedFor.substring(0, 10))
@@ -878,7 +894,10 @@ object EasyMealsEngine {
             }
         }
 
-        return targetPlan.copy(eatenAt = null, dishes = newDishes)
+        val warning = if (excludedRecipes.any { excluded -> newDishes.none { it.category == excluded.category } }) {
+            listOf(PlanWarning("not_enough_dishes", targetPlan.plannedFor, targetPlan.mealPeriod, "avoided_ingredients"))
+        } else emptyList()
+        return targetPlan.copy(eatenAt = null, dishes = newDishes, warnings = warning)
     }
 
     fun recomputeShoppingList(

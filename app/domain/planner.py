@@ -26,6 +26,7 @@ from app.domain.models import (
     MealPeriod,
     MealPlan,
     PantryLot,
+    PlanGenerationResult,
     PlannedDish,
     Recipe,
     ShoppingItem,
@@ -235,7 +236,8 @@ def generate_period_plan(
     household_settings: HouseholdSettings | None = None,
     recently_cooked_recipe_ids: set[UUID] | None = None,
     reference_date: date | None = None,
-) -> tuple[list[MealPlan], list[ShoppingItem]]:
+    avoided_ingredient_ids: set[UUID] | None = None,
+) -> PlanGenerationResult:
     """Generate meal plans for the specified period.
 
     Enforces:
@@ -257,6 +259,14 @@ def generate_period_plan(
         reference_date = start_date
     if recently_cooked_recipe_ids is None:
         recently_cooked_recipe_ids = set()
+    avoided_ids = set(avoided_ingredient_ids or ())
+    excluded_recipes = [
+        recipe
+        for recipe in recipes
+        if any(ingredient.ingredient_id in avoided_ids for ingredient in recipe.ingredients)
+    ]
+    excluded_recipe_ids = {recipe.id for recipe in excluded_recipes}
+    eligible_recipes = [recipe for recipe in recipes if recipe.id not in excluded_recipe_ids]
     # Khi household_settings không được truyền rõ ràng (None), giữ nguyên tham số
     # `periods` của caller (ví dụ test truyền periods=[LUNCH]). Chỉ áp dụng
     # meal_periods từ cài đặt hộ gia đình khi người dùng đã cung cấp rõ ràng.
@@ -286,9 +296,9 @@ def generate_period_plan(
 
     period_id = uuid4()
     recipes_by_cat: dict[DishCategory, list[Recipe]] = {
-        DishCategory.MAN: [r for r in recipes if r.category == DishCategory.MAN],
-        DishCategory.RAU: [r for r in recipes if r.category == DishCategory.RAU],
-        DishCategory.CANH: [r for r in recipes if r.category == DishCategory.CANH],
+        DishCategory.MAN: [r for r in eligible_recipes if r.category == DishCategory.MAN],
+        DishCategory.RAU: [r for r in eligible_recipes if r.category == DishCategory.RAU],
+        DishCategory.CANH: [r for r in eligible_recipes if r.category == DishCategory.CANH],
     }
 
     # Track simulated pantry stock to evaluate availability as we plan
@@ -311,6 +321,7 @@ def generate_period_plan(
     available_leftovers: list[PlannedDish] = []
     meal_plans: list[MealPlan] = []
     shopping_items_map: dict[tuple[UUID, str], ShoppingItem] = {}
+    warnings: list[dict[str, str]] = []
 
     current_d = start_date
     while current_d <= end_date:
@@ -332,6 +343,7 @@ def generate_period_plan(
             )
 
             # Target standard balanced menu: 1 món mặn, 1 món rau, 1 món canh
+            meal_avoidance_gap = False
             for cat in [DishCategory.MAN, DishCategory.RAU, DishCategory.CANH]:
                 dish_chosen: PlannedDish | None = None
 
@@ -374,6 +386,8 @@ def generate_period_plan(
                             recently_cooked_recipe_ids,
                             current_d,
                         )
+                    elif any(r.category == cat for r in excluded_recipes):
+                        meal_avoidance_gap = True
 
                     if chosen_recipe:
                         # Tính thiếu hiểu trên kho TRƯỚC khi trừ món này (giữ nguyên
@@ -463,11 +477,26 @@ def generate_period_plan(
                     meal_plan.dishes.append(dish_chosen)
 
             validate_meal_dish_limits(meal_plan.dishes)
+            if meal_avoidance_gap:
+                warnings.append(
+                    {
+                        "type": "not_enough_dishes",
+                        "planned_for": date_str,
+                        "meal_period": period.value,
+                        "reason": "avoided_ingredients",
+                    }
+                )
+                meal_plan.warnings.append(warnings[-1])
             meal_plans.append(meal_plan)
 
         current_d += timedelta(days=1)
 
-    return meal_plans, list(shopping_items_map.values())
+    return PlanGenerationResult(
+        meal_plans=meal_plans,
+        shopping_items=list(shopping_items_map.values()),
+        warnings=warnings,
+        excluded_recipe_count=len(excluded_recipe_ids),
+    )
 
 
 def merge_new_plans_into_existing(
@@ -534,6 +563,7 @@ def regenerate_single_meal(
     leftover_days: int = LEFTOVER_DEFAULT_DAYS,
     recently_cooked_recipe_ids: set[UUID] | None = None,
     reference_date: date | None = None,
+    avoided_ingredient_ids: set[UUID] | None = None,
 ) -> MealPlan:
     """Sinh lại 1 bữa đơn lẻ mà không ảnh hưởng các bữa khác (B1 & B2).
 
@@ -560,6 +590,14 @@ def regenerate_single_meal(
         reference_date = target_plan.planned_for
     if recently_cooked_recipe_ids is None:
         recently_cooked_recipe_ids = set()
+    avoided_ids = set(avoided_ingredient_ids or ())
+    excluded_recipes = [
+        recipe
+        for recipe in recipes
+        if any(ingredient.ingredient_id in avoided_ids for ingredient in recipe.ingredients)
+    ]
+    excluded_recipe_ids = {recipe.id for recipe in excluded_recipes}
+    eligible_recipes = [recipe for recipe in recipes if recipe.id not in excluded_recipe_ids]
 
     # Thu thập các món đã nấu trong các bữa KHÁC của cùng đợt (is_leftover = False)
     other_cooked_recipe_ids: set[UUID] = {
@@ -571,9 +609,9 @@ def regenerate_single_meal(
     }
 
     recipes_by_cat: dict[DishCategory, list[Recipe]] = {
-        DishCategory.MAN: [r for r in recipes if r.category == DishCategory.MAN],
-        DishCategory.RAU: [r for r in recipes if r.category == DishCategory.RAU],
-        DishCategory.CANH: [r for r in recipes if r.category == DishCategory.CANH],
+        DishCategory.MAN: [r for r in eligible_recipes if r.category == DishCategory.MAN],
+        DishCategory.RAU: [r for r in eligible_recipes if r.category == DishCategory.RAU],
+        DishCategory.CANH: [r for r in eligible_recipes if r.category == DishCategory.CANH],
     }
 
     usable_lots = [
@@ -593,6 +631,7 @@ def regenerate_single_meal(
     ]
 
     new_dishes: list[PlannedDish] = []
+    warnings: list[dict[str, str]] = []
     for cat in [DishCategory.MAN, DishCategory.RAU, DishCategory.CANH]:
         candidate_recipes = [r for r in recipes_by_cat[cat] if r.id not in other_cooked_recipe_ids]
         if not candidate_recipes:
@@ -632,6 +671,15 @@ def regenerate_single_meal(
                     selection_reason=chosen_reason,
                 )
             )
+        elif any(r.category == cat for r in excluded_recipes):
+            warning = {
+                "type": "not_enough_dishes",
+                "planned_for": target_plan.planned_for.isoformat(),
+                "meal_period": target_plan.meal_period.value,
+                "reason": "avoided_ingredients",
+            }
+            if warning not in warnings:
+                warnings.append(warning)
 
     validate_meal_dish_limits(new_dishes)
     return MealPlan(
@@ -643,6 +691,7 @@ def regenerate_single_meal(
         notes=target_plan.notes,
         dishes=new_dishes,
         created_at=target_plan.created_at,
+        warnings=warnings,
     )
 
 

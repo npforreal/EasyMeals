@@ -230,7 +230,7 @@ class EngineLogicTest {
                     assertEquals("[$name] items with price", exp.getInt("items_with_price_count"), budget.itemsWithPriceCount)
                     assertEquals("[$name] total items", exp.getInt("total_items_count"), budget.totalItemsCount)
                 }
-                "plan" -> {
+                "plan", "plan_avoided" -> {
                     val recipesArray = c.getJSONArray("recipes")
                     val recipes = mutableListOf<Recipe>()
                     for (j in 0 until recipesArray.length()) {
@@ -264,15 +264,32 @@ class EngineLogicTest {
                         continue
                     }
 
-                    val (_, plans, shopping) = EasyMealsEngine.generatePeriodPlan(
+                    val generated = EasyMealsEngine.generatePeriodPlan(
                         startDateStr = start.toString(),
                         endDateStr = end.toString(),
                         recipes = recipes,
                         currentPantryLots = pantry,
                         allowLeftovers = allowLeftovers,
                         conversions = convs,
-                        leftoverDays = leftoverDays
+                        leftoverDays = leftoverDays,
+                        avoidedIngredientIds = if (op == "plan_avoided") {
+                            val ids = c.getJSONArray("avoided_ingredient_ids")
+                            (0 until ids.length()).map { ids.getString(it) }.toSet()
+                        } else emptySet()
                     )
+                    val (_, plans, shopping) = generated
+
+                    if (op == "plan_avoided") {
+                        val blocked = (0 until c.getJSONArray("avoided_ingredient_ids").length())
+                            .map { c.getJSONArray("avoided_ingredient_ids").getString(it) }.toSet()
+                        val recipeById = recipes.associateBy { it.id }
+                        assertTrue("[$name] no forbidden ingredient in plan", plans.flatMap { it.dishes }.none { dish ->
+                            recipeById[dish.recipeId]?.ingredients?.any { it.ingredientId in blocked } == true
+                        })
+                        assertEquals("[$name] excluded count", exp.getInt("excluded_recipe_count"), generated.excludedRecipeCount)
+                        assertEquals("[$name] warning count", exp.getInt("warning_count"), generated.warnings.size)
+                        continue
+                    }
 
                     val expDishes = exp.getJSONArray("dishes")
                     val actualDishes = plans.flatMap { it.dishes }.map { it.recipeName }
@@ -293,5 +310,24 @@ class EngineLogicTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun regenerateMealHonorsAvoidedIngredientIds() {
+        val recipes = listOf(
+            Recipe("blocked", "Món tránh", "man", ingredients = listOf(RecipeIngredient("avoid-id", "X", "1", "g"))),
+            Recipe("allowed", "Món khác", "man", ingredients = listOf(RecipeIngredient("keep-id", "Y", "1", "g"))),
+            Recipe("greens", "Rau", "rau"),
+            Recipe("soup", "Canh", "canh")
+        )
+        val plan = MealPlan(id = "target", plannedFor = "2026-10-26", mealPeriod = "lunch")
+        val result = EasyMealsEngine.regenerateSingleMeal(
+            targetMealPlanId = plan.id,
+            allMealPlans = listOf(plan),
+            recipes = recipes,
+            avoidedIngredientIds = setOf("avoid-id")
+        )
+        assertFalse(result.dishes.any { it.recipeId == "blocked" })
+        assertTrue(result.dishes.any { it.recipeId == "allowed" })
     }
 }

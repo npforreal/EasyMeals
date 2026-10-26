@@ -25,6 +25,8 @@ import {
   syncCatalogue,
   getCachedCatalogue,
   getShoppingItems,
+  getLocalSetting,
+  setLocalSetting,
   addShoppingItem,
   replacePlanShoppingItems,
   toggleShoppingItemBought,
@@ -523,6 +525,22 @@ describe("EasyMeals IndexedDB Storage Tests", () => {
     assert.equal(restored.length, 2);
     assert.ok(restored.some((i) => i.source === "manual" && i.id === "ing-manual-1_ml"));
     assert.ok(restored.some((i) => i.source === "plan" && i.plan_ids.includes("period-001")));
+  });
+
+  test("backup giữ và phục hồi tuỳ chọn nguyên liệu cần tránh cùng settings cục bộ", async () => {
+    const preferences = {
+      avoidedIngredientIds: ["canonical-ing-1"],
+      preferredIngredientIds: ["canonical-ing-2"],
+      diet: "vegan",
+      maxSpice: 2,
+    };
+    await setLocalSetting("recipe_preferences_v1", preferences);
+    const backup = await exportBackupJSON();
+    assert.ok(backup.data.settings.some((entry) => entry.key === "recipe_preferences_v1"));
+
+    await clearAllPersonalData();
+    await importBackupJSON(JSON.parse(JSON.stringify(backup)));
+    assert.deepEqual(await getLocalSetting("recipe_preferences_v1"), preferences);
   });
 
   test("A3: backup cũ (schema_version 1 không có shopping) vẫn nhập được - migration tương thích", async () => {

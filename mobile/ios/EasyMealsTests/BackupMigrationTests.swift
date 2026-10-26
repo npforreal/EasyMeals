@@ -67,4 +67,17 @@ final class BackupMigrationTests: XCTestCase {
         XCTAssertTrue(manual.isManuallyAdded)
         XCTAssertEqual(manual.id, "i_g")
     }
+
+    func testRecipePreferenceBackupMigratesLegacyAndDecodesCurrent() throws {
+        let legacy = try BackupManager.validateAndDecode(jsonData: #"{"pantry_lots":[],"meal_plans":[],"stock_movements":[],"shopping_items":[]}"#.data(using: .utf8)!)
+        XCTAssertEqual(legacy.schemaVersion, 1)
+        XCTAssertEqual(legacy.recipePreferences, RecipePreferencesBackup())
+
+        let current = try BackupManager.validateAndDecode(jsonData: #"{"schema_version":2,"recipe_preferences":{"avoided_ingredient_ids":["ing-a"],"preferred_ingredient_ids":["ing-b"],"dietary_filter":"vegan","max_spice":2}}"#.data(using: .utf8)!)
+        XCTAssertEqual(current.schemaVersion, 2)
+        XCTAssertEqual(current.recipePreferences.avoidedIngredientIds, ["ing-a"])
+        XCTAssertEqual(current.recipePreferences.preferredIngredientIds, ["ing-b"])
+        XCTAssertEqual(current.recipePreferences.dietaryFilter, "vegan")
+        XCTAssertEqual(current.recipePreferences.maxSpice, 2)
+    }
 }

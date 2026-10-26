@@ -90,4 +90,17 @@ class BackupMigrationTest {
         assertTrue(manual.isManuallyAdded)
         assertEquals("i_g", manual.id)
     }
+
+    @Test
+    fun recipePreferencesBackupSupportsLegacyAndCurrentSchemas() {
+        val legacy = BackupManager.sanitize(BackupManager.decode("""{"pantry_lots":[],"meal_plans":[],"stock_movements":[],"shopping_items":[]}"""))
+        assertEquals(1, legacy.schemaVersion)
+        assertTrue(legacy.recipePreferences!!.avoidedIngredientIds.isEmpty())
+
+        val current = BackupManager.sanitize(BackupManager.decode("""{"schema_version":2,"recipe_preferences":{"avoided_ingredient_ids":["ing-a"],"preferred_ingredient_ids":["ing-b"],"dietary_filter":"vegan","max_spice":"2"}}"""))
+        assertEquals(setOf("ing-a"), current.recipePreferences!!.avoidedIngredientIds)
+        assertEquals(setOf("ing-b"), current.recipePreferences!!.preferredIngredientIds)
+        assertEquals("vegan", current.recipePreferences!!.dietaryFilter)
+        assertEquals("2", current.recipePreferences!!.maxSpice)
+    }
 }

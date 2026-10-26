@@ -121,7 +121,7 @@ def generate_stateless_plan(
         )
 
     try:
-        meal_plans, shopping_items = generate_period_plan(
+        generation = generate_period_plan(
             start_date=payload.start_date,
             end_date=end_date,
             recipes=recipes,
@@ -132,7 +132,9 @@ def generate_stateless_plan(
             raw_ingredient_names=raw_ingredient_names,
             household_settings=household_settings,
             recently_cooked_recipe_ids=set(payload.options.recently_cooked_recipe_ids),
+            avoided_ingredient_ids=set(payload.options.avoided_ingredient_ids),
         )
+        meal_plans, shopping_items = generation
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
 
@@ -148,6 +150,7 @@ def generate_stateless_plan(
             period_id=p.period_id,
             eaten_at=p.eaten_at,
             notes=p.notes,
+            warnings=p.warnings,
             dishes=[
                 PlannedDishResponse(
                     id=d.id,
@@ -182,6 +185,8 @@ def generate_stateless_plan(
         end_date=end_date,
         meals=meals_resp,
         shopping_list=shopping_resp,
+        warnings=generation.warnings,
+        excluded_recipe_count=generation.excluded_recipe_count,
     )
 
 
@@ -337,6 +342,7 @@ def _to_domain_meal_plan(inp: MealPlanInput) -> MealPlan:
         period_id=inp.period_id,
         eaten_at=inp.eaten_at,
         notes=inp.notes,
+        warnings=inp.warnings,
         dishes=[
             PlannedDish(
                 id=d.id,
@@ -375,6 +381,7 @@ def regenerate_stateless_meal(
             conversions=conversions,
             raw_ingredient_names=raw_ingredient_names,
             leftover_days=payload.options.leftover_days,
+            avoided_ingredient_ids=set(payload.options.avoided_ingredient_ids),
         )
     except MealAlreadyEatenError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -383,6 +390,13 @@ def regenerate_stateless_meal(
 
     return StatelessRegenerateMealResponse(
         success=True,
+        excluded_recipe_count=sum(
+            any(
+                ingredient.ingredient_id in set(payload.options.avoided_ingredient_ids)
+                for ingredient in recipe.ingredients
+            )
+            for recipe in recipes
+        ),
         meal=MealPlanResponse(
             id=updated_meal.id,
             planned_for=updated_meal.planned_for,
@@ -390,6 +404,7 @@ def regenerate_stateless_meal(
             period_id=updated_meal.period_id,
             eaten_at=updated_meal.eaten_at,
             notes=updated_meal.notes,
+            warnings=updated_meal.warnings,
             dishes=[
                 PlannedDishResponse(
                     id=d.id,

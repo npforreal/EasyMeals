@@ -203,6 +203,20 @@ class MealPlan:
     notes: str | None = None
     dishes: list[PlannedDish] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
+    warnings: list[dict[str, str]] = field(default_factory=list)
+
+
+@dataclass
+class PlanGenerationResult:
+    meal_plans: list[MealPlan]
+    shopping_items: list["ShoppingItem"]
+    warnings: list[dict[str, str]] = field(default_factory=list)
+    excluded_recipe_count: int = 0
+
+    def __iter__(self):
+        # Preserve existing `plans, shopping = generate_period_plan(...)` callers.
+        yield self.meal_plans
+        yield self.shopping_items
 
 
 @dataclass

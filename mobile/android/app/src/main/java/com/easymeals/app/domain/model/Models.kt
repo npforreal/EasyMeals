@@ -121,7 +121,24 @@ data class MealPlan(
     @SerialName("period_id") @SerializedName("period_id") val periodId: String? = null,
     @SerialName("eaten_at") @SerializedName("eaten_at") var eatenAt: String? = null,
     val notes: String? = null,
-    val dishes: MutableList<PlannedDish> = mutableListOf()
+    val dishes: MutableList<PlannedDish> = mutableListOf(),
+    val warnings: List<PlanWarning>? = null
+)
+
+@Serializable
+data class PlanWarning(
+    val type: String,
+    @SerialName("planned_for") val plannedFor: String,
+    @SerialName("meal_period") val mealPeriod: String,
+    val reason: String
+)
+
+data class PlanGenerationResult(
+    val periodId: String,
+    val plans: List<MealPlan>,
+    val shoppingList: List<ShoppingItem>,
+    val excludedRecipeCount: Int,
+    val warnings: List<PlanWarning>
 )
 
 @Serializable

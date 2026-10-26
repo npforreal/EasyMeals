@@ -13,6 +13,10 @@ public struct TodayView: View {
     @AppStorage("selected_plan_days") private var selectedPlanDays: Int = PlanLimits.defaultDays
     @AppStorage("allow_leftovers") private var allowLeftovers: Bool = true
     @AppStorage("leftover_days") private var leftoverDays: Int = PlanLimits.leftoverDefaultDays
+    @AppStorage("easymeals.recipe.avoidedIngredientIds") private var avoidedIngredientIDs = ""
+
+    private var avoidedIDs: Set<String> { Set(avoidedIngredientIDs.split(separator: ",").map(String.init)) }
+    private var staleAvoidedIDs: Set<String> { avoidedIDs.subtracting(storage.ingredients.map(\.id)) }
 
     var todayPlans: [MealPlan] {
         let todayStr = ISO8601DateFormatter().string(from: Date()).prefix(10).description
@@ -31,6 +35,23 @@ public struct TodayView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    if !avoidedIDs.isEmpty {
+                        Text("Ứng dụng chỉ loại món chứa chính xác các nguyên liệu bạn chọn. Thông tin dị ứng của nguyên liệu và món chưa được xác minh, nên nguyên liệu ẩn trong sốt, bánh hay đồ chế biến có thể không bị phát hiện. Hãy luôn đọc nhãn và hỏi người nấu.")
+                            .font(.footnote)
+                            .foregroundColor(AppColors.textSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    if !staleAvoidedIDs.isEmpty {
+                        Text("Một số nguyên liệu đã chọn không còn trong danh mục; sẽ được bỏ qua cho đến khi dữ liệu trở lại.")
+                            .font(.footnote)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    if !avoidedIDs.isEmpty && storage.excludedRecipeCount > 0 {
+                        Text("Đã loại \(storage.excludedRecipeCount) món theo nguyên liệu cần tránh.")
+                            .font(.footnote)
+                            .foregroundColor(AppColors.textSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                     if storage.mealPlans.isEmpty {
                         emptyPlanView
                     } else {
@@ -265,6 +286,13 @@ public struct TodayView: View {
             }
 
             Divider()
+
+            if !(plan.warnings ?? []).isEmpty {
+                Text("Không đủ món phù hợp với nguyên liệu bạn tránh cho bữa này.")
+                    .font(.footnote)
+                    .foregroundColor(AppColors.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
 
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(plan.dishes) { dish in

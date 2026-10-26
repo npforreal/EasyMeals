@@ -93,7 +93,11 @@ fun TodayScreen(repository: AppRepository) {
     val mealPlans by repository.mealPlans.collectAsState()
     val recipes by repository.recipes.collectAsState()
     val pantryLots by repository.pantryLots.collectAsState()
+    val ingredients by repository.ingredients.collectAsState()
+    val excludedRecipeCount by repository.excludedRecipeCount.collectAsState()
     val context = LocalContext.current
+    val avoidedIds = remember { context.getSharedPreferences("recipe_preferences", Context.MODE_PRIVATE).getStringSet("avoided_ingredient_ids", emptySet()).orEmpty() }
+    val staleAvoidedIds = avoidedIds - ingredients.map { it.id }.toSet()
 
     var viewingRecipe by remember { mutableStateOf<Recipe?>(null) }
     var viewingServings by remember { mutableIntStateOf(2) }
@@ -182,6 +186,20 @@ fun TodayScreen(repository: AppRepository) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            if (avoidedIds.isNotEmpty()) {
+                Text(
+                    "Ứng dụng chỉ loại món chứa chính xác các nguyên liệu bạn chọn. Thông tin dị ứng của nguyên liệu và món chưa được xác minh, nên nguyên liệu ẩn trong sốt, bánh hay đồ chế biến có thể không bị phát hiện. Hãy luôn đọc nhãn và hỏi người nấu.",
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            if (staleAvoidedIds.isNotEmpty()) {
+                Text("Một số nguyên liệu đã chọn không còn trong danh mục; sẽ được bỏ qua cho đến khi dữ liệu trở lại.", modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.tertiary)
+            }
+            if (avoidedIds.isNotEmpty() && excludedRecipeCount > 0) {
+                Text("Đã loại $excludedRecipeCount món theo nguyên liệu cần tránh.", modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             if (mealPlans.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(
@@ -492,6 +510,10 @@ fun MealPlanCard(
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+            if (!plan.warnings.isNullOrEmpty()) {
+                Text("Không đủ món phù hợp với nguyên liệu bạn tránh cho bữa này.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
 
             plan.dishes.forEach { dish ->
                 Row(

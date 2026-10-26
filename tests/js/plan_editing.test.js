@@ -60,6 +60,19 @@ describe("Plan Editing & Shopping Budget (JS Engine)", () => {
     assert.equal(manDish.recipe_id, "r-man-2");
   });
 
+  it("D2b: regenerateSingleMeal honors canonical avoided ingredient IDs", () => {
+    const recipes = [
+      { id: "blocked", name: "Món tránh", category: "man", servings: 4, ingredients: [{ ingredient_id: "avoid-id" }] },
+      { id: "allowed", name: "Món khác", category: "man", servings: 4, ingredients: [{ ingredient_id: "keep-id" }] },
+      { id: "greens", name: "Rau", category: "rau", servings: 4, ingredients: [] },
+      { id: "soup", name: "Canh", category: "canh", servings: 4, ingredients: [] },
+    ];
+    const plan = { id: "target", planned_for: "2026-10-26", meal_period: "lunch", dishes: [] };
+    const updated = regenerateSingleMeal("target", [plan], recipes, [], { avoided_ingredient_ids: ["avoid-id"] });
+    assert.equal(updated.dishes.some((dish) => dish.recipe_id === "blocked"), false);
+    assert.equal(updated.dishes.some((dish) => dish.recipe_id === "allowed"), true);
+  });
+
   it("B4: calculateShoppingBudget sums only items with user prices", () => {
     const items = [
       { id: "1", ingredient_name: "Thịt bò", price: "80000", is_bought: true },

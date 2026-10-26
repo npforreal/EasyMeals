@@ -14,6 +14,7 @@ public final class AppStorage: @unchecked Sendable {
     public var shoppingItems: [ShoppingItem] = []
     public var catalogueVersion: String = "2026.10.26"
     public var loadError: String? = nil
+    public var excludedRecipeCount: Int = 0
 
     // C1 - Vòng 13: cài đặt hộ gia đình cục bộ (không lưu lên server, nhưng backup/restore cùng state).
     public var householdSize: Int = 1
@@ -21,6 +22,11 @@ public final class AppStorage: @unchecked Sendable {
     public var mealPeriods: [String] = ["lunch", "dinner"]
     public var skipDates: [String] = []
     public var planDays: Int = PlanLimits.defaultDays
+
+    private var avoidedIngredientIDs: Set<String> {
+        Set((UserDefaults.standard.string(forKey: "easymeals.recipe.avoidedIngredientIds") ?? "")
+            .split(separator: ",").map(String.init))
+    }
 
     public var householdSettings: HouseholdSettings {
         HouseholdSettings(
@@ -363,7 +369,8 @@ public final class AppStorage: @unchecked Sendable {
             allMealPlans: mealPlans,
             recipes: recipes,
             currentPantryLots: pantryLots,
-            conversions: conversions
+            conversions: conversions,
+            avoidedIngredientIds: avoidedIngredientIDs
         )
         mealPlans[targetIdx] = updatedMeal
 
@@ -397,13 +404,14 @@ public final class AppStorage: @unchecked Sendable {
         persistState()
     }
 
-    public func swapDish(mealPlanId: String, oldDishId: String, newRecipeId: String) throws {
+    public func swapDish(mealPlanId: String, oldDishId: String, newRecipeId: String, confirmedAvoidance: Bool = false) throws {
         guard let targetIdx = mealPlans.firstIndex(where: { $0.id == mealPlanId }) else {
             throw MealPlanError("Không tìm thấy bữa ăn có ID \(mealPlanId)")
         }
         guard let recipe = recipes.first(where: { $0.id == newRecipeId }) else {
             throw MealPlanError("Không tìm thấy món có ID \(newRecipeId)")
         }
+        try requireAvoidanceConfirmation(recipe, confirmed: confirmedAvoidance)
         let updatedMeal = try EasyMealsEngine.swapDishInMeal(
             mealPlan: mealPlans[targetIdx],
             oldDishId: oldDishId,
@@ -415,13 +423,14 @@ public final class AppStorage: @unchecked Sendable {
         persistState()
     }
 
-    public func addDish(mealPlanId: String, recipeId: String, servings: Int? = nil) throws {
+    public func addDish(mealPlanId: String, recipeId: String, servings: Int? = nil, confirmedAvoidance: Bool = false) throws {
         guard let targetIdx = mealPlans.firstIndex(where: { $0.id == mealPlanId }) else {
             throw MealPlanError("Không tìm thấy bữa ăn có ID \(mealPlanId)")
         }
         guard let recipe = recipes.first(where: { $0.id == recipeId }) else {
             throw MealPlanError("Không tìm thấy món có ID \(recipeId)")
         }
+        try requireAvoidanceConfirmation(recipe, confirmed: confirmedAvoidance)
         let updatedMeal = try EasyMealsEngine.addDishToMeal(
             mealPlan: mealPlans[targetIdx],
             recipe: recipe,
@@ -430,6 +439,12 @@ public final class AppStorage: @unchecked Sendable {
         mealPlans[targetIdx] = updatedMeal
         updateShoppingListAfterPlanChange()
         persistState()
+    }
+
+    private func requireAvoidanceConfirmation(_ recipe: Recipe, confirmed: Bool) throws {
+        guard !confirmed, let violation = recipe.ingredients.first(where: { avoidedIngredientIDs.contains($0.ingredientId) }) else { return }
+        let name = ingredients.first(where: { $0.id == violation.ingredientId })?.name ?? "nguyên liệu đã chọn"
+        throw MealPlanError("Món này chứa \(name) mà bạn đã đặt cần tránh. Vẫn thêm?")
     }
 
     public func removeDish(mealPlanId: String, dishId: String) throws {
@@ -567,6 +582,7 @@ public final class AppStorage: @unchecked Sendable {
         let startStr = formatter.string(from: start)
         let endStr = formatter.string(from: end)
         let recentCutoff = Calendar.current.date(byAdding: .day, value: -7, to: start).map(formatter.string(from:)) ?? startStr
+        excludedRecipeCount = recipes.filter { recipe in recipe.ingredients.contains { avoidedIngredientIDs.contains($0.ingredientId) } }.count
 
         if let result = try? EasyMealsEngine.generatePeriodPlan(
             startDateStr: startStr,
@@ -585,7 +601,8 @@ public final class AppStorage: @unchecked Sendable {
             householdSettings: self.householdSettings,
             recentlyCookedRecipeIds: Set(mealPlans
                 .filter { $0.eatenAt != nil && $0.plannedFor >= recentCutoff && $0.plannedFor < startStr }
-                .flatMap { $0.dishes.filter { !$0.isLeftover }.map(\.recipeId) })
+                .flatMap { $0.dishes.filter { !$0.isLeftover }.map(\.recipeId) }),
+            avoidedIngredientIds: avoidedIngredientIDs
         ) {
             self.mealPlans = EasyMealsEngine.mergeNewPlansIntoExisting(
                 mealPlans,
@@ -608,7 +625,8 @@ public final class AppStorage: @unchecked Sendable {
             pantryLots: pantryLots,
             mealPlans: mealPlans,
             stockMovements: stockMovements,
-            shoppingItems: shoppingItems
+            shoppingItems: shoppingItems,
+            recipePreferences: recipePreferencesSnapshot()
         )
         return try BackupManager.encode(payload: payload)
     }
@@ -620,6 +638,7 @@ public final class AppStorage: @unchecked Sendable {
             self.mealPlans = payload.mealPlans
             self.stockMovements = payload.stockMovements
             self.shoppingItems = payload.shoppingItems
+            restoreRecipePreferences(payload.recipePreferences)
         } else {
             // Chế độ gộp: nối thêm lô tủ và món đi chợ
             let existingLotIds = Set(pantryLots.map { $0.id })
@@ -632,6 +651,26 @@ public final class AppStorage: @unchecked Sendable {
             }
         }
         persistState()
+    }
+
+    private func recipePreferencesSnapshot() -> RecipePreferencesBackup {
+        let defaults = UserDefaults.standard
+        let avoided = defaults.string(forKey: "easymeals.recipe.avoidedIngredientIds") ?? ""
+        let preferred = defaults.string(forKey: "easymeals.recipe.preferredIngredientIds") ?? ""
+        return RecipePreferencesBackup(
+            avoidedIngredientIds: avoided.split(separator: ",").map(String.init).sorted(),
+            preferredIngredientIds: preferred.split(separator: ",").map(String.init).sorted(),
+            dietaryFilter: defaults.string(forKey: "easymeals.recipe.dietaryFilter") ?? "",
+            maxSpice: defaults.object(forKey: "easymeals.recipe.maxSpice") as? Int ?? -1
+        )
+    }
+
+    private func restoreRecipePreferences(_ value: RecipePreferencesBackup) {
+        let defaults = UserDefaults.standard
+        defaults.set(value.avoidedIngredientIds.sorted().joined(separator: ","), forKey: "easymeals.recipe.avoidedIngredientIds")
+        defaults.set(value.preferredIngredientIds.sorted().joined(separator: ","), forKey: "easymeals.recipe.preferredIngredientIds")
+        defaults.set(value.dietaryFilter, forKey: "easymeals.recipe.dietaryFilter")
+        defaults.set(value.maxSpice, forKey: "easymeals.recipe.maxSpice")
     }
 
     public func wipeAllData() {

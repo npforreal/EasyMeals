@@ -32,6 +32,7 @@ from app.domain.planner import generate_period_plan
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_PATH = ROOT / "tests" / "fixtures" / "engine_test_cases.json"
+LOGIC_FIXTURE_PATH = ROOT / "tests" / "fixtures" / "engine_logic_cases.json"
 
 
 def serialize_val(obj):
@@ -634,6 +635,103 @@ def generate_fixtures() -> dict:
     FIXTURE_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(FIXTURE_PATH, "w", encoding="utf-8") as f:
         json.dump(cases, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+    # Shared D2b avoidance cases: generated once here and copied to native tests by
+    # scripts/sync_mobile_assets.py. Expectations describe invariants, not planner ordering.
+    avoidance_id = "11111111-0001-0000-0000-000000000801"
+    unknown_id = "11111111-0001-0000-0000-000000000899"
+
+    def avoidance_recipe(index: int, category: str, avoid: bool) -> dict:
+        ingredient_id = avoidance_id if avoid else f"11111111-0001-0000-0000-{index + 900:012d}"
+        return {
+            "id": f"22222222-0001-0000-0000-{index + 801:012d}",
+            "name": f"Món tránh {index}" if avoid else f"Món hợp lệ {index}",
+            "category": category,
+            "servings": 2,
+            "ingredients": [
+                {
+                    "ingredient_id": ingredient_id,
+                    "name": f"Nguyên liệu {index}",
+                    "quantity": "100",
+                    "unit": "g",
+                }
+            ],
+        }
+
+    base_recipes = [
+        avoidance_recipe(1, "man", True),
+        avoidance_recipe(2, "man", False),
+        avoidance_recipe(3, "rau", False),
+        avoidance_recipe(4, "rau", False),
+        avoidance_recipe(5, "canh", False),
+        avoidance_recipe(6, "canh", False),
+    ]
+    avoid_cases = [
+        {
+            "name": "plan_avoid_ids_exclude_recipes_and_warn_when_insufficient",
+            "op": "plan_avoided",
+            "start": "2026-10-26",
+            "days": 1,
+            "allow_leftovers": False,
+            "avoided_ingredient_ids": [avoidance_id],
+            "recipes": base_recipes,
+            "pantry": [],
+            "expect": {"excluded_recipe_count": 1, "warning_count": 1},
+        },
+        {
+            "name": "plan_avoid_common_ingredient_warns_without_relaxing",
+            "op": "plan_avoided",
+            "start": "2026-10-26",
+            "days": 1,
+            "allow_leftovers": False,
+            "avoided_ingredient_ids": [avoidance_id],
+            "recipes": [
+                avoidance_recipe(11, "man", True),
+                avoidance_recipe(12, "rau", True),
+                avoidance_recipe(13, "canh", True),
+            ],
+            "pantry": [],
+            "expect": {"excluded_recipe_count": 3, "warning_count": 2},
+        },
+        {
+            "name": "plan_avoid_empty_list_preserves_existing_choices",
+            "op": "plan_avoided",
+            "start": "2026-10-26",
+            "days": 1,
+            "allow_leftovers": False,
+            "avoided_ingredient_ids": [],
+            "recipes": [
+                avoidance_recipe(21, "man", False),
+                avoidance_recipe(22, "rau", False),
+                avoidance_recipe(23, "canh", False),
+            ],
+            "pantry": [],
+            "expect": {"excluded_recipe_count": 0, "warning_count": 0},
+        },
+        {
+            "name": "plan_avoid_unknown_ids_are_ignored",
+            "op": "plan_avoided",
+            "start": "2026-10-26",
+            "days": 1,
+            "allow_leftovers": False,
+            "avoided_ingredient_ids": [unknown_id],
+            "recipes": [
+                avoidance_recipe(31, "man", False),
+                avoidance_recipe(32, "rau", False),
+                avoidance_recipe(33, "canh", False),
+            ],
+            "pantry": [],
+            "expect": {"excluded_recipe_count": 0, "warning_count": 0},
+        },
+    ]
+    existing_logic = json.loads(LOGIC_FIXTURE_PATH.read_text(encoding="utf-8"))
+    existing_names = {case["name"] for case in existing_logic["cases"]}
+    existing_logic["cases"].extend(
+        case for case in avoid_cases if case["name"] not in existing_names
+    )
+    with LOGIC_FIXTURE_PATH.open("w", encoding="utf-8") as f:
+        json.dump(existing_logic, f, indent=1, ensure_ascii=False)
         f.write("\n")
 
     print(f"-> Đã sinh thành công fixture JSON: {FIXTURE_PATH}")
