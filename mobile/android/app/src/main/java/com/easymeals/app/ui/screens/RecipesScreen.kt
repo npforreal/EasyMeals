@@ -48,6 +48,10 @@ fun RecipesScreen(repository: AppRepository) {
     var dietaryFilter by remember { mutableStateOf(recipePreferences.getString("dietary_filter", "") ?: "") }
     var showAvoidDialog by remember { mutableStateOf(false) }
     var showPreferredDialog by remember { mutableStateOf(false) }
+    var showIncludeDialog by remember { mutableStateOf(false) }
+    var showExcludeDialog by remember { mutableStateOf(false) }
+    var includeIngredientIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var excludeIngredientIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var avoidedIngredientIds by remember { mutableStateOf(recipePreferences.getStringSet("avoided_ingredient_ids", emptySet()).orEmpty()) }
     var preferredIngredientIds by remember { mutableStateOf(recipePreferences.getStringSet("preferred_ingredient_ids", emptySet()).orEmpty()) }
     var maxSpice by remember {
@@ -71,12 +75,13 @@ fun RecipesScreen(repository: AppRepository) {
         listOf("Tất cả") + cats
     }
 
-    val filteredRecipes = remember(recipes, searchQuery, selectedCategory, dietaryFilter, avoidedIngredientIds, preferredIngredientIds, maxSpice) {
+    val filteredRecipes = remember(recipes, searchQuery, selectedCategory, dietaryFilter, avoidedIngredientIds, preferredIngredientIds, maxSpice, includeIngredientIds, excludeIngredientIds) {
         recipes.filter { recipe ->
             val catLabel = com.easymeals.app.ui.theme.GeneratedTokens.Labels.dish_categories[recipe.category] ?: recipe.category
             val matchCat = selectedCategory == "Tất cả" || recipe.category == selectedCategory
             val matchQuery = searchQuery.isBlank() ||
                     CatalogueLoader.matches(recipe.name, searchQuery) ||
+                    recipe.ingredients.any { CatalogueLoader.matches(it.ingredientName, searchQuery) } ||
                     CatalogueLoader.matches(recipe.category, searchQuery) ||
                     CatalogueLoader.matches(catLabel, searchQuery)
             val matchDiet = dietaryFilter.isEmpty() || (
@@ -85,11 +90,13 @@ fun RecipesScreen(repository: AppRepository) {
                             !recipe.dietaryVerifiedAt.isNullOrBlank()
                     )
             val matchAvoid = recipe.ingredients.none { it.ingredientId in avoidedIngredientIds }
+            val recipeIngredientIds = recipe.ingredients.map { it.ingredientId }.toSet()
+            val matchIngredients = includeIngredientIds.all { it in recipeIngredientIds } && excludeIngredientIds.none { it in recipeIngredientIds }
             val matchSpice = maxSpice == null || (
                     recipe.spiceLevel != null && recipe.spiceLevel <= maxSpice!! &&
                             !recipe.spiceSourceUrl.isNullOrBlank() && !recipe.spiceVerifiedAt.isNullOrBlank()
                     )
-            matchCat && matchQuery && matchDiet && matchAvoid && matchSpice
+            matchCat && matchQuery && matchDiet && matchAvoid && matchSpice && matchIngredients
         }.sortedByDescending { recipe -> recipe.ingredients.count { it.ingredientId in preferredIngredientIds } }
     }
 
@@ -169,6 +176,28 @@ fun RecipesScreen(repository: AppRepository) {
             confirmButton = { TextButton(onClick = { showPreferredDialog = false }) { Text("Xong") } }
         )
     }
+    if (showIncludeDialog || showExcludeDialog) {
+        val isInclude = showIncludeDialog
+        val selected = if (isInclude) includeIngredientIds else excludeIngredientIds
+        AlertDialog(
+            onDismissRequest = { showIncludeDialog = false; showExcludeDialog = false },
+            title = { Text(if (isInclude) "Công thức phải có đủ nguyên liệu" else "Loại món có nguyên liệu") },
+            text = {
+                LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
+                    items(ingredients, key = { it.id }) { ingredient ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = ingredient.id in selected, onCheckedChange = { checked ->
+                                val updated = selected.toMutableSet().apply { if (checked) add(ingredient.id) else remove(ingredient.id) }.toSet()
+                                if (isInclude) includeIngredientIds = updated else excludeIngredientIds = updated
+                            })
+                            Text(ingredient.name)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showIncludeDialog = false; showExcludeDialog = false }) { Text("Xong") } }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -197,6 +226,8 @@ fun RecipesScreen(repository: AppRepository) {
                 TextButton(onClick = { showPreferredDialog = true }) {
                     Text("Ưa thích (${preferredIngredientIds.size})")
                 }
+                TextButton(onClick = { showIncludeDialog = true }) { Text("Có: ${includeIngredientIds.size}") }
+                TextButton(onClick = { showExcludeDialog = true }) { Text("Không có: ${excludeIngredientIds.size}") }
                 Box {
                     TextButton(onClick = { showSpiceMenu = true }) {
                         Text("Cay tối đa: ${maxSpice?.toString() ?: "Không giới hạn"}")
@@ -253,7 +284,7 @@ fun RecipesScreen(repository: AppRepository) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Tìm theo tên món, danh mục...") },
+                placeholder = { Text("Tìm tên món hoặc nguyên liệu...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
@@ -290,9 +321,8 @@ fun RecipesScreen(repository: AppRepository) {
 
             // Results count
             Text(
-                text = if (filteredRecipes.isEmpty() && dietaryFilter.isNotEmpty()) {
-                    "Chưa có món nào được xác minh cho chế độ này."
-                } else "${filteredRecipes.size} món ăn chuẩn vị Việt",
+                text = if (filteredRecipes.isEmpty()) "Không tìm thấy công thức phù hợp. Thử đổi từ khóa hoặc bộ lọc."
+                else "${filteredRecipes.size} công thức phù hợp",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -510,6 +540,7 @@ fun RecipeDetailScreen(
             // Ingredients Section
             item {
                 Text("Nguyên liệu", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("Thời gian, độ khó và mẹo bảo quản chưa có dữ liệu được xác minh.", style = MaterialTheme.typography.bodySmall)
             }
 
             items(recipe.ingredients) { ing ->
@@ -627,13 +658,18 @@ fun CookingModeScreen(
     onDone: () -> Unit
 ) {
     val context = LocalContext.current
+    val cookingPreferences = remember { context.getSharedPreferences("recipe_preferences", android.content.Context.MODE_PRIVATE) }
     var currentStep by remember { mutableIntStateOf(0) }
+    var servings by remember { mutableIntStateOf(recipe.servings.coerceAtLeast(1)) }
+    var keepScreenOn by remember { mutableStateOf(cookingPreferences.getBoolean("keep_screen_on", true)) }
+    val checkedIngredients = remember { mutableStateListOf<String>() }
     val totalSteps = recipe.instructions.size
 
     // Keep screen on during cooking mode
-    DisposableEffect(Unit) {
+    DisposableEffect(keepScreenOn) {
         val window = (context as? Activity)?.window
-        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (keepScreenOn) window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         onDispose {
             window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
@@ -693,6 +729,37 @@ fun CookingModeScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Khẩu phần")
+                    IconButton(onClick = { if (servings > 1) servings-- }) { Icon(Icons.Default.Remove, contentDescription = "Giảm khẩu phần") }
+                    Text(servings.toString())
+                    IconButton(onClick = { if (servings < 20) servings++ }) { Icon(Icons.Default.Add, contentDescription = "Tăng khẩu phần") }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = keepScreenOn, onCheckedChange = {
+                        keepScreenOn = it
+                        cookingPreferences.edit().putBoolean("keep_screen_on", it).apply()
+                    })
+                    Text("Giữ màn hình sáng")
+                }
+            }
+            Text("Nguyên liệu cần chuẩn bị", style = MaterialTheme.typography.titleSmall)
+            LazyColumn(modifier = Modifier.heightIn(max = 150.dp)) {
+                items(recipe.ingredients, key = { it.ingredientId + it.unit }) { ingredient ->
+                    val checked = ingredient.ingredientId in checkedIngredients
+                    val quantity = (ExactDecimal(ingredient.quantity) * ExactDecimal(servings) / ExactDecimal(recipe.servings.coerceAtLeast(1))).toString()
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = checked, onCheckedChange = { value ->
+                            if (value && !checkedIngredients.contains(ingredient.ingredientId)) checkedIngredients.add(ingredient.ingredientId)
+                            if (!value) checkedIngredients.remove(ingredient.ingredientId)
+                        })
+                        Text("${ingredient.ingredientName}: $quantity ${ingredient.unit}")
+                    }
+                }
+            }
+            Text("Thời gian, độ khó và mẹo bảo quản chưa có dữ liệu được xác minh.", style = MaterialTheme.typography.bodySmall)
 
             Spacer(modifier = Modifier.height(24.dp))
 

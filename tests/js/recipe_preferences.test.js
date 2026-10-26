@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { filterRecipesByPreferences } from "../../app/static/js/recipe-preferences.js";
+import { filterRecipesByPreferences, filterRecipesForBrowse } from "../../app/static/js/recipe-preferences.js";
 
 const base = (id, ingredientId, extra = {}) => ({
   id,
@@ -35,5 +35,22 @@ describe("recipe preference filters", () => {
       filterRecipesByPreferences([verified, unknown], { diet: "vegetarian", maxSpice: "2" }).map((r) => r.id),
       ["verified"],
     );
+  });
+});
+
+describe("recipe browsing filters", () => {
+  const recipes = [
+    { id: "soup", name: "Canh chua cá", ingredients: [{ ingredient_id: "tomato", ingredient_name: "Cà chua" }, { ingredient_id: "fish", ingredient_name: "Cá lóc" }] },
+    { id: "stir-fry", name: "Rau xào", ingredients: [{ ingredient_id: "greens", ingredient_name: "Rau muống" }] },
+  ];
+
+  it("searches recipe and ingredient names with or without Vietnamese diacritics", () => {
+    assert.deepEqual(filterRecipesForBrowse(recipes, { query: "ca chua" }).map((r) => r.id), ["soup"]);
+    assert.deepEqual(filterRecipesForBrowse(recipes, { query: "Cà chua" }).map((r) => r.id), ["soup"]);
+  });
+
+  it("requires every selected ingredient and excludes any matching canonical ID", () => {
+    assert.deepEqual(filterRecipesForBrowse(recipes, { includeIngredientIds: ["tomato", "fish"] }).map((r) => r.id), ["soup"]);
+    assert.deepEqual(filterRecipesForBrowse(recipes, { excludeIngredientIds: ["fish"] }).map((r) => r.id), ["stir-fry"]);
   });
 });

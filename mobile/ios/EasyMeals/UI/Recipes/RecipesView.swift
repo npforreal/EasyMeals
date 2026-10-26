@@ -11,6 +11,9 @@ public struct RecipesView: View {
     @AppStorage("easymeals.recipe.maxSpice") private var maxSpiceFilter = -1
     @State private var showingAvoidIngredients = false
     @State private var editingPreferencesAsLikes = false
+    @State private var ingredientSelectionMode = "avoid"
+    @State private var includeIngredientIDs: Set<String> = []
+    @State private var excludeIngredientIDs: Set<String> = []
 
     private var avoidedIDs: Set<String> {
         Set(avoidedIngredientIDs.split(separator: ",").map(String.init))
@@ -21,9 +24,12 @@ public struct RecipesView: View {
 
     var filteredRecipes: [Recipe] {
         storage.recipes.filter { r in
-            let matchesQuery = CatalogueLoader.matches(text: r.name, query: searchText)
+            let matchesQuery = CatalogueLoader.matches(text: r.name, query: searchText) ||
+                r.ingredients.contains { CatalogueLoader.matches(text: $0.ingredientName, query: searchText) }
             let matchesCat = (selectedCategory == "all") || (r.category == selectedCategory)
             if !matchesQuery || !matchesCat { return false }
+            let recipeIngredientIDs = Set(r.ingredients.map(\.ingredientId))
+            if !includeIngredientIDs.isSubset(of: recipeIngredientIDs) || !excludeIngredientIDs.isDisjoint(with: recipeIngredientIDs) { return false }
             if canCookOnly {
                 let (canCook, _) = EasyMealsEngine.checkRecipeStock(recipe: r, pantryLots: storage.pantryLots)
                 if !canCook { return false }
@@ -67,14 +73,26 @@ public struct RecipesView: View {
                 .padding(.horizontal)
                 Button("Nguyên liệu cần tránh (chọn thủ công) (\(avoidedIDs.count))") {
                     editingPreferencesAsLikes = false
+                    ingredientSelectionMode = "avoid"
                     showingAvoidIngredients = true
                 }
                 .padding(.horizontal)
                 Button("Nguyên liệu ưa thích (\(preferredIDs.count))") {
                     editingPreferencesAsLikes = true
+                    ingredientSelectionMode = "like"
                     showingAvoidIngredients = true
                 }
                 .padding(.horizontal)
+                HStack {
+                    Button("Phải có: \(includeIngredientIDs.count)") {
+                        ingredientSelectionMode = "include"
+                        showingAvoidIngredients = true
+                    }
+                    Button("Loại nếu có: \(excludeIngredientIDs.count)") {
+                        ingredientSelectionMode = "exclude"
+                        showingAvoidIngredients = true
+                    }
+                }
                 Text("Ứng dụng chỉ loại món chứa chính xác các nguyên liệu bạn chọn. Thông tin dị ứng của nguyên liệu và món chưa được xác minh, nên nguyên liệu ẩn trong sốt, bánh hay đồ chế biến có thể không bị phát hiện. Hãy luôn đọc nhãn và hỏi người nấu.")
                     .font(.footnote)
                     .foregroundColor(AppColors.textSecondary)
@@ -110,7 +128,13 @@ public struct RecipesView: View {
                     .padding()
                 }
 
-                List(filteredRecipes) { recipe in
+                List {
+                    Section { Text("\(filteredRecipes.count) công thức phù hợp").font(.footnote).foregroundColor(AppColors.textSecondary) }
+                    if filteredRecipes.isEmpty {
+                        Text("Không tìm thấy công thức phù hợp. Thử đổi từ khóa hoặc bộ lọc.")
+                            .foregroundColor(AppColors.textSecondary)
+                    } else {
+                        ForEach(filteredRecipes) { recipe in
                     NavigationLink(destination: RecipeDetailView(recipe: recipe)) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
@@ -139,6 +163,8 @@ public struct RecipesView: View {
                         }
                         .padding(.vertical, 4)
                     }
+                        }
+                    }
                 }
                 .overlay(alignment: .top) {
                     if !dietaryFilter.isEmpty && filteredRecipes.isEmpty {
@@ -148,17 +174,25 @@ public struct RecipesView: View {
                             .background(AppColors.secondarySurface)
                     }
                 }
-                .searchable(text: $searchText, prompt: "Tìm theo tên món (ví dụ: kho quẹt, bò xào...)")
+                .searchable(text: $searchText, prompt: "Tìm tên món hoặc nguyên liệu")
             }
             .navigationTitle("Công thức")
             .sheet(isPresented: $showingAvoidIngredients) {
                 NavigationStack {
                     List(storage.ingredients) { ingredient in
                         Button {
-                            var updated = editingPreferencesAsLikes ? preferredIDs : avoidedIDs
+                            var updated = ingredientSelectionMode == "like" ? preferredIDs : avoidedIDs
+                            if ingredientSelectionMode == "include" || ingredientSelectionMode == "exclude" {
+                                var selected = ingredientSelectionMode == "include" ? includeIngredientIDs : excludeIngredientIDs
+                                if selected.contains(ingredient.id) { selected.remove(ingredient.id) }
+                                else { selected.insert(ingredient.id) }
+                                if ingredientSelectionMode == "include" { includeIngredientIDs = selected }
+                                else { excludeIngredientIDs = selected }
+                                return
+                            }
                             if updated.contains(ingredient.id) { updated.remove(ingredient.id) }
                             else { updated.insert(ingredient.id) }
-                            if editingPreferencesAsLikes {
+                            if ingredientSelectionMode == "like" {
                                 preferredIngredientIDs = updated.sorted().joined(separator: ",")
                             } else {
                                 avoidedIngredientIDs = updated.sorted().joined(separator: ",")
@@ -167,14 +201,15 @@ public struct RecipesView: View {
                             HStack {
                                 Text(ingredient.name)
                                 Spacer()
-                                if (editingPreferencesAsLikes ? preferredIDs : avoidedIDs).contains(ingredient.id) {
+                                let selected = ingredientSelectionMode == "like" ? preferredIDs : ingredientSelectionMode == "include" ? includeIngredientIDs : ingredientSelectionMode == "exclude" ? excludeIngredientIDs : avoidedIDs
+                                if selected.contains(ingredient.id) {
                                     Image(systemName: "checkmark").foregroundColor(AppColors.primary)
                                 }
                             }
                         }
                         .foregroundColor(AppColors.textPrimary)
                     }
-                    .navigationTitle(editingPreferencesAsLikes ? "Nguyên liệu ưa thích" : "Nguyên liệu cần tránh")
+                    .navigationTitle(["like": "Nguyên liệu ưa thích", "include": "Công thức phải có", "exclude": "Loại món có nguyên liệu" ][ingredientSelectionMode] ?? "Nguyên liệu cần tránh")
                     .toolbar { ToolbarItem(placement: .confirmationAction) {
                         Button("Xong") { showingAvoidIngredients = false }
                     } }
@@ -290,6 +325,9 @@ public struct RecipeDetailView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Các bước nấu")
                         .font(.title3.bold())
+                    Text("Thời gian, độ khó và mẹo bảo quản chưa có dữ liệu được xác minh.")
+                        .font(.footnote)
+                        .foregroundColor(AppColors.textSecondary)
 
                     ForEach(Array(recipe.instructions.enumerated()), id: \.offset) { idx, step in
                         HStack(alignment: .top, spacing: 12) {
@@ -332,6 +370,14 @@ public struct CookingModeView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var currentStep = 0
     @State private var storage = AppStorage.shared
+    @State private var servings: Int
+    @State private var checkedIngredients: Set<String> = []
+    @AppStorage("easymeals.recipe.keepScreenOn") private var keepScreenOn = true
+
+    public init(recipe: Recipe) {
+        self.recipe = recipe
+        _servings = State(initialValue: max(1, recipe.servings))
+    }
 
     public var body: some View {
         NavigationStack {
@@ -344,6 +390,33 @@ public struct CookingModeView: View {
                 Text("Bước \(currentStep + 1) / \(recipe.instructions.count)")
                     .font(.caption.bold())
                     .foregroundColor(AppColors.primary)
+
+                Stepper("Khẩu phần: \(servings)", value: $servings, in: 1...20)
+                    .padding(.horizontal)
+                Toggle("Giữ màn hình sáng", isOn: $keepScreenOn)
+                    .padding(.horizontal)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Nguyên liệu cần chuẩn bị").font(.headline)
+                        ForEach(recipe.ingredients) { ingredient in
+                            let quantity = (ExactDecimal(ingredient.quantity) * ExactDecimal(servings) / ExactDecimal(max(1, recipe.servings))).description
+                            Toggle(isOn: Binding(
+                                get: { checkedIngredients.contains(ingredient.id) },
+                                set: { checked in
+                                    if checked { checkedIngredients.insert(ingredient.id) }
+                                    else { checkedIngredients.remove(ingredient.id) }
+                                }
+                            )) {
+                                Text("\(ingredient.ingredientName): \(quantity) \(ingredient.unit)")
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 160)
+                Text("Thời gian, độ khó và mẹo bảo quản chưa có dữ liệu được xác minh.")
+                    .font(.footnote)
+                    .foregroundColor(AppColors.textSecondary)
+                    .padding(.horizontal)
 
                 Spacer()
 
@@ -411,11 +484,14 @@ public struct CookingModeView: View {
             }
             .onAppear {
                 // Giữ màn hình sáng khi đang nấu
-                UIApplication.shared.isIdleTimerDisabled = true
+                UIApplication.shared.isIdleTimerDisabled = keepScreenOn
             }
             .onDisappear {
                 // Khôi phục tắt màn hình tiết kiệm pin
                 UIApplication.shared.isIdleTimerDisabled = false
+            }
+            .onChange(of: keepScreenOn) { _, enabled in
+                UIApplication.shared.isIdleTimerDisabled = enabled
             }
         }
     }

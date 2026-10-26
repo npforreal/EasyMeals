@@ -9,6 +9,19 @@
   </div>
 
   <div class="card" style="margin-bottom: var(--space-3);">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--space-3); margin-bottom:var(--space-3);">
+      <label for="recipe-search">Tìm món hoặc nguyên liệu
+        <input id="recipe-search" type="search" autocomplete="off" placeholder="Ví dụ: canh chua, cà chua" aria-describedby="recipe-search-status">
+      </label>
+      <label for="recipe-include-ingredients">Có đủ nguyên liệu này (chọn nhiều)
+        <select id="recipe-include-ingredients" multiple size="3"></select>
+      </label>
+      <label for="recipe-exclude-ingredients">Không có nguyên liệu này (chọn nhiều)
+        <select id="recipe-exclude-ingredients" multiple size="3"></select>
+      </label>
+    </div>
+    <p id="recipe-search-status" role="status" aria-live="polite"></p>
+    <p class="text-muted">Danh mục hiện chưa có thời gian nấu, độ khó hoặc mẹo bảo quản được xác minh; các bộ lọc này sẽ xuất hiện khi có dữ liệu đáng tin.</p>
     <div style="display:flex; gap:var(--space-3); flex-wrap:wrap; align-items:end; margin-bottom:var(--space-3);">
       <label for="recipe-diet-filter">Chế độ ăn đã xác minh
         <select id="recipe-diet-filter">

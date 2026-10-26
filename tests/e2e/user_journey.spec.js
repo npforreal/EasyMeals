@@ -139,6 +139,28 @@ test.describe("EasyMeals End-to-End User Journey", () => {
     expect(htmlTheme).toBe("dark");
   });
 
+  test("Tìm công thức không dấu, lọc nguyên liệu và dùng checklist chế độ nấu", async ({ page }) => {
+    await page.goto("/recipes");
+    const grid = page.locator("#recipes-grid");
+    await page.locator("#recipe-search").fill("ca chua");
+    await expect(grid).toContainText("Canh chua cá lóc");
+    await page.locator("#recipe-include-ingredients").selectOption({ label: "Cà chua" });
+    await expect(grid).toContainText("Canh chua cá lóc");
+    await page.locator("#recipe-exclude-ingredients").selectOption({ label: "Cà chua" });
+    await expect(grid).toContainText("Không tìm thấy công thức phù hợp");
+    await page.locator("#recipe-exclude-ingredients").selectOption([]);
+    await page.locator("#recipe-search").fill("");
+    const card = page.locator(".recipe-card:has-text('Canh chua cá lóc')").first();
+    await card.click();
+    const modal = page.locator("#recipe-modal-content");
+    await modal.locator("button:has-text('Bật chế độ nấu')").click();
+    const cooking = page.locator("#cooking-mode-overlay");
+    await expect(cooking).toContainText("Checklist nguyên liệu");
+    await expect(cooking).toContainText("Khẩu phần");
+    await expect(cooking.locator("input[type=checkbox]").last()).toBeVisible();
+    await cooking.locator("button:has-text('Thoát chế độ nấu')").click();
+  });
+
   test("Mobile Offline E2E Journey on static www/ build with route abort", async ({ page }) => {
     // Chặn hoàn toàn tất cả các request ra API bên ngoài hoặc mạng
     await page.route("**/*", (route) => {

@@ -62,7 +62,7 @@ import {
   reverseStockMovements as engineReverseStockMovements,
   getTotalIngredientStock as engineGetTotalIngredientStock,
 } from "./js/engine.js";
-import { filterRecipesByPreferences } from "./js/recipe-preferences.js";
+import { filterRecipesByPreferences, filterRecipesForBrowse } from "./js/recipe-preferences.js";
 import {
   formatDateVN,
   formatRelativeDate,
@@ -161,10 +161,14 @@ export function startCookingMode(recipe) {
   }
   overlay.style.display = "flex";
   let step = 0;
+  let servings = recipe.servings || 4;
+  const checkedIngredients = new Set();
   const steps = recipe.instructions || [];
+  const keepAwakeKey = "easymeals_keep_screen_on";
+  let keepAwake = localStorage.getItem(keepAwakeKey) !== "false";
 
   let wakeLock = null;
-  if ("wakeLock" in navigator) {
+  if (keepAwake && "wakeLock" in navigator) {
     navigator.wakeLock.request("screen").then((wl) => { wakeLock = wl; }).catch(() => {});
   }
 
@@ -200,6 +204,64 @@ export function startCookingMode(recipe) {
     topBar.appendChild(modeLabel);
     topBar.appendChild(stepCounter);
     overlay.appendChild(topBar);
+
+    const settings = document.createElement("div");
+    settings.style.display = "flex";
+    settings.style.justifyContent = "space-between";
+    settings.style.gap = "var(--space-3)";
+    const servingsLabel = document.createElement("label");
+    servingsLabel.textContent = "Khẩu phần ";
+    const servingsInput = document.createElement("input");
+    servingsInput.type = "number";
+    servingsInput.min = "1";
+    servingsInput.max = "20";
+    servingsInput.value = String(servings);
+    servingsInput.setAttribute("aria-label", "Số khẩu phần");
+    servingsInput.addEventListener("change", () => {
+      servings = Math.max(1, Math.min(20, Number(servingsInput.value) || 1));
+      renderStep();
+    });
+    servingsLabel.appendChild(servingsInput);
+    const awakeLabel = document.createElement("label");
+    const awakeCheckbox = document.createElement("input");
+    awakeCheckbox.type = "checkbox";
+    awakeCheckbox.checked = keepAwake;
+    awakeCheckbox.addEventListener("change", async () => {
+      keepAwake = awakeCheckbox.checked;
+      localStorage.setItem(keepAwakeKey, String(keepAwake));
+      if (!keepAwake && wakeLock) { await wakeLock.release(); wakeLock = null; }
+      if (keepAwake && "wakeLock" in navigator) {
+        try { wakeLock = await navigator.wakeLock.request("screen"); } catch { /* The platform may deny a wake lock. */ }
+      }
+    });
+    awakeLabel.append(awakeCheckbox, document.createTextNode(" Giữ màn hình sáng"));
+    settings.append(servingsLabel, awakeLabel);
+    overlay.appendChild(settings);
+
+    const ingredientsList = document.createElement("ul");
+    ingredientsList.style.maxHeight = "24vh";
+    ingredientsList.style.overflowY = "auto";
+    ingredientsList.setAttribute("aria-label", "Checklist nguyên liệu");
+    const ingredientsHeading = document.createElement("h3");
+    ingredientsHeading.textContent = "Checklist nguyên liệu";
+    ingredientsHeading.style.margin = "var(--space-2) 0";
+    overlay.appendChild(ingredientsHeading);
+    (recipe.ingredients || []).forEach((ingredient) => {
+      const item = document.createElement("li");
+      const label = document.createElement("label");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = checkedIngredients.has(ingredient.ingredient_id);
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) checkedIngredients.add(ingredient.ingredient_id);
+        else checkedIngredients.delete(ingredient.ingredient_id);
+      });
+      const quantity = Number(ingredient.quantity) * servings / (recipe.servings || 4);
+      label.append(checkbox, document.createTextNode(` ${ingredient.ingredient_name}: ${formatQty(quantity)} ${ingredient.unit}`));
+      item.appendChild(label);
+      ingredientsList.appendChild(item);
+    });
+    overlay.appendChild(ingredientsList);
 
     const midBox = document.createElement("div");
     midBox.style.flex = "1";
@@ -572,6 +634,11 @@ export async function openRecipeModal(recipeId, initialServings = null) {
         ingList.appendChild(li);
       });
       body.appendChild(ingList);
+
+      const metadataNote = document.createElement("p");
+      metadataNote.className = "text-muted";
+      metadataNote.textContent = "Danh mục chưa có thời gian chuẩn bị/nấu, độ khó hoặc mẹo bảo quản được xác minh cho công thức này.";
+      body.appendChild(metadataNote);
 
       const stepTitle = document.createElement("h3");
       stepTitle.style.fontSize = "1rem";
@@ -2051,6 +2118,10 @@ async function initRecipesPage() {
   const spiceFilter = document.getElementById("recipe-spice-filter");
   const avoidFilter = document.getElementById("recipe-avoid-ingredients");
   const preferredFilter = document.getElementById("recipe-preferred-ingredients");
+  const searchInput = document.getElementById("recipe-search");
+  const includeFilter = document.getElementById("recipe-include-ingredients");
+  const excludeFilter = document.getElementById("recipe-exclude-ingredients");
+  const searchStatus = document.getElementById("recipe-search-status");
   let activeCat = "";
   const preferenceKey = "recipe_preferences_v1";
   let preferences = (await getLocalSetting(preferenceKey)) || {};
@@ -2070,7 +2141,7 @@ async function initRecipesPage() {
     const availableIds = new Set(availableIngredients.map((ingredient) => ingredient.id));
     staleAvoidNote.hidden = !(preferences.avoidedIngredientIds || []).some((id) => !availableIds.has(id));
   }
-  if (avoidFilter || preferredFilter) {
+  if (avoidFilter || preferredFilter || includeFilter || excludeFilter) {
     availableIngredients.slice().sort((a, b) => a.name.localeCompare(b.name, "vi")).forEach((ingredient) => {
       [
         [avoidFilter, preferences.avoidedIngredientIds || []],
@@ -2081,6 +2152,13 @@ async function initRecipesPage() {
         option.value = ingredient.id;
         option.textContent = ingredient.name;
         option.selected = selectedIds.includes(ingredient.id);
+        select.appendChild(option);
+      });
+      [includeFilter, excludeFilter].forEach((select) => {
+        if (!select) return;
+        const option = document.createElement("option");
+        option.value = ingredient.id;
+        option.textContent = ingredient.name;
         select.appendChild(option);
       });
     });
@@ -2112,12 +2190,17 @@ async function initRecipesPage() {
         if (res.ok) recipes = await res.json();
       }
 
-      recipes = filterRecipesByPreferences(recipes, preferences, activeCat);
+      const includedIds = Array.from(includeFilter?.selectedOptions || [], (option) => option.value);
+      const excludedIds = Array.from(excludeFilter?.selectedOptions || [], (option) => option.value);
+      recipes = filterRecipesForBrowse(filterRecipesByPreferences(recipes, preferences, activeCat), {
+        query: searchInput?.value || "", includeIngredientIds: includedIds, excludeIngredientIds: excludedIds,
+      });
+      if (searchStatus) searchStatus.textContent = `${recipes.length} công thức phù hợp`;
 
       if (!recipes.length) {
         grid.innerHTML = `
           <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: var(--space-6);">
-            <p style="color: var(--text-muted);">Không tìm thấy món ăn nào thuộc nhóm này.</p>
+            <p style="color: var(--text-muted);">Không tìm thấy công thức phù hợp. Thử đổi từ khóa hoặc bộ lọc.</p>
           </div>
         `;
         return;
@@ -2197,6 +2280,8 @@ async function initRecipesPage() {
   [dietFilter, spiceFilter, avoidFilter, preferredFilter].filter(Boolean).forEach((control) => {
     control.addEventListener("change", async () => { await savePreferences(); await loadAndRender(); });
   });
+  searchInput?.addEventListener("input", loadAndRender);
+  [includeFilter, excludeFilter].filter(Boolean).forEach((control) => control.addEventListener("change", loadAndRender));
 
   loadAndRender();
 }

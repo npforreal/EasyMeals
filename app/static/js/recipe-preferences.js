@@ -22,3 +22,18 @@ export function filterRecipesByPreferences(recipes, preferences = {}, category =
     return score(b) - score(a);
   });
 }
+
+export function filterRecipesForBrowse(recipes, { query = "", includeIngredientIds = [], excludeIngredientIds = [] } = {}) {
+  const normalize = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[đĐ]/g, "d").toLocaleLowerCase("vi").trim();
+  const normalizedQuery = normalize(query);
+  const included = new Set(includeIngredientIds);
+  const excluded = new Set(excludeIngredientIds);
+  return (recipes || []).filter((recipe) => {
+    const ingredients = recipe.ingredients || [];
+    const ids = new Set(ingredients.map((ingredient) => ingredient.ingredient_id));
+    const searchable = normalize([recipe.name, ...ingredients.map((ingredient) => ingredient.ingredient_name)].join(" "));
+    return (!normalizedQuery || searchable.includes(normalizedQuery)) &&
+      Array.from(included).every((id) => ids.has(id)) &&
+      !Array.from(excluded).some((id) => ids.has(id));
+  });
+}
