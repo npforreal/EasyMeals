@@ -44,6 +44,28 @@
           <option value="3">3 ngày</option>
         </select>
       </div>
+
+      <!-- C1 - Vòng 13: cài đặt hộ gia đình cục bộ (lưu trong localStorage, không lên server). -->
+      <div class="form-group" style="display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); flex-wrap: wrap;">
+        <label for="household-size" style="margin: 0; font-size: var(--text-sm);">Số người:</label>
+        <input type="number" id="household-size" min="1" max="20" value="1" style="width: 60px; min-height: auto; padding: 2px 6px; font-size: var(--text-sm);">
+        <span style="font-size: var(--text-xs); color: var(--text-muted); margin-left: var(--space-1);">Khẩu phần mỗi người:</span>
+        <input type="number" id="default-servings" min="1" max="50" value="2" style="width: 55px; min-height: auto; padding: 2px 6px; font-size: var(--text-sm);">
+        <div style="font-size: var(--text-sm); margin-left: var(--space-2);">
+          <label style="display:flex; align-items:center; gap: var(--space-1); margin: 0;">
+            <input type="checkbox" id="meal-brea" value="breakfast" style="width: auto; min-height: auto;"> Sáng
+          </label>
+          <label style="display:flex; align-items:center; gap: var(--space-1); margin: 0;">
+            <input type="checkbox" id="meal-lunc" value="lunch" checked style="width: auto; min-height: auto;"> Trưa
+          </label>
+          <label style="display:flex; align-items:center; gap: var(--space-1); margin: 0;">
+            <input type="checkbox" id="meal-dinn" value="dinner" checked style="width: auto; min-height: auto;"> Tối
+          </label>
+        </div>
+        <span style="font-size: var(--text-xs); color: var(--text-muted); margin-left: var(--space-2);">Ngày không nấu (YYYY-MM-DD, cách nhau dấu phẩy):</span>
+        <input type="text" id="skip-dates" placeholder="2026-11-01, 2026-11-02" style="width: 170px; min-height: auto; padding: 2px 6px; font-size: var(--text-sm);">
+      </div>
+
       <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4); flex-wrap: wrap;">
         <button type="submit" class="btn btn-primary" id="btn-generate">Lên thực đơn 3 ngày</button>
       </div>

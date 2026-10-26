@@ -12,6 +12,12 @@ public struct SettingsView: View {
     @AppStorage("allow_leftovers") private var allowLeftovers: Bool = true
     @AppStorage("leftover_days") private var leftoverDays: Int = PlanLimits.leftoverDefaultDays
 
+    // C1 - Vòng 13: cài đặt hộ gia đình cục bộ (lưu vào tệp trạng thái, có backup/restore).
+    @State private var hhSize: Int = AppStorage.shared.householdSize
+    @State private var hhServings: Int = AppStorage.shared.defaultServings
+    @State private var hhPeriods: Set<String> = Set(AppStorage.shared.mealPeriods)
+    @State private var hhSkipDates: String = AppStorage.shared.skipDates.joined(separator: ", ")
+
     public var body: some View {
         NavigationStack {
             Form {
@@ -45,6 +51,49 @@ public struct SettingsView: View {
                             .font(.caption)
                             .foregroundColor(AppColors.textSecondary)
                     }
+                }
+
+                // Section: Hộ gia đình (C1 - Vòng 13)
+                Section("Hộ gia đình") {
+                    Stepper("Số người ăn cùng: \(hhSize)", value: $hhSize, in: 1...20, step: 1)
+                        .onChange(of: hhSize) { newSize in
+                            AppStorage.shared.setHouseholdSize(newSize)
+                        }
+                    Stepper("Khẩu phần mặc định mỗi người: \(hhServings)", value: $hhServings, in: 1...50, step: 1)
+                        .onChange(of: newServings) { AppStorage.shared.setDefaultServings(newServings) }
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Bữa cần lập mỗi ngày")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        HStack(spacing: 8) {
+                            ForEach(["breakfast", "lunch", "dinner"], id: \.self) { period in
+                                let label = ["breakfast": "Sáng", "lunch": "Trưa", "dinner": "Tối"][period, default: period]
+                                Toggle(label, isOn: Binding(
+                                    get: { hhPeriods.contains(period) },
+                                    set: { isOn in
+                                        if isOn { hhPeriods.insert(period) } else { hhPeriods.remove(period) }
+                                        AppStorage.shared.setMealPeriods(Array(hhPeriods.sorted()))
+                                    }
+                                ))
+                                .toggleStyle(.button)
+                            }
+                        }
+                        if hhPeriods.isEmpty {
+                            Text("Mặc định: Trưa + Tối")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    TextField("Ngày không nấu / ăn ngoài (YYYY-MM-DD, cách nhau bằng dấu phẩy)", text: $hhSkipDates)
+                        .textFieldStyle(.roundedBorder)
+                        .keyboardType(.numbersAndPunctuation)
+                        .onChange(of: hhSkipDates) { newText in
+                            let dates = newText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+                            AppStorage.shared.setSkipDates(Array(dates))
+                        }
+                    Text("Ngày không nấu sẽ bị bỏ qua khi lập thực đơn, không ảnh hưởng lịch sử kho.")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
                 }
 
                 Section("Dữ liệu & Quyền riêng tư") {

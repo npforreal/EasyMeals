@@ -16,6 +16,7 @@ from app.domain.inventory import (
     reverse_stock_movements,
 )
 from app.domain.models import (
+    HouseholdSettings,
     IncompatibleUnitError,
     MealPlan,
     PantryLot,
@@ -107,6 +108,18 @@ def generate_stateless_plan(
     conversions = repo.get_conversions()
     raw_ingredient_names = {ing.id: ing.name for ing in repo.get_ingredients()}
 
+    # C1 - Vòng 13: chuyển đổi cài đặt hộ gia đình từ client sang domain model.
+    household_settings: HouseholdSettings | None = None
+    if payload.options.household_settings is not None:
+        hs = payload.options.household_settings
+        household_settings = HouseholdSettings(
+            household_size=hs.household_size,
+            default_servings=hs.default_servings,
+            meal_periods=hs.meal_periods,
+            skip_dates=hs.skip_dates,
+            plan_days=hs.plan_days,
+        )
+
     try:
         meal_plans, shopping_items = generate_period_plan(
             start_date=payload.start_date,
@@ -117,6 +130,7 @@ def generate_stateless_plan(
             leftover_days=payload.options.leftover_days,
             conversions=conversions,
             raw_ingredient_names=raw_ingredient_names,
+            household_settings=household_settings,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))

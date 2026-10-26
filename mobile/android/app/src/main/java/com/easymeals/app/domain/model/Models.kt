@@ -99,7 +99,8 @@ data class PlannedDish(
     val category: String,
     @SerialName("is_leftover") @SerializedName("is_leftover") val isLeftover: Boolean = false,
     @SerialName("original_dish_id") @SerializedName("original_dish_id") val originalDishId: String? = null,
-    val servings: Int = 4
+    val servings: Int = 4,
+    @SerialName("selection_reason") @SerializedName("selection_reason") val selectionReason: String? = null
 )
 
 @Serializable
@@ -134,4 +135,14 @@ data class DeficitItem(
     @SerialName("ingredient_name") @SerializedName("ingredient_name") val ingredientName: String,
     @SerialName("missing_quantity") @SerializedName("missing_quantity") val missingQuantity: String,
     val unit: String
+)
+
+/** C1 - Vòng 13: cài đặt hộ gia đình cục bộ (không lưu lên server). */
+@Serializable
+data class HouseholdSettings(
+    val householdSize: Int = 1,
+    val defaultServings: Int = 2,
+    val mealPeriods: List<String> = listOf("lunch", "dinner"),
+    val skipDates: List<String> = emptyList(),
+    val planDays: Int = 3
 )

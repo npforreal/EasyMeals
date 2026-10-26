@@ -522,7 +522,8 @@ public enum EasyMealsEngine {
         allowLeftovers: Bool = true,
         conversions: [Conversion]? = nil,
         rawIngredientNames: [String: String]? = nil,
-        leftoverDays: Int = PlanLimits.leftoverDefaultDays
+        leftoverDays: Int = PlanLimits.leftoverDefaultDays,
+        householdSettings: HouseholdSettings? = nil
     ) throws -> (periodId: String, meals: [MealPlan], shoppingList: [ShoppingItem]) {
         try validateLeftoverDays(leftoverDays)
         let formatter = DateFormatter()
@@ -551,13 +552,23 @@ public enum EasyMealsEngine {
 
         let simulatedLots = currentPantryLots
         var cookedRecipeIds = Set<String>()
-        // Sổ cái phần dư: mỗi mẻ nấu (≥ 4 khẩu phần) dư đúng một phần ăn, dùng lại
-        // một lần trong quá hạn (ngày nấu + leftoverDays). Khớp planner.py / Engine.kt.
+        // Sổ cái phần dư: mỗi mẻ nấu (≥ 4 khẩu phần) dư số phần ăn theo kích thước hộ gia đình,
+        // dùng lại một lần trong khoảng hạn (ngày nấu + leftoverDays). Khớp planner.py / Engine.kt.
         var availableLeftovers: [AvailableLeftover] = []
         var mealPlans: [MealPlan] = []
         var shoppingItemsMap: [String: ShoppingItem] = [:]
 
-        let periods = ["lunch", "dinner"]
+        // C1 - Vòng 13: cài đặt hộ gia đình cục bộ.
+        let hs = householdSettings
+        let householdSize = max(1, hs?.householdSize ?? 1)
+        // Bữa cần lập mỗi ngày: ưu tiên cài đặt hộ gia đình, ngược lại trưa + tối.
+        let resolvedPeriods: [String] = {
+            guard let periods = hs?.mealPeriods, !periods.isEmpty else { return ["lunch", "dinner"] }
+            return periods.map { $0.lowercased() }
+        }()
+        // Ngày không nấu / ăn ngoài: bỏ qua hoàn toàn khi lập kế hoạch.
+        let skipDates = Set(hs?.skipDates ?? [])
+
         var curr = start
 
         // FIFO tiêu thụ PHẢI giữ qua các ngày lập kế hoạch (fixture
@@ -569,13 +580,18 @@ public enum EasyMealsEngine {
 
         for _ in 0..<diffDays {
             let dateStr = formatter.string(from: curr)
+            // Ngày không nấu / ăn ngoài: bỏ qua hoàn toàn (không lập bữa, không trừ kho mô phỏng).
+            if skipDates.contains(dateStr) {
+                curr = calendar.date(byAdding: .day, value: 1, to: curr) ?? curr
+                continue
+            }
             // Lọc tại ngày lập: bỏ các lô đã quá hạn (tiêu thụ vẫn giữ qua ngày).
             carrying = carrying.filter { lot in
                 guard let exp = lot.expiresAt else { return true }
                 return exp >= dateStr
             }
 
-            for p in periods {
+            for p in resolvedPeriods {
                 let planId = UUID().uuidString
                 var plannedDishes: [PlannedDish] = []
 
@@ -600,7 +616,9 @@ public enum EasyMealsEngine {
                                 category: cat,
                                 isLeftover: true,
                                 originalDishId: left.id,
-                                servings: left.servings
+                                servings: left.servings,
+                                // C2 - Vòng 13: diễn giải tại sao món này được chọn.
+                                selectionReason: "Dùng đồ dư đã nấu trước"
                             )
                         }
                     }
@@ -676,14 +694,18 @@ public enum EasyMealsEngine {
                                 recipeName: validChosen.name,
                                 category: cat,
                                 isLeftover: false,
-                                servings: validChosen.servings
+                                servings: validChosen.servings,
+                                // C2 - Vòng 13: diễn giải tại sao món này được chọn.
+                                selectionReason: fullyStocked != nil
+                                    ? "Nguyên liệu đủ trong tủ, nấu ngay"
+                                    : "Chọn món thay thế, bổ sung vào danh sách đi chợ"
                             )
                             dishChosen = dish
                             cookedRecipeIds.insert(validChosen.id)
 
                             if allowLeftovers && validChosen.servings >= 4 {
                                 if let dead = calendar.date(byAdding: .day, value: leftoverDays, to: curr) {
-                                    availableLeftovers.append(AvailableLeftover(dish: dish, portionsRemaining: 1, deadline: dead))
+                                    availableLeftovers.append(AvailableLeftover(dish: dish, portionsRemaining: householdSize, deadline: dead))
                                 }
                             }
                         }

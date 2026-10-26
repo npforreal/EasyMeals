@@ -490,7 +490,8 @@ object EasyMealsEngine {
         allowLeftovers: Boolean = true,
         conversions: List<Conversion>? = null,
         rawIngredientNames: Map<String, String>? = null,
-        leftoverDays: Int = GeneratedTokens.PlanLimits.LEFTOVER_DEFAULT_DAYS
+        leftoverDays: Int = GeneratedTokens.PlanLimits.LEFTOVER_DEFAULT_DAYS,
+        householdSettings: HouseholdSettings? = null
     ): Triple<String, List<MealPlan>, List<ShoppingItem>> {
         validateLeftoverDays(leftoverDays)
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -511,17 +512,35 @@ object EasyMealsEngine {
 
         val simulatedLots = currentPantryLots.map { it.copy() }.toMutableList()
         val cookedRecipeIds = mutableSetOf<String>()
-        // Sổ cái phần dư: mỗi mẻ nấu (≥ 4 khẩu phần) dư đúng một phần ăn, dùng lại
-        // một lần trong quá hạn (ngày nấu + leftoverDays). Khớp planner.py / engine.js.
+        // Sổ cái phần dư: mỗi mẻ nấu (≥ 4 khẩu phần) dư số phần ăn theo kích thước hộ gia đình,
+        // dùng lại một lần trong quá hạn (ngày nấu + leftoverDays). Khớp planner.py / engine.js.
         val availableLeftovers = mutableListOf<AvailableLeftover>()
         val mealPlans = mutableListOf<MealPlan>()
         val shoppingItemsMap = linkedMapOf<String, ShoppingItem>()
 
-        val periods = listOf("lunch", "dinner")
+        // C1 - Vòng 13: cài đặt hộ gia đình cục bộ.
+        val hs = householdSettings
+        val householdSize = (hs?.householdSize ?: 1).coerceAtLeast(1)
+        // Bữa cần lập mỗi ngày: ưu tiên cài đặt hộ gia đình, ngược lại trưa + tối.
+        val mealPeriods = hs?.mealPeriods?.filter { it.isNotEmpty() }
+        val resolvedPeriods = if (mealPeriods?.isNotEmpty() == true) {
+            mealPeriods.map { it.lowercase() }
+        } else {
+            listOf("lunch", "dinner")
+        }
+        // Ngày không nấu / ăn ngoài: bỏ qua hoàn toàn khi lập kế hoạch.
+        val skipDates = (hs?.skipDates ?: emptyList()).toSet()
+
+        val periods = resolvedPeriods
         var curr = start
 
         for (d in 0 until diffDays) {
             val dateStr = curr.format(formatter)
+            // Ngày không nấu / ăn ngoài: bỏ qua hoàn toàn (không lập bữa, không trừ kho mô phỏng).
+            if (skipDates.contains(dateStr)) {
+                curr = curr.plusDays(1)
+                continue
+            }
             val usableLots = simulatedLots.filter { lot ->
                 val exp = lot.expiresAt ?: return@filter true
                 exp >= dateStr
@@ -551,7 +570,9 @@ object EasyMealsEngine {
                                 category = cat,
                                 isLeftover = true,
                                 originalDishId = left.id,
-                                servings = left.servings
+                                servings = left.servings,
+                                // C2 - Vòng 13: diễn giải tại sao món này được chọn.
+                                selectionReason = "Dùng đồ dư đã nấu trước"
                             )
                         }
                     }
@@ -633,13 +654,16 @@ object EasyMealsEngine {
                                 recipeName = chosen.name,
                                 category = cat,
                                 isLeftover = false,
-                                servings = chosen.servings
+                                servings = chosen.servings,
+                                // C2 - Vòng 13: diễn giải tại sao món này được chọn.
+                                selectionReason = if (fullyStocked != null) "Nguyên liệu đủ trong tủ, nấu ngay"
+                                else "Chọn món thay thế, bổ sung vào danh sách đi chợ"
                             )
                             dishChosen = dish
                             cookedRecipeIds.add(chosen.id)
 
                             if (allowLeftovers && chosen.servings >= 4) {
-                                availableLeftovers.add(AvailableLeftover(dish, 1, curr.plusDays(leftoverDays.toLong())))
+                                availableLeftovers.add(AvailableLeftover(dish, householdSize, curr.plusDays(leftoverDays.toLong())))
                             }
                         }
                     }

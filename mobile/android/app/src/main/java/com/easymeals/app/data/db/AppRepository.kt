@@ -84,6 +84,61 @@ class AppRepository(private val context: Context) {
         prefs.edit().putInt("leftover_days", bounded).apply()
     }
 
+    // C1 - Vòng 13: cài đặt hộ gia đình cục bộ (lưu vào SharedPreferences, không lên server).
+    private val _householdSize = MutableStateFlow(
+        prefs.getInt("hh_size", 1).coerceIn(1, 20)
+    )
+    val householdSize: StateFlow<Int> = _householdSize.asStateFlow()
+
+    private val _defaultServings = MutableStateFlow(
+        prefs.getInt("hh_servings", 2).coerceIn(1, 50)
+    )
+    val defaultServings: StateFlow<Int> = _defaultServings.asStateFlow()
+
+    private val _mealPeriods = MutableStateFlow(
+        prefs.getString("hh_periods", "lunch,dinner")?.split(",")?.filter { it.isNotEmpty() } ?: listOf("lunch", "dinner")
+    )
+    val mealPeriods: StateFlow<List<String>> = _mealPeriods.asStateFlow()
+
+    private val _skipDates = MutableStateFlow(
+        prefs.getString("hh_skip_dates", "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
+    )
+    val skipDates: StateFlow<List<String>> = _skipDates.asStateFlow()
+
+    private val _planDays = MutableStateFlow(
+        prefs.getInt("hh_plan_days", GeneratedTokens.PlanLimits.DEFAULT_DAYS)
+            .coerceIn(GeneratedTokens.PlanLimits.MIN_DAYS, GeneratedTokens.PlanLimits.MAX_DAYS)
+    )
+    val planDays: StateFlow<Int> = _planDays.asStateFlow()
+
+    fun setHouseholdSize(size: Int) {
+        val bounded = size.coerceIn(1, 20)
+        _householdSize.value = bounded
+        prefs.edit().putInt("hh_size", bounded).apply()
+    }
+
+    fun setDefaultServings(servings: Int) {
+        val bounded = servings.coerceIn(1, 50)
+        _defaultServings.value = bounded
+        prefs.edit().putInt("hh_servings", bounded).apply()
+    }
+
+    fun setMealPeriods(periods: List<String>) {
+        _mealPeriods.value = periods
+        prefs.edit().putString("hh_periods", periods.joinToString(",")).apply()
+    }
+
+    fun setSkipDates(dates: List<String>) {
+        _skipDates.value = dates
+        prefs.edit().putString("hh_skip_dates", dates.joinToString(",")).apply()
+    }
+
+    fun setPlanDays(days: Int) {
+        val bounded = days.coerceIn(GeneratedTokens.PlanLimits.MIN_DAYS, GeneratedTokens.PlanLimits.MAX_DAYS)
+        _planDays.value = bounded
+        prefs.edit().putInt("hh_plan_days", bounded).apply()
+    }
+
     fun setThemeMode(mode: String) {
         _themeMode.value = mode
         prefs.edit().putString("theme_mode", mode).apply()
@@ -575,7 +630,15 @@ class AppRepository(private val context: Context) {
             // nguyên liệu gốc để danh sách mua nêu "Gạo", khớp mọi đường chạy khác.
             conversions = conversions,
             rawIngredientNames = _ingredients.value.associate { it.id to it.name },
-            leftoverDays = _leftoverDays.value
+            leftoverDays = _leftoverDays.value,
+            // C1 - Vòng 13: truyền cài đặt hộ gia đình cục bộ vào engine.
+            householdSettings = HouseholdSettings(
+                householdSize = _householdSize.value,
+                defaultServings = _defaultServings.value,
+                mealPeriods = _mealPeriods.value,
+                skipDates = _skipDates.value,
+                planDays = _planDays.value
+            )
         )
         _mealPlans.value = EasyMealsEngine.mergeNewPlansIntoExisting(
             _mealPlans.value, meals, mergeMode

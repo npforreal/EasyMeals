@@ -240,6 +240,94 @@ fun SettingsScreen(repository: AppRepository) {
                 }
             }
 
+            // Section: Hộ gia đình (C1 - Vòng 13)
+            val currentHouseholdSize by repository.householdSize.collectAsState()
+            val currentDefaultServings by repository.defaultServings.collectAsState()
+            val currentMealPeriods by repository.mealPeriods.collectAsState()
+            val currentSkipDates by repository.skipDates.collectAsState()
+
+            Text(
+                "HỘ GIA ĐÊNH",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Số người ăn cùng", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = currentHouseholdSize.toString(),
+                        onValueChange = {
+                            val parsed = it.toIntOrNull()
+                            if (parsed != null) repository.setHouseholdSize(parsed)
+                        },
+                        label = { Text("Số người") },
+                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text("Khẩu phần mặc định mỗi người", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = currentDefaultServings.toString(),
+                        onValueChange = {
+                            val parsed = it.toIntOrNull()
+                            if (parsed != null) repository.setDefaultServings(parsed)
+                        },
+                        label = { Text("Khẩu phần") },
+                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text("Bữa cần lập mỗi ngày", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(
+                            "breakfast" to "Sáng",
+                            "lunch" to "Trưa",
+                            "dinner" to "Tối"
+                        ).forEach { (period, label) ->
+                            FilterChip(
+                                selected = currentMealPeriods.contains(period),
+                                onClick = {
+                                    val updated = if (currentMealPeriods.contains(period)) {
+                                        currentMealPeriods.filter { it != period }
+                                    } else {
+                                        (currentMealPeriods + period)
+                                    }
+                                    repository.setMealPeriods(updated)
+                                },
+                                label = { Text(label) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text("Ngày không nấu / ăn ngoài (YYYY-MM-DD, cách nhau dấu phẩy)", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = currentSkipDates.joinToString(", "),
+                        onValueChange = {
+                            val dates = it.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                            repository.setSkipDates(dates)
+                        },
+                        label = { Text("Ngày nghỉ nấu") },
+                        placeholder = { Text("2026-11-01, 2026-11-02") },
+                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                    )
+                }
+            }
+
             // Section: Backup & Restore
             Text(
                 "SAO LƯU & KHÔI PHỤC",

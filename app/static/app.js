@@ -1698,6 +1698,82 @@ async function initPlannerPage() {
     if (sel && savedDays !== null) sel.value = savedDays;
   }
   restoreLeftoverPreferences();
+  restoreHouseholdSettings();
+
+  // C1 - Vòng 13: đọc cài đặt hộ gia đình cục bộ từ localStorage (không lưu lên server).
+  // Trả về đối tượng khớp schema HouseholdSettingsInput; giá trị rỗng -> engine dùng mặc định.
+  function readHouseholdSettings() {
+    const size = parseInt(localStorage.getItem("easymeals_household_size") || "1", 10);
+    const servings = parseInt(localStorage.getItem("easymeals_default_servings") || "2", 10);
+    let periods = ["lunch", "dinner"];
+    try {
+      const p = JSON.parse(localStorage.getItem("easymeals_meal_periods") || "[]");
+      if (Array.isArray(p) && p.length) periods = p.filter((x) => ["breakfast", "lunch", "dinner"].includes(x));
+    } catch (_) {}
+    let skipDates = [];
+    try {
+      const sd = JSON.parse(localStorage.getItem("easymeals_skip_dates") || "[]");
+      if (Array.isArray(sd)) skipDates = sd.filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x));
+    } catch (_) {}
+    const planDays = parseInt(localStorage.getItem("easymeals_plan_days") || String(PLAN_DEFAULT_DAYS), 10);
+    return {
+      household_size: Number.isFinite(size) && size >= 1 ? size : 1,
+      default_servings: Number.isFinite(servings) && servings >= 1 ? servings : 2,
+      meal_periods: periods.length ? periods : ["lunch", "dinner"],
+      skip_dates: skipDates,
+      plan_days: Number.isFinite(planDays) && planDays >= PLAN_MIN_DAYS && planDays <= PLAN_MAX_DAYS ? planDays : PLAN_DEFAULT_DAYS,
+    };
+  }
+
+  // C1 - Vòng 13: ghi cài đặt hộ gia đình cục bộ vào localStorage để lần sau giữ nguyên.
+  function persistHouseholdSettings({ household_size, default_servings, meal_periods, skip_dates, plan_days }) {
+    if (household_size != null) localStorage.setItem("easymeals_household_size", String(household_size));
+    if (default_servings != null) localStorage.setItem("easymeals_default_servings", String(default_servings));
+    if (meal_periods != null) localStorage.setItem("easymeals_meal_periods", JSON.stringify(meal_periods));
+    if (skip_dates != null) localStorage.setItem("easymeals_skip_dates", JSON.stringify(skip_dates));
+    if (plan_days != null) localStorage.setItem("easymeals_plan_days", String(plan_days));
+  }
+
+  // C1 - Vòng 13: khôi phục cài đặt hộ gia đình đã lưu vào các ô nhập trên trang.
+  function restoreHouseholdSettings() {
+    const hs = readHouseholdSettings();
+    const sizeInput = document.getElementById("household-size");
+    const servingsInput = document.getElementById("default-servings");
+    if (sizeInput) sizeInput.value = hs.household_size;
+    if (servingsInput) servingsInput.value = hs.default_servings;
+    hs.meal_periods.forEach((p) => {
+      const cb = document.getElementById("meal-" + p.slice(0, 4));
+      if (cb) cb.checked = true;
+    });
+    // Bỏ chọn các bữa không nằm trong danh sách đã lưu
+    ["breakfast", "lunch", "dinner"].forEach((p) => {
+      const cb = document.getElementById("meal-" + p.slice(0, 4));
+      if (cb && !hs.meal_periods.includes(p)) cb.checked = false;
+    });
+    const skipInput = document.getElementById("skip-dates");
+    if (skipInput && hs.skip_dates.length) skipInput.value = hs.skip_dates.join(", ");
+  }
+
+  // C1 - Vòng 13: đọc cài đặt hộ gia đình từ các ô nhập và lưu vào localStorage.
+  function persistHouseholdSettingsFromDom() {
+    const sizeInput = document.getElementById("household-size");
+    const servingsInput = document.getElementById("default-servings");
+    const periodInputs = ["breakfast", "lunch", "dinner"].map((p) => {
+      const cb = document.getElementById("meal-" + p.slice(0, 4));
+      return cb && cb.checked ? p : null;
+    }).filter(Boolean);
+    const skipInput = document.getElementById("skip-dates");
+    const skipDates = skipInput
+      ? skipInput.value.split(",").map((s) => s.trim()).filter((s) => /^\d{4}-\d{2}-\d{2}$/.test(s))
+      : [];
+    persistHouseholdSettings({
+      household_size: sizeInput ? parseInt(sizeInput.value, 10) || 1 : 1,
+      default_servings: servingsInput ? parseInt(servingsInput.value, 10) || 2 : 2,
+      meal_periods: periodInputs.length ? periodInputs : ["lunch", "dinner"],
+      skip_dates: skipDates,
+      plan_days: document.getElementById("plan-days") ? parseInt(document.getElementById("plan-days").value, 10) || PLAN_DEFAULT_DAYS : PLAN_DEFAULT_DAYS,
+    });
+  }
 
   // Lưu đợt thực đơn mới an toàn (A2 - Vòng 13): idempotency theo mã đợt,
   // gộp giữ bữa đã ăn, xoá các bữa chưa ăn bị thay khỏi kho trước khi lưu.
@@ -1733,6 +1809,8 @@ async function initPlannerPage() {
       }
 
       const leftoverPrefs = readAndPersistLeftoverPreferences();
+      // C1 - Vòng 13: lưu cài đặt hộ gia đình trước khi tính toán.
+      persistHouseholdSettingsFromDom();
 
       // A2: nếu tạo thực đơn trùng ngày với bữa CHƯA ăn -> hỏi người dùng giữ hay thay.
       // Bữa đã ăn luôn được giữ; bấm Huỷ thì không tạo gì cả.
@@ -1771,6 +1849,8 @@ async function initPlannerPage() {
           const data = engineGeneratePeriodPlan(s, end, catalogue.recipes, lots, {
             allowLeftovers: leftoverPrefs.allowLeftovers,
             leftoverDays: leftoverPrefs.leftoverDays,
+            // C1 - Vòng 13: truyền cài đặt hộ gia đình cục bộ (mặc định 1 người, trưa+tối).
+            household_settings: readHouseholdSettings(),
             // A7 - Vòng 13: đường offline/bundled cũng phải nhận quy đổi (gạo -> cơm)
             // kèm tên nguyên liệu gốc, khớp đường API.
             conversions: catalogue.conversions || [],
@@ -1814,6 +1894,8 @@ async function initPlannerPage() {
           options: {
             allow_leftovers: leftoverPrefs.allowLeftovers,
             leftover_days: leftoverPrefs.leftoverDays,
+            // C1 - Vòng 13: truyền cài đặt hộ gia đình cục bộ (mặc định 1 người, trưa+tối).
+            household_settings: readHouseholdSettings(),
           },
         };
 

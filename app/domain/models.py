@@ -162,6 +162,25 @@ class PlannedDish:
     original_dish_id: UUID | None = None
     servings: int = 1
     created_at: datetime = field(default_factory=datetime.now)
+    selection_reason: str | None = None
+
+
+@dataclass
+class HouseholdSettings:
+    """Cài đặt hộ gia đình cục bộ (không lưu lên server).
+
+    plan_days mặc định 3 khớp với design-tokens/tokens.json (plan_limits.default_days)
+    và app.constants.PLAN_DEFAULT_DAYS; giá trị này được đồng bộ khi khởi tạo
+    từ caller thay vì import hằng số để tránh circular import (constants import models).
+    """
+
+    household_size: int = 1
+    default_servings: int = 2
+    # Bữa cần lập trong mỗi ngày: mặc định trưa + tối.
+    meal_periods: list[str] = field(default_factory=lambda: ["lunch", "dinner"])
+    # Ngày không nấu / ăn ngoài (ISO "YYYY-MM-DD"): bỏ qua khi lập kế hoạch.
+    skip_dates: list[str] = field(default_factory=list)
+    plan_days: int = 3
 
 
 @dataclass

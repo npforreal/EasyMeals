@@ -20,6 +20,7 @@ from app.domain.inventory import (
 from app.domain.models import (
     UNIT_DIMENSIONS,
     DishCategory,
+    HouseholdSettings,
     IngredientConversion,
     MealPeriod,
     MealPlan,
@@ -62,11 +63,13 @@ class AvailableLeftover:
 
     __slots__ = ("leftover", "portions_remaining", "deadline")
 
-    def __init__(self, leftover: PlannedDish, cook_date: date, leftover_days: int) -> None:
+    def __init__(
+        self, leftover: PlannedDish, cook_date: date, leftover_days: int, household_size: int = 1
+    ) -> None:
         self.leftover = leftover
-        # Mỗi mẻ nấu (≥ 4 khẩu phần) chỉ dư đúng một phần ăn dùng lại một lần.
-        # (Khẩu phần thực tế theo hộ gia đình sẽ hoàn thiện ở Giai đoạn C1.)
-        self.portions_remaining = 1
+        # Mỗi mẻ nấu (≥ 4 khẩu phần) dư số phần ăn theo kích thước hộ gia đình;
+        # mỗi phần dùng lại một lần trong khoảng hạn (mặc định 2, cấu hình 1-3).
+        self.portions_remaining = max(1, household_size)
         self.deadline = cook_date + timedelta(days=leftover_days)
 
 
@@ -110,6 +113,7 @@ def generate_period_plan(
     conversions: list[IngredientConversion] | None = None,
     raw_ingredient_names: dict[UUID, str] | None = None,
     leftover_days: int = LEFTOVER_DEFAULT_DAYS,
+    household_settings: HouseholdSettings | None = None,
 ) -> tuple[list[MealPlan], list[ShoppingItem]]:
     """Generate meal plans for the specified period.
 
@@ -122,12 +126,34 @@ def generate_period_plan(
       be scheduled in later meals. Mỗi phần dư dùng lại đúng một lần và chỉ
       trong `leftover_days` ngày kể từ ngày nấu (mặc định 2, cấu hình 1-3).
       4. SHOPPING LIST: If pantry stock runs out of non-repeating dishes,
-      pick suitable unique recipes
-         and aggregate missing ingredients into a shopping list.
+         pick suitable unique recipes
+          and aggregate missing ingredients into a shopping list.
+      5. HOUSEHOLD SETTINGS: Chỉ lập các bữa trong `meal_periods`, bỏ qua
+         `skip_dates`, và tính số phần ăn theo `household_size`.
     """
     _validate_leftover_days(leftover_days)
-    if periods is None:
-        periods = [MealPeriod.LUNCH, MealPeriod.DINNER]
+    # Khi household_settings không được truyền rõ ràng (None), giữ nguyên tham số
+    # `periods` của caller (ví dụ test truyền periods=[LUNCH]). Chỉ áp dụng
+    # meal_periods từ cài đặt hộ gia đình khi người dùng đã cung cấp rõ ràng.
+    if household_settings is None:
+        household_settings = HouseholdSettings()
+        resolved_periods = periods or [MealPeriod.LUNCH, MealPeriod.DINNER]
+    else:
+        if household_settings.meal_periods:
+            try:
+                resolved_periods = [
+                    MealPeriod(p.strip().lower()) for p in household_settings.meal_periods
+                ]
+            except ValueError:
+                resolved_periods = periods or [MealPeriod.LUNCH, MealPeriod.DINNER]
+        else:
+            resolved_periods = periods or [MealPeriod.LUNCH, MealPeriod.DINNER]
+
+    if not resolved_periods:
+        resolved_periods = [MealPeriod.LUNCH, MealPeriod.DINNER]
+
+    skip_dates = set(household_settings.skip_dates or [])
+    household_size = max(1, household_settings.household_size or 1)
 
     total_days = (end_date - start_date).days + 1
     if total_days < PLAN_MIN_DAYS or total_days > PLAN_MAX_DAYS:
@@ -163,12 +189,16 @@ def generate_period_plan(
 
     current_d = start_date
     while current_d <= end_date:
+        date_str = current_d.strftime("%Y-%m-%d")
+        # Ngày không nấu / ăn ngoài: bỏ qua hoàn toàn (không lập bữa, không trừ kho mô phỏng).
+        if date_str in skip_dates:
+            current_d += timedelta(days=1)
+            continue
         # Lô đã quá hạn tại ngày đang lập kế hoạch không được tính là có hàng.
-        # (cùng đối tượng với simulated_lots nên việc trừ kho mô phỏng vẫn có tác dụng)
         usable_lots = [
             lot for lot in simulated_lots if lot.expires_at is None or lot.expires_at >= current_d
         ]
-        for period in periods:
+        for period in resolved_periods:
             meal_plan = MealPlan(
                 id=uuid4(),
                 planned_for=current_d,
@@ -309,7 +339,9 @@ def generate_period_plan(
                         # leftover for dinner/next day lunch
                         if allow_leftovers and chosen_recipe.servings >= 4:
                             available_leftovers.append(
-                                AvailableLeftover(cooked_dish, current_d, leftover_days)
+                                AvailableLeftover(
+                                    cooked_dish, current_d, leftover_days, household_size
+                                )
                             )
 
                 if dish_chosen:

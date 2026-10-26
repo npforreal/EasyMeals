@@ -248,6 +248,8 @@ public struct PlannedDish: Identifiable, Codable, Equatable, Sendable {
     public let isLeftover: Bool
     public let originalDishId: String?
     public let servings: Int
+    // C2 - Vòng 13: diễn giải tại sao món này được chọn.
+    public var selectionReason: String?
 
     public init(
         id: String = UUID().uuidString,
@@ -257,7 +259,8 @@ public struct PlannedDish: Identifiable, Codable, Equatable, Sendable {
         category: String,
         isLeftover: Bool = false,
         originalDishId: String? = nil,
-        servings: Int = 4
+        servings: Int = 4,
+        selectionReason: String? = nil
     ) {
         self.id = id
         self.mealPlanId = mealPlanId
@@ -267,6 +270,7 @@ public struct PlannedDish: Identifiable, Codable, Equatable, Sendable {
         self.isLeftover = isLeftover
         self.originalDishId = originalDishId
         self.servings = servings
+        self.selectionReason = selectionReason
     }
 
     enum CodingKeys: String, CodingKey {
@@ -278,6 +282,7 @@ public struct PlannedDish: Identifiable, Codable, Equatable, Sendable {
         case isLeftover = "is_leftover"
         case originalDishId = "original_dish_id"
         case servings
+        case selectionReason = "selection_reason"
     }
 }
 
@@ -398,5 +403,36 @@ public struct DeficitItem: Codable, Equatable, Sendable {
         case ingredientName = "ingredient_name"
         case missingQuantity = "missing_quantity"
         case unit
+    }
+}
+
+// C1 - Vòng 13: cài đặt hộ gia đình cục bộ (không lưu lên server).
+public struct HouseholdSettings: Codable, Equatable, Sendable {
+    public let householdSize: Int
+    public let defaultServings: Int
+    public let mealPeriods: [String]
+    public let skipDates: [String]
+    public let planDays: Int
+
+    public init(
+        householdSize: Int = 1,
+        defaultServings: Int = 2,
+        mealPeriods: [String] = ["lunch", "dinner"],
+        skipDates: [String] = [],
+        planDays: Int = PlanLimits.defaultDays
+    ) {
+        self.householdSize = householdSize
+        self.defaultServings = defaultServings
+        self.mealPeriods = mealPeriods
+        self.skipDates = skipDates
+        self.planDays = planDays
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case householdSize = "household_size"
+        case defaultServings = "default_servings"
+        case mealPeriods = "meal_periods"
+        case skipDates = "skip_dates"
+        case planDays = "plan_days"
     }
 }

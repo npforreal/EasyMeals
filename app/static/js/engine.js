@@ -12,6 +12,7 @@ import {
   LEFTOVER_DEFAULT_DAYS,
   LEFTOVER_MAX_DAYS,
   LEFTOVER_MIN_DAYS,
+  PLAN_DEFAULT_DAYS,
   PLAN_MAX_DAYS,
   PLAN_MIN_DAYS,
 } from "./constants.js";
@@ -596,6 +597,17 @@ export function generatePeriodPlan(
   const conversions = options.conversions || [];
   const rawIngredientNames = options.raw_ingredient_names || options.rawIngredientNames || {};
 
+  // C1 - Vòng 13: cài đặt hộ gia đình cục bộ (không lưu lên server).
+  const hs = options.household_settings || {};
+  const householdSize = Math.max(1, parseInt(hs.household_size || 1, 10) || 1);
+  const defaultServings = hs.default_servings || 2;
+  // Bữa cần lập mỗi ngày: ưu tiên cài đặt hộ gia đình, ngược lại trưa + tối.
+  const resolvedPeriods = (hs.meal_periods && hs.meal_periods.length)
+    ? hs.meal_periods.map((p) => String(p).trim().toLowerCase())
+    : ["lunch", "dinner"];
+  // Ngày không nấu / ăn ngoài: bỏ qua hoàn toàn khi lập kế hoạch.
+  const skipDates = new Set((hs.skip_dates || []).map(String));
+
   const recipesByCat = {
     man: recipes.filter((r) => r.category === "man"),
     rau: recipes.filter((r) => r.category === "rau"),
@@ -609,22 +621,26 @@ export function generatePeriodPlan(
   }));
 
   const cookedRecipeIds = new Set();
-  // Sổ cái phần dư: mỗi mẻ nấu (≥ 4 khẩu phần) dư đúng một phần ăn, dùng lại
-  // một lần trong quá hạn (ngày nấu + leftoverDays). Mô hình khớp planner.py.
+  // Sổ cái phần dư: mỗi mẻ nấu (≥ 4 khẩu phần) dư số phần ăn theo kích thước hộ gia đình,
+  // dùng lại một lần trong khoảng hạn (ngày nấu + leftoverDays). Mô hình khớp planner.py.
   const availableLeftovers = []; // { dish, portionsRemaining, deadline (Date) }
   const mealPlans = [];
   const shoppingItemsMap = new Map(); // khoá: `${ingredient_id}|${thứ nguyên}`
 
-  const periods = ["lunch", "dinner"];
   const curr = new Date(start);
 
   for (let d = 0; d < diffDays; d++) {
     const dateStr = curr.toISOString().split("T")[0];
+    // Ngày không nấu / ăn ngoài: bỏ qua hoàn toàn (không lập bữa, không trừ kho mô phỏng).
+    if (skipDates.has(dateStr)) {
+      curr.setUTCDate(curr.getUTCDate() + 1);
+      continue;
+    }
     // Lô đã quá hạn tại ngày đang lập kế hoạch không được tính là có hàng
     // (cùng đối tượng với simulatedLots nên việc trừ kho mô phỏng vẫn có tác dụng).
     const usableLots = simulatedLots.filter((l) => !l.expires_at || l.expires_at >= dateStr);
 
-    for (const period of periods) {
+    for (const period of resolvedPeriods) {
       const mealPlan = {
         id: generateEngineUUID(),
         planned_for: dateStr,
@@ -654,6 +670,8 @@ export function generatePeriodPlan(
               is_leftover: true,
               original_dish_id: leftover.id,
               servings: leftover.servings,
+              // C2 - Vòng 13: diễn giải tại sao món này được chọn.
+              selection_reason: "Dùng đồ dư đã nấu trước",
             };
           }
         }
@@ -732,6 +750,10 @@ export function generatePeriodPlan(
               category: cat,
               is_leftover: false,
               servings: chosenRecipe.servings,
+              // C2 - Vòng 13: diễn giải tại sao món này được chọn.
+              selection_reason: fullyStockedRecipe
+                ? "Nguyên liệu đủ trong tủ, nấu ngay"
+                : "Chọn món thay thế, bổ sung vào danh sách đi chợ",
             };
             cookedRecipeIds.add(chosenRecipe.id);
 
@@ -740,7 +762,11 @@ export function generatePeriodPlan(
               // Hạn an toàn: phần dư chỉ dùng được tới (ngày nấu + leftoverDays).
               const deadline = new Date(curr.getTime());
               deadline.setUTCDate(deadline.getUTCDate() + leftoverDays);
-              availableLeftovers.push({ dish: dishChosen, portionsRemaining: 1, deadline });
+              availableLeftovers.push({
+                dish: dishChosen,
+                portionsRemaining: householdSize,
+                deadline,
+              });
             }
           }
         }

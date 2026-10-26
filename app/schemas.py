@@ -71,6 +71,29 @@ class PantryLotInput(BaseModel):
     updated_at: datetime | None = None
 
 
+class HouseholdSettingsInput(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    household_size: int = Field(default=1, ge=1, le=20, description="Số người trong hộ gia đình.")
+    default_servings: int = Field(
+        default=2, ge=1, le=50, description="Khẩu phần mặc định cho mỗi người."
+    )
+    meal_periods: list[str] = Field(
+        default_factory=lambda: ["lunch", "dinner"],
+        description="Các bữa cần lập mỗi ngày (breakfast, lunch, dinner).",
+    )
+    skip_dates: list[str] = Field(
+        default_factory=list,
+        description="Ngày không nấu / ăn ngoài (ISO 'YYYY-MM-DD'), bỏ qua khi lập kế hoạch.",
+    )
+    plan_days: int = Field(
+        default=3,
+        ge=PLAN_MIN_DAYS,
+        le=PLAN_MAX_DAYS,
+        description=f"Số ngày lập thực đơn (từ {PLAN_MIN_DAYS} đến {PLAN_MAX_DAYS} ngày).",
+    )
+
+
 class PlanOptions(BaseModel):
     model_config = {"extra": "forbid"}
 
@@ -78,6 +101,9 @@ class PlanOptions(BaseModel):
     # Đồ dư dùng lại tối đa 2 ngày sau ngày nấu (quyết định chủ dự án), cấu hình 1-3.
     leftover_days: int = Field(
         default=LEFTOVER_DEFAULT_DAYS, ge=LEFTOVER_MIN_DAYS, le=LEFTOVER_MAX_DAYS
+    )
+    household_settings: HouseholdSettingsInput | None = Field(
+        default=None, description="Cài đặt hộ gia đình cục bộ (không lưu lên server)."
     )
 
 

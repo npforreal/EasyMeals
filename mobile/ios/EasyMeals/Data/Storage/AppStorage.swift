@@ -15,6 +15,23 @@ public final class AppStorage: @unchecked Sendable {
     public var catalogueVersion: String = "2026.10.26"
     public var loadError: String? = nil
 
+    // C1 - Vòng 13: cài đặt hộ gia đình cục bộ (không lưu lên server, nhưng backup/restore cùng state).
+    public var householdSize: Int = 1
+    public var defaultServings: Int = 2
+    public var mealPeriods: [String] = ["lunch", "dinner"]
+    public var skipDates: [String] = []
+    public var planDays: Int = PlanLimits.defaultDays
+
+    public var householdSettings: HouseholdSettings {
+        HouseholdSettings(
+            householdSize: householdSize,
+            defaultServings: defaultServings,
+            mealPeriods: mealPeriods,
+            skipDates: skipDates,
+            planDays: planDays
+        )
+    }
+
     // Trạng thái snackbar hoàn tác
     public var undoMessage: String?
     public var lastActionPlanId: String?
@@ -298,6 +315,33 @@ public final class AppStorage: @unchecked Sendable {
         persistState()
     }
 
+    // C1 - Vòng 13: setters cài đặt hộ gia đình (lưu vào tệp trạng thái cục bộ).
+    public func setHouseholdSize(_ size: Int) {
+        householdSize = max(1, min(20, size))
+        persistState()
+    }
+
+    public func setDefaultServings(_ servings: Int) {
+        defaultServings = max(1, min(50, servings))
+        persistState()
+    }
+
+    public func setMealPeriods(_ periods: [String]) {
+        mealPeriods = periods.filter { ["breakfast", "lunch", "dinner"].contains($0) }
+        if mealPeriods.isEmpty { mealPeriods = ["lunch", "dinner"] }
+        persistState()
+    }
+
+    public func setSkipDates(_ dates: [String]) {
+        skipDates = dates
+        persistState()
+    }
+
+    public func setPlanDays(_ days: Int) {
+        planDays = max(PlanLimits.minDays, min(PlanLimits.maxDays, days))
+        persistState()
+    }
+
     public func regenerateMeal(planId: String) throws {
         guard let targetIdx = mealPlans.firstIndex(where: { $0.id == planId }) else {
             throw MealPlanError("Không tìm thấy bữa ăn có ID \(planId)")
@@ -527,7 +571,9 @@ public final class AppStorage: @unchecked Sendable {
             rawIngredientNames: Dictionary(
                 uniqueKeysWithValues: ingredients.map { ($0.id, $0.name) }
             ),
-            leftoverDays: leftoverDays
+            leftoverDays: leftoverDays,
+            // C1 - Vòng 13: truyền cài đặt hộ gia đình cục bộ vào engine.
+            householdSettings: self.householdSettings
         ) {
             self.mealPlans = EasyMealsEngine.mergeNewPlansIntoExisting(
                 mealPlans,
@@ -592,6 +638,8 @@ public final class AppStorage: @unchecked Sendable {
         let mealPlans: [MealPlan]
         let stockMovements: [StockMovement]
         let shoppingItems: [ShoppingItem]
+        // C1 - Vòng 13: cài đặt hộ gia đình (tùy chọn để tương thích backup cũ).
+        let householdSettings: HouseholdSettings?
     }
 
     private func persistState() {
@@ -599,7 +647,8 @@ public final class AppStorage: @unchecked Sendable {
             pantryLots: pantryLots,
             mealPlans: mealPlans,
             stockMovements: stockMovements,
-            shoppingItems: shoppingItems
+            shoppingItems: shoppingItems,
+            householdSettings: self.householdSettings
         )
         if let data = try? JSONEncoder().encode(state) {
             try? data.write(to: storageFileURL, options: .atomic)
@@ -615,5 +664,12 @@ public final class AppStorage: @unchecked Sendable {
         self.mealPlans = state.mealPlans
         self.stockMovements = state.stockMovements
         self.shoppingItems = state.shoppingItems
+        if let hs = state.householdSettings {
+            self.householdSize = hs.householdSize
+            self.defaultServings = hs.defaultServings
+            self.mealPeriods = hs.mealPeriods
+            self.skipDates = hs.skipDates
+            self.planDays = hs.planDays
+        }
     }
 }
