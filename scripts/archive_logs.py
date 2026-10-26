@@ -1,6 +1,6 @@
 """Lưu trữ phần cũ của PROGRESS.md, REVIEW.md, PLAN.md vào thư mục archive/ để agent đỡ phải đọc.
 
-Chạy khi KẾT THÚC MỘT GIAI ĐOẠN (xem AGENT.md). Không xoá nội dung nào: phần cũ được chuyển
+Chạy khi KẾT THÚC MỘT GIAI ĐOẠN (xem AGENTS.md). Không xoá nội dung nào: phần cũ được chuyển
 nguyên văn sang archive/PROGRESS.md, archive/REVIEW.md, archive/PLAN.md.
 
     python scripts/archive_logs.py             # giữ 3 mục PROGRESS, 2 mục REVIEW mới nhất

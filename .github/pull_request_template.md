@@ -12,7 +12,7 @@ Liên kết đến issue giải quyết (nếu có): Fixes #(issue)
 - [ ] Kiểm thử bổ sung (Tests)
 
 ## Danh sách kiểm tra (Checklist)
-- [ ] Mã nguồn tuân thủ các quy tắc trong `AGENT.md` và `CONTRIBUTING.md`.
+- [ ] Mã nguồn tuân thủ các quy tắc trong `AGENTS.md` và `CONTRIBUTING.md`.
 - [ ] Đã chạy `bash scripts/check.sh` và toàn bộ kiểm thử báo xanh.
 - [ ] Không có dữ liệu cá nhân hay bí mật (secrets/tokens) bị commit.
 - [ ] Không có dữ liệu hay tham chiếu nguồn bên thứ ba chưa cấp quyền trong cây theo dõi.
