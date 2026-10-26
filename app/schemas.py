@@ -105,6 +105,7 @@ class PlanOptions(BaseModel):
     household_settings: HouseholdSettingsInput | None = Field(
         default=None, description="Cài đặt hộ gia đình cục bộ (không lưu lên server)."
     )
+    recently_cooked_recipe_ids: list[UUID] = Field(default_factory=list, max_length=500)
 
 
 class StatelessGeneratePlanRequest(BaseModel):
@@ -133,6 +134,7 @@ class PlannedDishResponse(BaseModel):
     category: DishCategory
     is_leftover: bool = False
     servings: int = 1
+    selection_reason: str | None = None
 
 
 class MealPlanResponse(BaseModel):

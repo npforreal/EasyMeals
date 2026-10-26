@@ -491,7 +491,8 @@ object EasyMealsEngine {
         conversions: List<Conversion>? = null,
         rawIngredientNames: Map<String, String>? = null,
         leftoverDays: Int = GeneratedTokens.PlanLimits.LEFTOVER_DEFAULT_DAYS,
-        householdSettings: HouseholdSettings? = null
+        householdSettings: HouseholdSettings? = null,
+        recentlyCookedRecipeIds: Set<String> = emptySet()
     ): Triple<String, List<MealPlan>, List<ShoppingItem>> {
         validateLeftoverDays(leftoverDays)
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -580,8 +581,25 @@ object EasyMealsEngine {
                     // 2. Chọn món mới
                     if (dishChosen == null) {
                         val candidates = (recipesByCat[cat] ?: emptyList()).filter { !cookedRecipeIds.contains(it.id) }
+                        val chosenCandidate = candidates.maxByOrNull { recipe ->
+                            val reqs = aggregateRequirements(recipe)
+                            var coverage = 0.0
+                            var earliest: LocalDate? = null
+                            for (req in reqs) {
+                                val available = getTotalIngredientStock(usableLots, req.ingredientId, req.unit, conversions)
+                                val needed = req.quantity
+                                if (needed.compareTo(ExactDecimal.ZERO) > 0) coverage += minOf(1.0, (available / needed).toString().toDouble())
+                                usableLots.filter { it.ingredientId == req.ingredientId && ExactDecimal(it.remainingQuantity).compareTo(ExactDecimal.ZERO) > 0 }
+                                    .mapNotNull { it.expiresAt?.let { exp -> runCatching { LocalDate.parse(exp) }.getOrNull() } }
+                                    .minOrNull()?.let { exp -> if (earliest == null || exp < earliest) earliest = exp }
+                            }
+                            if (reqs.isNotEmpty()) coverage /= reqs.size
+                            val expiry = earliest?.let { (30 - ChronoUnit.DAYS.between(curr, it).toInt().coerceIn(0, 30)) / 30.0 } ?: 0.0
+                            coverage * 0.5 + expiry * 0.3 + if (recentlyCookedRecipeIds.contains(recipe.id)) 0.0 else 0.2
+                        }
                         var fullyStocked: Recipe? = null
                         for (r in candidates) {
+                            if (r.id != chosenCandidate?.id) continue
                             val (canCook, _) = checkRecipeStock(r, usableLots, "1", conversions)
                             if (canCook) {
                                 fullyStocked = r
@@ -596,9 +614,10 @@ object EasyMealsEngine {
                                 consumeAvailable(usableLots, req.ingredientId, req.quantity, req.unit, conversions)
                             }
                         } else if (candidates.isNotEmpty()) {
-                            chosen = candidates.first()
-                            val (_, deficits) = checkRecipeStock(chosen, usableLots, "1", conversions)
-                            for (req in aggregateRequirements(chosen)) {
+                            val candidate = chosenCandidate ?: candidates.first()
+                            chosen = candidate
+                            val (_, deficits) = checkRecipeStock(candidate, usableLots, "1", conversions)
+                            for (req in aggregateRequirements(candidate)) {
                                 consumeAvailable(usableLots, req.ingredientId, req.quantity, req.unit, conversions)
                             }
                             for ((ingId, def) in deficits) {
@@ -631,8 +650,8 @@ object EasyMealsEngine {
                                         missingDecimal
                                     }
                                     item.neededQuantity = (ExactDecimal(item.neededQuantity) + converted).toString()
-                                    if (!item.dishNames.contains(chosen.name)) {
-                                        item.dishNames.add(chosen.name)
+                                    if (!item.dishNames.contains(candidate.name)) {
+                                        item.dishNames.add(candidate.name)
                                     }
                                 } else {
                                     shoppingItemsMap[key] = ShoppingItem(
@@ -640,13 +659,18 @@ object EasyMealsEngine {
                                         ingredientName = actualName,
                                         neededQuantity = actualQty,
                                         unit = actualUnit,
-                                        dishNames = mutableListOf(chosen.name)
+                                        dishNames = mutableListOf(candidate.name)
                                     )
                                 }
                             }
                         }
 
                         if (chosen != null) {
+                            val chosenExpiry = aggregateRequirements(chosen).flatMap { req ->
+                                usableLots.filter { it.ingredientId == req.ingredientId }
+                                    .mapNotNull { it.expiresAt?.let { exp -> runCatching { LocalDate.parse(exp) }.getOrNull() } }
+                            }.minOrNull()
+                            val expiringSoon = chosenExpiry != null && ChronoUnit.DAYS.between(curr, chosenExpiry).toInt() in 0..7
                             val dish = PlannedDish(
                                 id = UUID.randomUUID().toString(),
                                 mealPlanId = planId,
@@ -656,7 +680,9 @@ object EasyMealsEngine {
                                 isLeftover = false,
                                 servings = chosen.servings,
                                 // C2 - Vòng 13: diễn giải tại sao món này được chọn.
-                                selectionReason = if (fullyStocked != null) "Nguyên liệu đủ trong tủ, nấu ngay"
+                                selectionReason = if (expiringSoon) "Ưu tiên dùng nguyên liệu sắp hết hạn trong tủ"
+                                else if (fullyStocked != null && !recentlyCookedRecipeIds.contains(chosen.id)) "Nguyên liệu đủ trong tủ, món chưa ăn gần đây"
+                                else if (fullyStocked != null) "Nguyên liệu đủ trong tủ, nấu ngay"
                                 else "Chọn món thay thế, bổ sung vào danh sách đi chợ"
                             )
                             dishChosen = dish

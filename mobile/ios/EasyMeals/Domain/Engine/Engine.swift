@@ -523,7 +523,8 @@ public enum EasyMealsEngine {
         conversions: [Conversion]? = nil,
         rawIngredientNames: [String: String]? = nil,
         leftoverDays: Int = PlanLimits.leftoverDefaultDays,
-        householdSettings: HouseholdSettings? = nil
+        householdSettings: HouseholdSettings? = nil,
+        recentlyCookedRecipeIds: Set<String> = []
     ) throws -> (periodId: String, meals: [MealPlan], shoppingList: [ShoppingItem]) {
         try validateLeftoverDays(leftoverDays)
         let formatter = DateFormatter()
@@ -626,8 +627,29 @@ public enum EasyMealsEngine {
                     // 2. Chọn món mới
                     if dishChosen == nil {
                         let candidates = (recipesByCat[cat] ?? []).filter { !cookedRecipeIds.contains($0.id) }
+                        let rankedCandidates = candidates.sorted { lhs, rhs in
+                            func score(_ recipe: Recipe) -> Double {
+                                let requirements = aggregateRequirements(recipe: recipe)
+                                var coverage = 0.0
+                                var earliest: Date?
+                                for req in requirements {
+                                    let available = getTotalIngredientStock(pantryLots: carrying, ingredientId: req.ingredientId, targetUnit: req.unit, conversions: conversions)
+                                    if req.quantity > .zero {
+                                        coverage += min(1, Double((available / req.quantity).description) ?? 0)
+                                    }
+                                    for lot in carrying where lot.ingredientId == req.ingredientId && ExactDecimal(lot.remainingQuantity) > .zero {
+                                        if let exp = lot.expiresAt, let date = formatter.date(from: exp), earliest == nil || date < earliest! { earliest = date }
+                                    }
+                                }
+                                if !requirements.isEmpty { coverage /= Double(requirements.count) }
+                                let days = earliest.map { max(0, min(30, calendar.dateComponents([.day], from: curr, to: $0).day ?? 30)) } ?? 30
+                                let expiry = earliest == nil ? 0 : Double(30 - days) / 30
+                                return coverage * 0.5 + expiry * 0.3 + (recentlyCookedRecipeIds.contains(recipe.id) ? 0 : 0.2)
+                            }
+                            return score(lhs) > score(rhs)
+                        }
                         var fullyStocked: Recipe?
-                        for r in candidates {
+                        for r in rankedCandidates {
                             let (canCook, _) = checkRecipeStock(recipe: r, pantryLots: carrying, multiplier: "1", conversions: conversions)
                             if canCook {
                                 fullyStocked = r
@@ -641,7 +663,7 @@ public enum EasyMealsEngine {
                             for req in aggregateRequirements(recipe: stocked) {
                                 _ = consumeAvailable(pantryLots: &carrying, ingredientId: req.ingredientId, quantity: req.quantity, unit: req.unit, conversions: conversions)
                             }
-                        } else if let first = candidates.first {
+                        } else if let first = rankedCandidates.first {
                             chosen = first
                             let (_, deficits) = checkRecipeStock(recipe: first, pantryLots: carrying, multiplier: "1", conversions: conversions)
                             for req in aggregateRequirements(recipe: first) {
@@ -687,6 +709,10 @@ public enum EasyMealsEngine {
                         }
 
                         if let validChosen = chosen {
+                            let chosenExpiry = aggregateRequirements(recipe: validChosen)
+                                .flatMap { req in carrying.filter { $0.ingredientId == req.ingredientId }.compactMap { $0.expiresAt.flatMap(formatter.date(from:)) } }
+                                .min()
+                            let expiringSoon = chosenExpiry.map { (calendar.dateComponents([.day], from: curr, to: $0).day ?? 30) >= 0 && (calendar.dateComponents([.day], from: curr, to: $0).day ?? 30) <= 7 } ?? false
                             let dish = PlannedDish(
                                 id: UUID().uuidString,
                                 mealPlanId: planId,
@@ -696,9 +722,11 @@ public enum EasyMealsEngine {
                                 isLeftover: false,
                                 servings: validChosen.servings,
                                 // C2 - Vòng 13: diễn giải tại sao món này được chọn.
-                                selectionReason: fullyStocked != nil
-                                    ? "Nguyên liệu đủ trong tủ, nấu ngay"
-                                    : "Chọn món thay thế, bổ sung vào danh sách đi chợ"
+                                selectionReason: expiringSoon
+                                    ? "Ưu tiên dùng nguyên liệu sắp hết hạn trong tủ"
+                                    : (fullyStocked != nil && !recentlyCookedRecipeIds.contains(validChosen.id)
+                                    ? "Nguyên liệu đủ trong tủ, món chưa ăn gần đây"
+                                    : (fullyStocked != nil ? "Nguyên liệu đủ trong tủ, nấu ngay" : "Chọn món thay thế, bổ sung vào danh sách đi chợ"))
                             )
                             dishChosen = dish
                             cookedRecipeIds.insert(validChosen.id)

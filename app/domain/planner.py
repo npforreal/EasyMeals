@@ -16,6 +16,7 @@ from app.domain.inventory import (
     aggregate_requirements,
     check_recipe_stock,
     consume_available,
+    get_total_ingredient_stock,
 )
 from app.domain.models import (
     UNIT_DIMENSIONS,
@@ -103,6 +104,124 @@ def validate_meal_dish_limits(dishes: list[PlannedDish]) -> None:
             )
 
 
+# ---------------------------------------------------------------------------
+# C2 - Vòng 13: xếp hạng công thức khi lập thực đơn
+# ---------------------------------------------------------------------------
+
+_RECENTLY_COOKED_DAYS = 7  # cửa sổ "món chưa ăn gần đây" dùng để tránh lặp ngay liên tiếp
+
+
+def _recipe_stock_coverage(
+    recipe: Recipe,
+    pantry_lots: list[PantryLot],
+    conversions: list[IngredientConversion] | None,
+    multiplier: Decimal = Decimal("1"),
+) -> tuple[Decimal, date | None]:
+    """Tỉ lệ kho đáp ứng công thức (0-1, 1 = đủ hoàn toàn) và ngày hết hạn sớm nhất
+    của các lô nguyên liệu có sẵn (để ưu tiên dùng nguyên liệu sắp hết hạn)."""
+    total_ratio = Decimal("0")
+    req_count = 0
+    soonest_expiry: date | None = None
+    for req in aggregate_requirements(recipe, multiplier):
+        available = get_total_ingredient_stock(
+            pantry_lots, req.ingredient_id, req.unit, conversions=conversions
+        )
+        req_count += 1
+        if req.quantity > 0:
+            total_ratio += min(available, req.quantity) / req.quantity
+        for lot in pantry_lots:
+            if (
+                lot.ingredient_id == req.ingredient_id
+                and lot.remaining_quantity > 0
+                and lot.expires_at is not None
+                and (soonest_expiry is None or lot.expires_at < soonest_expiry)
+            ):
+                soonest_expiry = lot.expires_at
+    coverage = total_ratio / req_count if req_count else Decimal("0")
+    return coverage, soonest_expiry
+
+
+def _score_recipe(
+    recipe: Recipe,
+    pantry_lots: list[PantryLot],
+    conversions: list[IngredientConversion] | None,
+    recently_cooked: set[UUID],
+    reference_date: date,
+    multiplier: Decimal = Decimal("1"),
+) -> tuple[Decimal, Decimal, date | None]:
+    """Điểm ưu tiên công thức (cao hơn = nên chọn sớm hơn).
+
+    Thành phần:
+      - coverage (50%): tỉ lệ nguyên liệu đã có trong tủ.
+      - expiry (30%): sớm hết hạn trước → điểm cao hơn (dùng nguyên liệu sắp hết hạn).
+      - variety (20%): món chưa ăn gần đây → điểm cao hơn (giữ đa dạng).
+    """
+    coverage, soonest_expiry = _recipe_stock_coverage(
+        recipe, pantry_lots, conversions, multiplier=multiplier
+    )
+    # expiry_score: sớm hết hạn càng nhiều điểm (giới hạn cửa sổ 30 ngày)
+    expiry_score = Decimal("0")
+    if soonest_expiry is not None:
+        days = (soonest_expiry - reference_date).days
+        days = max(0, min(30, days))
+        expiry_score = Decimal(30 - days) / Decimal(30)
+    recency_score = Decimal("0") if recipe.id in recently_cooked else Decimal("1")
+    total = (
+        coverage * Decimal("0.5") + expiry_score * Decimal("0.3") + recency_score * Decimal("0.2")
+    )
+    return total, coverage, soonest_expiry
+
+
+def _selection_reason(
+    is_leftover: bool,
+    coverage: Decimal,
+    soonest_expiry: date | None,
+    recently_cooked: bool,
+    reference_date: date,
+) -> str:
+    """Diễn giải tại sao món này được chọn (C2)."""
+    if is_leftover:
+        return "Dùng đồ dư đã nấu trước"
+    if soonest_expiry is not None and (soonest_expiry - reference_date).days <= 7:
+        return "Ưu tiên dùng nguyên liệu sắp hết hạn trong tủ"
+    if coverage >= Decimal("1") and not recently_cooked:
+        return "Nguyên liệu đủ trong tủ, món chưa ăn gần đây"
+    if coverage >= Decimal("1"):
+        return "Nguyên liệu đủ trong tủ, nấu ngay"
+    return "Chọn món thay thế, bổ sung vào danh sách đi chợ"
+
+
+def _select_best_recipe(
+    candidates: list[Recipe],
+    pantry_lots: list[PantryLot],
+    conversions: list[IngredientConversion] | None,
+    recently_cooked: set[UUID],
+    reference_date: date,
+) -> tuple[Recipe | None, Decimal, date | None, str]:
+    """Chọn công thức có điểm ưu tiên cao nhất; hòa điểm giữ thứ tự ban đầu."""
+    best: Recipe | None = None
+    best_score = Decimal("-1")
+    best_coverage = Decimal("0")
+    best_expiry: date | None = None
+    for r in candidates:
+        score, coverage, expiry = _score_recipe(
+            r, pantry_lots, conversions, recently_cooked, reference_date
+        )
+        if score > best_score:
+            best = r
+            best_score = score
+            best_coverage = coverage
+            best_expiry = expiry
+    reason = _selection_reason(
+        False,
+        best_coverage,
+        best_expiry,
+        best is not None and best.id in recently_cooked,
+        reference_date,
+    )
+    return best, best_coverage, best_expiry, reason
+
+
 def generate_period_plan(
     start_date: date,
     end_date: date,
@@ -114,6 +233,8 @@ def generate_period_plan(
     raw_ingredient_names: dict[UUID, str] | None = None,
     leftover_days: int = LEFTOVER_DEFAULT_DAYS,
     household_settings: HouseholdSettings | None = None,
+    recently_cooked_recipe_ids: set[UUID] | None = None,
+    reference_date: date | None = None,
 ) -> tuple[list[MealPlan], list[ShoppingItem]]:
     """Generate meal plans for the specified period.
 
@@ -132,6 +253,10 @@ def generate_period_plan(
          `skip_dates`, và tính số phần ăn theo `household_size`.
     """
     _validate_leftover_days(leftover_days)
+    if reference_date is None:
+        reference_date = start_date
+    if recently_cooked_recipe_ids is None:
+        recently_cooked_recipe_ids = set()
     # Khi household_settings không được truyền rõ ràng (None), giữ nguyên tham số
     # `periods` của caller (ví dụ test truyền periods=[LUNCH]). Chỉ áp dụng
     # meal_periods từ cài đặt hộ gia đình khi người dùng đã cung cấp rõ ràng.
@@ -234,40 +359,29 @@ def generate_period_plan(
                             break
 
                 # 2. If no leftover used, pick a fresh recipe respecting the NO-REPEAT rule
+                # C2: ưu tiên công thức dùng tồn kho / sắp hết hạn / chưa ăn gần đây.
                 if not dish_chosen:
                     candidate_recipes = [
                         r for r in recipes_by_cat[cat] if r.id not in cooked_recipe_ids_in_period
                     ]
-
-                    # First priority: Recipes that can be cooked with current simulated stock
-                    fully_stocked_recipe: Recipe | None = None
-                    for r in candidate_recipes:
-                        can_cook, _ = check_recipe_stock(r, usable_lots, conversions=conversions)
-                        if can_cook:
-                            fully_stocked_recipe = r
-                            break
-
                     chosen_recipe: Recipe | None = None
-                    if fully_stocked_recipe:
-                        chosen_recipe = fully_stocked_recipe
-                        # Trừ kho mô phỏng (có quy đổi đơn vị và nguyên liệu, theo FIFO)
-                        for req in aggregate_requirements(chosen_recipe):
-                            consume_available(
-                                usable_lots,
-                                req.ingredient_id,
-                                req.quantity,
-                                req.unit,
-                                conversions=conversions,
-                            )
-                    elif candidate_recipes:
-                        # Stock is insufficient for any remaining fresh recipe in this category.
-                        # Pick the first non-repeating recipe and generate
-                        # shopping items for deficits
-                        chosen_recipe = candidate_recipes[0]
+                    chosen_reason = ""
+                    if candidate_recipes:
+                        chosen_recipe, coverage, expiry, chosen_reason = _select_best_recipe(
+                            candidate_recipes,
+                            usable_lots,
+                            conversions,
+                            recently_cooked_recipe_ids,
+                            current_d,
+                        )
+
+                    if chosen_recipe:
+                        # Tính thiếu hiểu trên kho TRƯỚC khi trừ món này (giữ nguyên
+                        # hành vi gốc: không tự tạo thiếu cho món vừa chọn).
                         _, deficits = check_recipe_stock(
                             chosen_recipe, usable_lots, conversions=conversions
                         )
-                        # Phần đã có trong kho được dùng cho món này, để món sau không đếm lại.
+                        # Trừ kho mô phỏng (có quy đổi đơn vị và nguyên liệu, theo FIFO)
                         for req in aggregate_requirements(chosen_recipe):
                             consume_available(
                                 usable_lots,
@@ -328,6 +442,7 @@ def generate_period_plan(
                             category=cat,
                             is_leftover=False,
                             servings=chosen_recipe.servings,
+                            selection_reason=chosen_reason,
                         )
                         dish_chosen = cooked_dish
                         # Mark this recipe as cooked in this period -> DO NOT REPEAT!
@@ -417,6 +532,8 @@ def regenerate_single_meal(
     conversions: list[IngredientConversion] | None = None,
     raw_ingredient_names: dict[UUID, str] | None = None,
     leftover_days: int = LEFTOVER_DEFAULT_DAYS,
+    recently_cooked_recipe_ids: set[UUID] | None = None,
+    reference_date: date | None = None,
 ) -> MealPlan:
     """Sinh lại 1 bữa đơn lẻ mà không ảnh hưởng các bữa khác (B1 & B2).
 
@@ -426,6 +543,7 @@ def regenerate_single_meal(
         (để tuân thủ quy tắc không lặp món trong đợt - NO REPEAT RULE).
       - Lập lại các món (1 mặn, 1 rau, 1 canh) cho bữa này.
       - Giữ nguyên id, planned_for, meal_period, period_id của bữa cũ.
+      - C2: ưu tiên công thức dùng tồn kho / sắp hết hạn / chưa ăn gần đây.
     """
     _validate_leftover_days(leftover_days)
     target_plan = next((p for p in all_meal_plans if p.id == target_meal_plan_id), None)
@@ -437,6 +555,11 @@ def regenerate_single_meal(
             "Bữa ăn này đã được đánh dấu ăn và ghi nhận vào kho. "
             "Hãy hoàn tác bữa ăn trước nếu bạn muốn đổi món."
         )
+
+    if reference_date is None:
+        reference_date = target_plan.planned_for
+    if recently_cooked_recipe_ids is None:
+        recently_cooked_recipe_ids = set()
 
     # Thu thập các món đã nấu trong các bữa KHÁC của cùng đợt (is_leftover = False)
     other_cooked_recipe_ids: set[UUID] = {
@@ -478,14 +601,15 @@ def regenerate_single_meal(
             ]
 
         chosen_recipe: Recipe | None = None
-        for r in candidate_recipes:
-            can_cook, _ = check_recipe_stock(r, usable_lots, conversions=conversions)
-            if can_cook:
-                chosen_recipe = r
-                break
-
-        if not chosen_recipe and candidate_recipes:
-            chosen_recipe = candidate_recipes[0]
+        chosen_reason = ""
+        if candidate_recipes:
+            chosen_recipe, coverage, expiry, chosen_reason = _select_best_recipe(
+                candidate_recipes,
+                usable_lots,
+                conversions,
+                recently_cooked_recipe_ids,
+                reference_date,
+            )
 
         if chosen_recipe:
             for req in aggregate_requirements(chosen_recipe):
@@ -505,6 +629,7 @@ def regenerate_single_meal(
                     category=cat,
                     is_leftover=False,
                     servings=chosen_recipe.servings,
+                    selection_reason=chosen_reason,
                 )
             )
 

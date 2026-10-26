@@ -39,6 +39,36 @@ class EngineEquivalenceTest {
     }
 
     @Test
+    fun testSharedPlannerPreferenceFixture() {
+        val input = javaClass.classLoader?.getResourceAsStream("planner_preferences.json")
+            ?: throw IllegalStateException("Thiếu planner_preferences.json")
+        val data = JSONObject(InputStreamReader(input).readText())
+        val recipeType = object : TypeToken<List<Recipe>>() {}.type
+        val pantryType = object : TypeToken<List<PantryLot>>() {}.type
+        val recipes: List<Recipe> = gson.fromJson(data.getJSONArray("recipes").toString(), recipeType)
+        val pantry: List<PantryLot> = gson.fromJson(data.getJSONArray("pantry").toString(), pantryType)
+        val settings = HouseholdSettings(mealPeriods = listOf("lunch"))
+        val (_, meals, _) = EasyMealsEngine.generatePeriodPlan(
+            data.getString("reference_date"), data.getString("reference_date"), recipes, pantry,
+            allowLeftovers = false, householdSettings = settings
+        )
+        val selected = meals.first().dishes.first { it.category == "man" }
+        assertEquals(data.getString("expected_recipe_id"), selected.recipeId)
+        assertEquals(data.getString("expected_reason"), selected.selectionReason)
+        val recency = data.getJSONObject("recency_case")
+        val recentIds = recency.getJSONArray("recently_cooked_recipe_ids").let { array ->
+            (0 until array.length()).map { array.getString(it) }.toSet()
+        }
+        val (_, variedMeals, _) = EasyMealsEngine.generatePeriodPlan(
+            data.getString("reference_date"), data.getString("reference_date"), recipes, pantry,
+            allowLeftovers = false, householdSettings = settings, recentlyCookedRecipeIds = recentIds
+        )
+        val varied = variedMeals.first().dishes.first { it.category == "man" }
+        assertEquals(recency.getString("expected_recipe_id"), varied.recipeId)
+        assertEquals(recency.getString("expected_reason"), varied.selectionReason)
+    }
+
+    @Test
     fun testFifoStockDeduction() {
         val fifoDict = fixtureJson.getJSONObject("fifo_deduction")
         val recipe = gson.fromJson(fifoDict.getJSONObject("recipe").toString(), Recipe::class.java)

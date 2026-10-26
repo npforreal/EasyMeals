@@ -131,6 +131,7 @@ def generate_stateless_plan(
             conversions=conversions,
             raw_ingredient_names=raw_ingredient_names,
             household_settings=household_settings,
+            recently_cooked_recipe_ids=set(payload.options.recently_cooked_recipe_ids),
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
@@ -156,6 +157,7 @@ def generate_stateless_plan(
                     category=d.category,
                     is_leftover=d.is_leftover,
                     servings=d.servings,
+                    selection_reason=d.selection_reason,
                 )
                 for d in p.dishes
             ],
@@ -397,6 +399,7 @@ def regenerate_stateless_meal(
                     category=d.category,
                     is_leftover=d.is_leftover,
                     servings=d.servings,
+                    selection_reason=d.selection_reason,
                 )
                 for d in updated_meal.dishes
             ],

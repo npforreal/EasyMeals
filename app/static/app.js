@@ -1855,6 +1855,12 @@ async function initPlannerPage() {
       // A2: nếu tạo thực đơn trùng ngày với bữa CHƯA ăn -> hỏi người dùng giữ hay thay.
       // Bữa đã ăn luôn được giữ; bấm Huỷ thì không tạo gì cả.
       const existingPlans = await getMealPlans();
+      const recentCutoff = new Date(`${s}T00:00:00Z`);
+      recentCutoff.setUTCDate(recentCutoff.getUTCDate() - 7);
+      const recentlyCookedRecipeIds = [...new Set(existingPlans
+        .filter((p) => p.eaten_at && String(p.planned_for).slice(0, 10) >= recentCutoff.toISOString().slice(0, 10)
+          && String(p.planned_for).slice(0, 10) < s)
+        .flatMap((p) => (p.dishes || []).filter((d) => !d.is_leftover).map((d) => d.recipe_id)))];
       const uneatenOverlap = existingPlans.filter(
         (p) =>
           !p.eaten_at &&
@@ -1891,6 +1897,7 @@ async function initPlannerPage() {
             leftoverDays: leftoverPrefs.leftoverDays,
             // C1 - Vòng 13: truyền cài đặt hộ gia đình cục bộ (mặc định 1 người, trưa+tối).
             household_settings: readHouseholdSettings(),
+            recently_cooked_recipe_ids: recentlyCookedRecipeIds,
             // A7 - Vòng 13: đường offline/bundled cũng phải nhận quy đổi (gạo -> cơm)
             // kèm tên nguyên liệu gốc, khớp đường API.
             conversions: catalogue.conversions || [],
@@ -1936,6 +1943,7 @@ async function initPlannerPage() {
             leftover_days: leftoverPrefs.leftoverDays,
             // C1 - Vòng 13: truyền cài đặt hộ gia đình cục bộ (mặc định 1 người, trưa+tối).
             household_settings: readHouseholdSettings(),
+            recently_cooked_recipe_ids: recentlyCookedRecipeIds,
           },
         };
 

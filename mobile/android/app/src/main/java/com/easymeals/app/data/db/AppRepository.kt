@@ -646,7 +646,11 @@ class AppRepository(private val context: Context) {
                 mealPeriods = _mealPeriods.value,
                 skipDates = _skipDates.value,
                 planDays = _planDays.value
-            )
+            ),
+            recentlyCookedRecipeIds = _mealPlans.value
+                .filter { it.eatenAt != null && runCatching { LocalDate.parse(it.plannedFor) }.getOrNull()?.let { d -> !d.isBefore(start.minusDays(7)) && d.isBefore(start) } == true }
+                .flatMap { it.dishes.filterNot(PlannedDish::isLeftover).map(PlannedDish::recipeId) }
+                .toSet()
         )
         _mealPlans.value = EasyMealsEngine.mergeNewPlansIntoExisting(
             _mealPlans.value, meals, mergeMode

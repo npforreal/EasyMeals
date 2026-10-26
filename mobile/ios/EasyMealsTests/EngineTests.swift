@@ -34,6 +34,42 @@ final class EngineTests: XCTestCase {
         }
     }
 
+    func testSharedPlannerPreferenceFixture() throws {
+        let fixtureURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("../../tests/fixtures/planner_preferences.json")
+        let data = try JSONSerialization.jsonObject(with: Data(contentsOf: fixtureURL)) as! [String: Any]
+        let recipesData = try JSONSerialization.data(withJSONObject: data["recipes"]!)
+        let pantryData = try JSONSerialization.data(withJSONObject: data["pantry"]!)
+        let recipes = try JSONDecoder().decode([Recipe].self, from: recipesData)
+        let pantry = try JSONDecoder().decode([PantryLot].self, from: pantryData)
+        let date = data["reference_date"] as! String
+        let result = try EasyMealsEngine.generatePeriodPlan(
+            startDateStr: date,
+            endDateStr: date,
+            recipes: recipes,
+            currentPantryLots: pantry,
+            allowLeftovers: false,
+            householdSettings: HouseholdSettings(mealPeriods: ["lunch"])
+        )
+        let selected = try XCTUnwrap(result.meals.first?.dishes.first(where: { $0.category == "man" }))
+        XCTAssertEqual(selected.recipeId, data["expected_recipe_id"] as? String)
+        XCTAssertEqual(selected.selectionReason, data["expected_reason"] as? String)
+        let recency = data["recency_case"] as! [String: Any]
+        let recentIds = Set(recency["recently_cooked_recipe_ids"] as! [String])
+        let variedResult = try EasyMealsEngine.generatePeriodPlan(
+            startDateStr: date,
+            endDateStr: date,
+            recipes: recipes,
+            currentPantryLots: pantry,
+            allowLeftovers: false,
+            householdSettings: HouseholdSettings(mealPeriods: ["lunch"]),
+            recentlyCookedRecipeIds: recentIds
+        )
+        let varied = try XCTUnwrap(variedResult.meals.first?.dishes.first(where: { $0.category == "man" }))
+        XCTAssertEqual(varied.recipeId, recency["expected_recipe_id"] as? String)
+        XCTAssertEqual(varied.selectionReason, recency["expected_reason"] as? String)
+    }
+
     func testFifoStockDeduction() throws {
         guard let fifoDict = fixtureJSON["fifo_deduction"] as? [String: Any] else {
             XCTFail("Thiếu fifo_deduction")

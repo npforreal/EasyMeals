@@ -566,6 +566,7 @@ public final class AppStorage: @unchecked Sendable {
 
         let startStr = formatter.string(from: start)
         let endStr = formatter.string(from: end)
+        let recentCutoff = Calendar.current.date(byAdding: .day, value: -7, to: start).map(formatter.string(from:)) ?? startStr
 
         if let result = try? EasyMealsEngine.generatePeriodPlan(
             startDateStr: startStr,
@@ -581,7 +582,10 @@ public final class AppStorage: @unchecked Sendable {
             ),
             leftoverDays: leftoverDays,
             // C1 - Vòng 13: truyền cài đặt hộ gia đình cục bộ vào engine.
-            householdSettings: self.householdSettings
+            householdSettings: self.householdSettings,
+            recentlyCookedRecipeIds: Set(mealPlans
+                .filter { $0.eatenAt != nil && $0.plannedFor >= recentCutoff && $0.plannedFor < startStr }
+                .flatMap { $0.dishes.filter { !$0.isLeftover }.map(\.recipeId) })
         ) {
             self.mealPlans = EasyMealsEngine.mergeNewPlansIntoExisting(
                 mealPlans,

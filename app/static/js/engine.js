@@ -596,6 +596,7 @@ export function generatePeriodPlan(
   }
   const conversions = options.conversions || [];
   const rawIngredientNames = options.raw_ingredient_names || options.rawIngredientNames || {};
+  const recentlyCooked = new Set(options.recently_cooked_recipe_ids || options.recentlyCookedRecipeIds || []);
 
   // C1 - Vòng 13: cài đặt hộ gia đình cục bộ (không lưu lên server).
   const hs = options.household_settings || {};
@@ -680,24 +681,42 @@ export function generatePeriodPlan(
         if (!dishChosen) {
           const candidateRecipes = recipesByCat[cat].filter((r) => !cookedRecipeIds.has(r.id));
 
-          let fullyStockedRecipe = null;
-          for (const r of candidateRecipes) {
-            const { canCook } = checkRecipeStock(r, usableLots, "1", conversions);
-            if (canCook) {
-              fullyStockedRecipe = r;
-              break;
+          const rankRecipe = (recipe) => {
+            const requirements = aggregateRequirements(recipe);
+            let coverage = 0;
+            let earliest = null;
+            for (const req of requirements) {
+              const available = getTotalIngredientStock(usableLots, req.ingredient_id, req.unit, conversions);
+              const needed = Decimal.from(req.quantity);
+              coverage += needed.eq("0") ? 0 : Math.min(1, Number(available.div(needed).toString()));
+              for (const lot of usableLots) {
+                if (lot.ingredient_id === req.ingredient_id && Number(lot.remaining_quantity) > 0 && lot.expires_at
+                    && (!earliest || lot.expires_at < earliest)) earliest = lot.expires_at;
+              }
+            }
+            coverage = requirements.length ? coverage / requirements.length : 0;
+            const days = earliest ? Math.max(0, Math.min(30,
+              (Date.parse(`${earliest}T00:00:00Z`) - Date.parse(`${dateStr}T00:00:00Z`)) / 86400000)) : 30;
+            const expiry = earliest ? (30 - days) / 30 : 0;
+            const variety = recentlyCooked.has(recipe.id) ? 0 : 1;
+            return { recipe, coverage, earliest, score: coverage * 0.5 + expiry * 0.3 + variety * 0.2 };
+          };
+          const ranked = candidateRecipes.map(rankRecipe).sort((a, b) => b.score - a.score);
+          const selected = ranked[0];
+          let chosenRecipe = selected ? selected.recipe : null;
+          let chosenReason = "";
+          if (selected) {
+            if (selected.earliest && selected.earliest <= new Date(Date.parse(`${dateStr}T00:00:00Z`) + 7 * 86400000).toISOString().slice(0, 10)) {
+              chosenReason = "Ưu tiên dùng nguyên liệu sắp hết hạn trong tủ";
+            } else if (selected.coverage >= 1 && !recentlyCooked.has(chosenRecipe.id)) {
+              chosenReason = "Nguyên liệu đủ trong tủ, món chưa ăn gần đây";
+            } else if (selected.coverage >= 1) {
+              chosenReason = "Nguyên liệu đủ trong tủ, nấu ngay";
+            } else {
+              chosenReason = "Chọn món thay thế, bổ sung vào danh sách đi chợ";
             }
           }
-
-          let chosenRecipe = null;
-          if (fullyStockedRecipe) {
-            chosenRecipe = fullyStockedRecipe;
-            // Trừ kho mô phỏng (có quy đổi đơn vị và nguyên liệu, theo FIFO)
-            for (const req of aggregateRequirements(chosenRecipe)) {
-              consumeAvailable(usableLots, req.ingredient_id, req.quantity, req.unit, conversions);
-            }
-          } else if (candidateRecipes.length > 0) {
-            chosenRecipe = candidateRecipes[0];
+          if (chosenRecipe) {
             const { deficits } = checkRecipeStock(chosenRecipe, usableLots, "1", conversions);
             // Phần đã có trong kho được dùng cho món này, để món sau không đếm lại.
             for (const req of aggregateRequirements(chosenRecipe)) {
@@ -751,9 +770,7 @@ export function generatePeriodPlan(
               is_leftover: false,
               servings: chosenRecipe.servings,
               // C2 - Vòng 13: diễn giải tại sao món này được chọn.
-              selection_reason: fullyStockedRecipe
-                ? "Nguyên liệu đủ trong tủ, nấu ngay"
-                : "Chọn món thay thế, bổ sung vào danh sách đi chợ",
+              selection_reason: chosenReason,
             };
             cookedRecipeIds.add(chosenRecipe.id);
 

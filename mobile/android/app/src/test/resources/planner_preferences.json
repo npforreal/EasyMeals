@@ -1,0 +1,24 @@
+{
+  "reference_date": "2026-10-26",
+  "days": 1,
+  "meal_periods": ["lunch"],
+  "allow_leftovers": false,
+  "pantry": [
+    {"id":"20000000-0000-0000-0000-000000000001","ingredient_id":"10000000-0000-0000-0000-000000000001","ingredient_name":"Thịt A","remaining_quantity":"100","purchased_quantity":"100","unit":"g","purchased_at":"2026-10-01T00:00:00","expires_at":"2026-11-15"},
+    {"id":"20000000-0000-0000-0000-000000000002","ingredient_id":"10000000-0000-0000-0000-000000000002","ingredient_name":"Thịt B","remaining_quantity":"100","purchased_quantity":"100","unit":"g","purchased_at":"2026-10-01T00:00:00","expires_at":"2026-10-28"}
+  ],
+  "recipes": [
+    {"id":"30000000-0000-0000-0000-000000000001","name":"Món hạn xa","category":"man","servings":2,"ingredients":[{"ingredient_id":"10000000-0000-0000-0000-000000000001","ingredient_name":"Thịt A","quantity":"100","unit":"g"}]},
+    {"id":"30000000-0000-0000-0000-000000000002","name":"Món sắp hết hạn","category":"man","servings":2,"ingredients":[{"ingredient_id":"10000000-0000-0000-0000-000000000002","ingredient_name":"Thịt B","quantity":"100","unit":"g"}]},
+    {"id":"30000000-0000-0000-0000-000000000003","name":"Rau","category":"rau","servings":2,"ingredients":[]},
+    {"id":"30000000-0000-0000-0000-000000000004","name":"Canh","category":"canh","servings":2,"ingredients":[]}
+  ],
+  "recently_cooked_recipe_ids": [],
+  "expected_recipe_id": "30000000-0000-0000-0000-000000000002",
+  "expected_reason": "Ưu tiên dùng nguyên liệu sắp hết hạn trong tủ",
+  "recency_case": {
+    "recently_cooked_recipe_ids": ["30000000-0000-0000-0000-000000000002"],
+    "expected_recipe_id": "30000000-0000-0000-0000-000000000001",
+    "expected_reason": "Nguyên liệu đủ trong tủ, món chưa ăn gần đây"
+  }
+}
