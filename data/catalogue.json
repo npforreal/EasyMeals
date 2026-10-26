@@ -1,5 +1,5 @@
 {
-  "catalogue_version": "2026.10.27",
+  "catalogue_version": "2026.10.28",
   "categories": [
     {
       "display_order": 1,
@@ -80,10 +80,14 @@
       "to_unit": "g"
     }
   ],
-  "etag": "\"2026.10.27-e23d6b337538dc98\"",
+  "etag": "\"2026.10.28-300bea0727ee55f8\"",
   "ingredients": [
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "00adfe1b-efdc-515d-af25-8b127bcd8dcb",
@@ -92,6 +96,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "nuoc_cham_dau",
       "default_unit": "ml",
       "id": "02aa5c61-5cf8-538b-b1d0-83e04882d95b",
@@ -100,6 +108,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "041f616a-d7c2-588d-94f6-23f07fb548ad",
@@ -108,6 +120,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "nuoc_cham_dau",
       "default_unit": "ml",
       "id": "06581f9f-c75f-5c44-b59a-7799b8b2f331",
@@ -119,6 +135,10 @@
         "Gạo trắng",
         "Gạo tẻ"
       ],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gao_bot_mi",
       "default_unit": "g",
       "id": "0738fdf0-710e-5aed-bbb5-5ba1f0c05f3b",
@@ -127,6 +147,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "07569be6-6c49-5862-91e6-cb8fe994dae6",
@@ -135,6 +159,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "nuoc_cham_dau",
       "default_unit": "g",
       "id": "0759a8af-b4e5-51ef-b0c1-779a9f636f37",
@@ -143,6 +171,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "07cdbb7d-927b-53d3-85d9-db836ec67363",
@@ -151,6 +183,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "thit",
       "default_unit": "g",
       "id": "0ce224e4-9890-5fea-8ee5-7c3c4024397f",
@@ -159,6 +195,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "0f1c5578-9150-5376-b0e0-242e43284950",
@@ -167,6 +207,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "nuoc_cham_dau",
       "default_unit": "g",
       "id": "0fa1df4c-c98b-5cd3-9b9f-1aefcd6710d8",
@@ -177,6 +221,10 @@
       "aliases": [
         "Thịt rọi"
       ],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "thit",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000001",
@@ -188,6 +236,10 @@
         "Thịt băm",
         "Thịt xay"
       ],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "thit",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000002",
@@ -196,6 +248,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "thit",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000003",
@@ -204,6 +260,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "thit",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000004",
@@ -212,6 +272,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_cam",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000005",
@@ -220,6 +284,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000006",
@@ -228,6 +296,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000007",
@@ -236,6 +308,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_cam",
       "default_unit": "piece",
       "id": "11111111-0001-0000-0000-000000000008",
@@ -244,6 +320,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_cam",
       "default_unit": "piece",
       "id": "11111111-0001-0000-0000-000000000009",
@@ -254,6 +334,10 @@
       "aliases": [
         "Tàu hũ"
       ],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "khac",
       "default_unit": "piece",
       "id": "11111111-0001-0000-0000-000000000010",
@@ -262,6 +346,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000011",
@@ -270,6 +358,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000012",
@@ -278,6 +370,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000013",
@@ -286,6 +382,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000014",
@@ -294,6 +394,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000015",
@@ -302,6 +406,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000016",
@@ -310,6 +418,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000017",
@@ -318,6 +430,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000018",
@@ -326,6 +442,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000019",
@@ -334,6 +454,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000020",
@@ -345,6 +469,10 @@
         "Dứa",
         "Khóm"
       ],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000021",
@@ -353,6 +481,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000022",
@@ -361,6 +493,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000023",
@@ -369,6 +505,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000024",
@@ -377,6 +517,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000025",
@@ -385,6 +529,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000026",
@@ -393,6 +541,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000027",
@@ -401,6 +553,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000028",
@@ -409,6 +565,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "11111111-0001-0000-0000-000000000029",
@@ -417,6 +577,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "12962022-5858-5728-83a0-b435f64c4fd2",
@@ -425,6 +589,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gao_bot_mi",
       "default_unit": "g",
       "id": "16ddda98-781e-5ecf-9778-aedb4d1cd9ef",
@@ -433,6 +601,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "khac",
       "default_unit": "g",
       "id": "1d082590-32f1-5474-a477-d4ffc3c6f75a",
@@ -441,6 +613,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "20161b9c-0b8e-52c5-a4f0-f1381c378359",
@@ -449,6 +625,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "226ca8f7-4b9a-53b7-af05-eec7843f1ded",
@@ -457,6 +637,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "23d34b99-c771-5972-b10c-0a5dcb22f6c8",
@@ -465,6 +649,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "24780d3d-9d7b-53ca-98ae-1677c647cdc5",
@@ -473,6 +661,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "25c13eb0-8848-5932-a5f4-2aba98419f3c",
@@ -481,6 +673,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "25d4d75b-2a37-5bd5-9a77-c5e86921c6e6",
@@ -489,6 +685,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "27307f32-10a8-5418-a650-b67e1c42f74b",
@@ -497,6 +697,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_cam",
       "default_unit": "g",
       "id": "289ade1d-caff-51cf-acd6-7b78519e66c7",
@@ -505,6 +709,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_cam",
       "default_unit": "g",
       "id": "28d51144-141e-51a4-bfe8-56b56570230a",
@@ -513,6 +721,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gao_bot_mi",
       "default_unit": "g",
       "id": "2aac64db-7407-5e60-a6b5-a88a4d4ac7bc",
@@ -521,6 +733,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "2cc4ffe6-83a7-59ca-b946-2fdbbd08272c",
@@ -529,6 +745,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "35d353fb-14c1-5ef7-9eb7-d76108a4ef7a",
@@ -537,6 +757,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "383705e4-6802-58e5-960c-bfbc0db7ee92",
@@ -545,6 +769,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "nuoc_cham_dau",
       "default_unit": "ml",
       "id": "38a6d0e2-668a-591a-b585-c7e52fb5d425",
@@ -553,6 +781,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "3c4dfb65-9e63-590f-83e6-0dbbe92aa302",
@@ -561,6 +793,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "3e49235f-ec85-5dc4-9876-edeadec74f8b",
@@ -569,6 +805,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "3e681f25-7d91-5783-a2d0-d32d509eeb52",
@@ -577,6 +817,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "3f24e849-e702-5cde-bde4-d77c918f3889",
@@ -585,6 +829,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "4043b900-41ce-5873-84e6-f179088646f0",
@@ -593,6 +841,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gao_bot_mi",
       "default_unit": "g",
       "id": "412a8c08-4863-5000-aedd-13e2ba3adb69",
@@ -601,6 +853,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "45b9343b-e4f3-5f5a-b83e-76c53cc71cc5",
@@ -609,6 +865,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "475163e4-4743-5558-84f9-da944141efaf",
@@ -617,6 +877,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "4996721c-f13b-5f9a-ae9c-090bed5de13a",
@@ -625,6 +889,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "4a6aa554-60db-5696-b8bb-b69ef5e5d352",
@@ -633,6 +901,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "4a85ce87-735e-522f-ac0a-8cddbef30ce8",
@@ -641,6 +913,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "50019dc2-feda-530f-a551-002811e6c76f",
@@ -649,6 +925,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "trung_sua",
       "default_unit": "ml",
       "id": "58b7aab8-0045-570f-8940-6c2a07081cbd",
@@ -657,6 +937,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "602d7131-eeee-5a5f-86d6-d7c3d83bcb1e",
@@ -665,6 +949,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "nuoc_cham_dau",
       "default_unit": "g",
       "id": "603fd092-920d-58f7-bffb-044060dbc075",
@@ -673,6 +961,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "6106e6c7-4925-5374-91f3-14c48c61f164",
@@ -681,6 +973,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "6848fdf4-04e3-5458-a636-1bb3af67b712",
@@ -689,6 +985,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "68e135f6-018f-5e2a-9d61-1ef02dd33a78",
@@ -697,6 +997,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "6b6d2aac-52c5-559c-a169-06af713deece",
@@ -705,6 +1009,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "6b8bbcf1-a781-5416-8ed5-1dbc9a54596d",
@@ -713,6 +1021,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_cam",
       "default_unit": "g",
       "id": "7000d49b-2073-55a0-89cb-daab2748509a",
@@ -721,6 +1033,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "70a5d8a5-645c-5a46-ac2f-1b23ee71c214",
@@ -729,6 +1045,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "7152d7c2-81b8-55a5-8663-02d7c65aba88",
@@ -737,6 +1057,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "trung_sua",
       "default_unit": "g",
       "id": "749d80af-fbd9-5177-8772-0e215b3ac326",
@@ -745,6 +1069,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "75e1a678-ffdc-5e9f-8348-9c2ae2b3ba5c",
@@ -753,6 +1081,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "75f1f149-fc34-587f-8c7f-d1e4a30a6ed6",
@@ -761,6 +1093,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "79f4f60c-3377-550e-af8a-c46ace67ef0f",
@@ -769,6 +1105,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gao_bot_mi",
       "default_unit": "g",
       "id": "7dccd7c7-460d-5d3b-97d5-e7508b8b4c93",
@@ -777,6 +1117,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "piece",
       "id": "8258d3a0-8a4a-503d-bb97-60127353997b",
@@ -785,6 +1129,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gao_bot_mi",
       "default_unit": "piece",
       "id": "83759a4d-0602-5048-a8cf-1ef4d0eb1a46",
@@ -793,6 +1141,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "839b4f3b-70b1-5708-b38a-3b31691746a3",
@@ -801,6 +1153,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "86a53cb8-e5cc-5349-a50c-a4371d29de87",
@@ -809,6 +1165,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "khac",
       "default_unit": "g",
       "id": "889c2f1d-4dae-5d75-8ed6-a6a9f811c9dc",
@@ -817,6 +1177,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "thit",
       "default_unit": "g",
       "id": "893549fd-8fcb-536a-b4a1-aecf7582abc6",
@@ -825,6 +1189,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "897ed7ae-f89b-56af-9aa1-fcfda0c49060",
@@ -833,6 +1201,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "89a7c750-9fdb-5578-ae3d-1409763f0ee1",
@@ -841,6 +1213,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "8a45e085-b4df-5a9f-8749-531190550973",
@@ -849,6 +1225,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "8b6b7f69-b8ce-5fa0-a98a-6ddf0a67edc1",
@@ -857,6 +1237,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "nuoc_cham_dau",
       "default_unit": "ml",
       "id": "8e3e0a57-75e9-5a82-b295-a421c437c254",
@@ -865,6 +1249,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "9010c55f-27e2-504c-9c49-7286c13a6d3a",
@@ -873,6 +1261,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gao_bot_mi",
       "default_unit": "g",
       "id": "911f6b62-9ac0-58ac-8a41-9288fc6e2e66",
@@ -881,6 +1273,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "thit",
       "default_unit": "g",
       "id": "92688361-e3c2-58c6-928e-4a37f1e84050",
@@ -889,6 +1285,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "969e10da-48d0-5e19-acaa-f6ce2620d2fb",
@@ -897,6 +1297,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "nuoc_cham_dau",
       "default_unit": "g",
       "id": "a3a06aed-fe9e-58e0-9ac0-b0039c635696",
@@ -905,6 +1309,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "a3fe5f4c-d3cc-5a43-9556-0a44626f7d00",
@@ -913,6 +1321,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "a49d14f7-d3a7-5d63-93b1-bebfd88ee7c5",
@@ -921,6 +1333,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "nuoc_cham_dau",
       "default_unit": "ml",
       "id": "a4e0f9d5-5f01-56b5-998e-0daa96f0647d",
@@ -929,6 +1345,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gao_bot_mi",
       "default_unit": "g",
       "id": "a6dcf80d-9427-5950-9e4b-180eb8d8cb4d",
@@ -937,6 +1357,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "nuoc_cham_dau",
       "default_unit": "ml",
       "id": "ac247e34-bb8c-5deb-a1a5-311782334c68",
@@ -945,6 +1369,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "khac",
       "default_unit": "g",
       "id": "af25d32d-51ad-51dd-85d2-21f0e6bb09f2",
@@ -953,6 +1381,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "af40e13c-fd55-55f9-abd1-1aee04fc2cd2",
@@ -961,6 +1393,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "af978afc-ed4a-51e3-b542-e06778b233e1",
@@ -969,6 +1405,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "piece",
       "id": "b1e2c81f-5f74-53db-b93e-7e7535fe0726",
@@ -977,6 +1417,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "thit",
       "default_unit": "g",
       "id": "b1fc41b9-fe1e-51dd-b0f4-e7cc91afad09",
@@ -985,6 +1429,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "b712ae0c-48ca-5465-9a24-28ea6a0afc87",
@@ -993,6 +1441,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "b87dd579-5188-56c4-b0ac-d239792dc92b",
@@ -1001,6 +1453,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "nuoc_cham_dau",
       "default_unit": "g",
       "id": "b95e858c-db38-5227-8890-c1b6f166baa3",
@@ -1009,6 +1465,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "nuoc_cham_dau",
       "default_unit": "g",
       "id": "bb95478e-90e4-57e4-8e4b-19e1c6e9f6a5",
@@ -1017,6 +1477,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gao_bot_mi",
       "default_unit": "g",
       "id": "bbc869f8-3219-53ec-9ace-bbc05359aa00",
@@ -1025,6 +1489,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gao_bot_mi",
       "default_unit": "g",
       "id": "bca8993a-e5c6-5dcc-8cf4-8205bab215bc",
@@ -1033,6 +1501,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "bdac25e2-2207-5532-8e44-280283a735c1",
@@ -1041,6 +1513,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "be5e2e4d-ef37-53cc-a8ed-156f51506a57",
@@ -1049,6 +1525,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "thit",
       "default_unit": "g",
       "id": "bfd02f5c-bd91-5709-92bc-be0b6b712e0b",
@@ -1057,6 +1537,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "c20fc3de-6cfa-5243-86d6-a300f073e216",
@@ -1065,6 +1549,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_cam",
       "default_unit": "g",
       "id": "c29ba7ab-13fb-5d8b-a4cf-067e47c8273d",
@@ -1073,6 +1561,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "trung_sua",
       "default_unit": "g",
       "id": "c2c0e95f-a6bb-5dbf-801e-91b2588a5c56",
@@ -1081,6 +1573,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "khac",
       "default_unit": "g",
       "id": "c95e1ce9-48f0-5cb4-a055-5297daee1ff6",
@@ -1089,6 +1585,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "trung_sua",
       "default_unit": "g",
       "id": "cb9975be-8cfa-5f95-bbf1-11dd74974bea",
@@ -1097,6 +1597,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "ccbf47ac-0dca-50a2-b756-c31b0c7192b8",
@@ -1105,6 +1609,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "cdac64c6-8e03-5804-a24b-db666316279d",
@@ -1113,6 +1621,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "khac",
       "default_unit": "g",
       "id": "ce8f2c0e-c00c-59b2-9be4-20e9cba8c65f",
@@ -1121,6 +1633,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "d0881267-e442-5c13-9e68-4601b70f18fa",
@@ -1129,6 +1645,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "d2f82030-7fb5-596f-b49c-35e2bdb6e81a",
@@ -1137,6 +1657,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "trung_sua",
       "default_unit": "ml",
       "id": "d71b8381-3c2a-5fd9-a621-e172e957ce54",
@@ -1145,6 +1669,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gia_vi",
       "default_unit": "g",
       "id": "d8ee9578-8bb3-56f3-bd08-69dd9bbb4b2d",
@@ -1153,6 +1681,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "dabfe410-cc7f-53a0-baae-dbd5a6c4dbc4",
@@ -1161,6 +1693,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "de465e9f-b0b9-56b6-8375-702cfc4e8e7a",
@@ -1169,6 +1705,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "gao_bot_mi",
       "default_unit": "g",
       "id": "e3045837-16d2-5b8e-8099-e00683b42084",
@@ -1177,6 +1717,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "thit",
       "default_unit": "g",
       "id": "e55c04a1-d558-5680-9288-48996185dfdf",
@@ -1185,6 +1729,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "nuoc_cham_dau",
       "default_unit": "ml",
       "id": "ead7e94f-3f12-50cf-b699-639d56ce6002",
@@ -1193,6 +1741,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "ec976a2e-b349-5015-8b7a-3d0fc7c92567",
@@ -1201,6 +1753,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "ecaf07ed-0d29-5eb4-bcca-c11f4366cb42",
@@ -1209,6 +1765,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "ee5391a2-cd69-53f6-9083-7e158b061194",
@@ -1217,6 +1777,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "ee5d738a-cd42-5887-906a-d429640c1af3",
@@ -1225,6 +1789,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "f15603ca-d91f-54b7-8ad3-398a201de25f",
@@ -1233,6 +1801,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "thit",
       "default_unit": "g",
       "id": "f29072e0-ba66-5322-a9e0-90aec784e9cb",
@@ -1241,6 +1813,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "rau_cu",
       "default_unit": "g",
       "id": "f29af1f0-29bb-582b-8100-5852e83320c9",
@@ -1249,6 +1825,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "cu_qua",
       "default_unit": "g",
       "id": "f4a476b9-bd67-5979-bb1c-f6c3f356187c",
@@ -1257,6 +1837,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "f67b577a-9d7c-5029-ad69-75566de6a1aa",
@@ -1265,6 +1849,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "fefe46a0-4bf7-536a-a9f0-5a44a240b873",
@@ -1273,6 +1861,10 @@
     },
     {
       "aliases": [],
+      "allergen_source_url": null,
+      "allergen_verification_status": "unknown",
+      "allergen_verified_at": null,
+      "allergens": [],
       "category": "hai_san",
       "default_unit": "g",
       "id": "ff58abf7-25a4-5c7b-8394-b5204529cab4",
@@ -1283,6 +1875,9 @@
   "recipes": [
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "000888e7-88de-5217-a3c2-78659d24b88c",
       "ingredients": [
         {
@@ -1337,10 +1932,16 @@
         "Tắt bếp rắc nhiều ngò gai và rau om thái nhỏ tạo mùi thơm nức mũi."
       ],
       "name": "Canh khoai mỡ nấu tôm thịt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "0256e3d5-c953-5180-b47f-0c1a5c731dc0",
       "ingredients": [
         {
@@ -1394,10 +1995,16 @@
         "Thêm sữa tươi và kem tươi khuấy đều, hòa tan chút bột mì tạo độ sánh mịn như nhung, rắc tiêu đen thơm ngát."
       ],
       "name": "Súp kem nấm gà kiểu Âu",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "02dc86e4-714c-50b4-a2de-1632b3cbd75d",
       "ingredients": [
         {
@@ -1439,10 +2046,16 @@
         "Đảo đều trong 1 phút đến khi hoa thiên lý vừa chín tới giữ độ giòn ngọt, rắc tiêu rồi dọn ăn ngay trên chảo gang."
       ],
       "name": "Thịt bò né hoa thiên lý",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "07cca4e4-99c1-5a49-9e16-80a7dc688256",
       "ingredients": [
         {
@@ -1478,10 +2091,16 @@
         "Chấm rau cùng chén tương bần pha chút đường, ớt và vài lát gừng cay nồng."
       ],
       "name": "Rau muống luộc chấm tương bần",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "0921f7a2-2c1b-5a67-9ae0-e7fb7ad68c0c",
       "ingredients": [
         {
@@ -1542,10 +2161,16 @@
         "Rắc hành lá, tiêu xay và vài lát ớt hiểm lên mặt trước khi bưng ra bàn ăn."
       ],
       "name": "Cá lóc kho tộ",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "0959dae9-e69b-536e-b230-3ba73911a8c6",
       "ingredients": [
         {
@@ -1599,10 +2224,16 @@
         "Nêm nước mắm, đường, chút nước màu đảo đều tay đến khi nước cạn keo bám bóng tôm thịt, rắc hành lá tiêu xay."
       ],
       "name": "Tôm rang thịt ba chỉ",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "0968834f-615f-58b5-bb27-e11121e4685e",
       "ingredients": [
         {
@@ -1656,10 +2287,16 @@
         "Rưới mỡ hành, nước mắm tỏi ớt chua ngọt và rắc đậu phộng rang giã dập lên đĩa cà tím."
       ],
       "name": "Cà tím nướng mỡ hành",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "0b1613ac-95e6-5086-bf15-533ab4640b82",
       "ingredients": [
         {
@@ -1707,10 +2344,16 @@
         "Nêm nước mắm vừa miệng, rắc nhiều hành hoa và hành lá thơm nức mũi."
       ],
       "name": "Canh bầu nấu tôm tươi",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "0dd28595-b297-5548-b67d-2a545ea1bafb",
       "ingredients": [
         {
@@ -1770,10 +2413,16 @@
         "Vắt ráo ngó sen cà rốt, trộn đều cùng tôm thịt, rau răm và nước mắm chua ngọt, rắc đậu phộng lên trên."
       ],
       "name": "Gỏi ngó sen tôm thịt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "0f89a406-db57-5a2a-a3c5-7c347e8d25e9",
       "ingredients": [
         {
@@ -1815,10 +2464,16 @@
         "Luộc chín lòng đào 2 quả trứng vịt (hoặc trứng gà), dầm nát vào chén nước mắm nhĩ ngon nhiều ớt để chấm rau."
       ],
       "name": "Bắp cải luộc dầm trứng nước mắm",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "0f8d3ac7-ec70-5bae-9c65-bc68be367e3b",
       "ingredients": [
         {
@@ -1860,10 +2515,16 @@
         "Đổ sữa tươi không đường và kem sữa đặc vào khuấy đều trên lửa nhỏ, nêm chút muối tiêu vừa vị béo ngậy mịn màng."
       ],
       "name": "Súp bí đỏ kem sữa tươi kiểu Pháp",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "10ac6e85-a5ad-565b-9ccd-d14811b6f4c4",
       "ingredients": [
         {
@@ -1905,10 +2566,16 @@
         "Nướng tiếp 10 phút đến khi da gà cánh gián nâu bóng vàng giòn thơm nức mũi."
       ],
       "name": "Cánh gà nướng sốt BBQ mật ong",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "13c2b68a-d12d-5925-8be6-e85067f293fa",
       "ingredients": [
         {
@@ -1956,10 +2623,16 @@
         "Xếp xà lách, cà chua, dưa leo ra đĩa lớn, cho cá ngừ và trứng luộc lên trên, rưới sốt Mayonnaise pha chút cốt chanh và tiêu xay."
       ],
       "name": "Salad cá ngừ trứng luộc sốt Mayonnaise",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "13f374af-f020-5577-9943-063d22aa96e3",
       "ingredients": [
         {
@@ -2013,10 +2686,16 @@
         "Cho cơm vào đảo nhanh tay trên lửa lớn đến khi hạt cơm săn giòn tách rời, nêm nước tương tiêu rắc hành hoa."
       ],
       "name": "Cơm chiên Dương Châu lạp xưởng tôm",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "1868755f-b247-5c4e-8186-68da190b5117",
       "ingredients": [
         {
@@ -2058,10 +2737,16 @@
         "Nêm nước mắm vừa vị ngọt dịu, rắc rau ngò ôm (rau ngổ) và mùi tàu thái nhỏ rồi tắt bếp."
       ],
       "name": "Canh bí đỏ thịt băm",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "19f6c287-3cf7-5f9c-a568-485a8ac42fa7",
       "ingredients": [
         {
@@ -2109,10 +2794,16 @@
         "Phi thơm tỏi ớt băm, đổ sốt me vào đun sôi lăn tăn, cho cánh gà chiên vào đảo đều đến khi sốt keo bóng."
       ],
       "name": "Cánh gà sốt me chua ngọt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "1bd57492-4cd5-5648-8ee5-e20df510a9ad",
       "ingredients": [
         {
@@ -2160,10 +2851,16 @@
         "Vớt ra giấy thấm dầu, ăn nóng chấm tương ớt hoặc sốt mayonnaise."
       ],
       "name": "Chả cá thát lát chiên cốm",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "1dddd2b5-1694-588d-bc82-78435fd85af4",
       "ingredients": [
         {
@@ -2205,10 +2902,16 @@
         "Thả cải bẹ xanh vào nấu sôi 2 phút cho cải chín mềm vị cay thanh mát, nêm nước mắm vừa ăn."
       ],
       "name": "Canh cải bẹ xanh nấu gừng cá rô",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "22222222-0001-0000-0000-000000000001",
       "ingredients": [
         {
@@ -2238,10 +2941,16 @@
         "Cho trứng vịt vào kho cùng đến khi thịt mềm rục."
       ],
       "name": "Thịt kho tàu",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "22222222-0001-0000-0000-000000000002",
       "ingredients": [
         {
@@ -2270,10 +2979,16 @@
         "Phi thơm tỏi, cho sườn và sốt đảo đều đến khi ngấm vị."
       ],
       "name": "Sườn xào chua ngọt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "22222222-0002-0000-0000-000000000001",
       "ingredients": [
         {
@@ -2295,10 +3010,16 @@
         "Cho rau muống vào đảo nhanh tay, nêm gia vị vừa ăn rồi tắt bếp."
       ],
       "name": "Rau muống xào tỏi",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "22222222-0003-0000-0000-000000000001",
       "ingredients": [
         {
@@ -2339,10 +3060,16 @@
         "Cho đậu bắp, giá đỗ vào nấu sôi lại, nêm nếm gia vị và rau ngò."
       ],
       "name": "Canh chua cá lóc",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "267e2c7a-7b74-54f5-9cf9-8d44c586307f",
       "ingredients": [
         {
@@ -2390,10 +3117,16 @@
         "Thả các viên thịt vào sốt cà chua, đậy nắp om nhỏ lửa 15 phút cho ngấm đều, rắc hành lá."
       ],
       "name": "Thịt băm viên sốt cà chua",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "26d5e016-13cf-59fd-95d7-223de11cc717",
       "ingredients": [
         {
@@ -2441,10 +3174,16 @@
         "Rắc hành lá cắt nhỏ và tiêu xay thơm nồng rồi tắt bếp."
       ],
       "name": "Su su xào trứng",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "271f010b-ae8f-5259-ae70-c38cc4c4dd3f",
       "ingredients": [
         {
@@ -2492,10 +3231,16 @@
         "Hạ nhỏ lửa, đậy vung kho khoảng 15 phút đến khi gà chín mềm, nước kho sánh thơm nức mùi gừng."
       ],
       "name": "Gà kho gừng",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "2a627a10-ca8f-5aa5-8ffc-ea8314b63c89",
       "ingredients": [
         {
@@ -2543,10 +3288,16 @@
         "Thả viên sốt cà ri Nhật (hoặc bột cà ri) vào khuấy tan hoàn toàn, đun liu riu thêm 5 phút đến khi sốt cà ri sánh mịn thơm nức."
       ],
       "name": "Cà ri gà kiểu Nhật Bản",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "2dd67426-2b93-51c7-b9de-be3188a3c5de",
       "ingredients": [
         {
@@ -2613,10 +3364,16 @@
         "Thả đậu bắp, dọc mùng, giá đỗ vào đun sôi bùng lại rồi tắt bếp, rắc ngò gai rau om và tỏi phi thơm nức."
       ],
       "name": "Canh chua cá lóc miền Tây",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "2e2fcc9b-2425-5e3f-9645-7171139e696d",
       "ingredients": [
         {
@@ -2664,10 +3421,16 @@
         "Để trong ngăn mát tủ lạnh 15-20 phút cho dưa ngấm giòn lạnh chua ngọt khai vị rất ngon."
       ],
       "name": "Dưa leo dầm tỏi ớt chua ngọt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "2f8a2e0c-2c72-5403-a945-88ca41a4fd54",
       "ingredients": [
         {
@@ -2727,10 +3490,16 @@
         "Cho đậu bắp và giá đỗ vào đun sôi thêm 2 phút, nêm nước mắm đường vừa vị chua ngọt đậm đà, rắc rau ngò."
       ],
       "name": "Canh chua tôm đậu bắp",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "2fb55f3c-2f1e-581e-afd4-71c486986382",
       "ingredients": [
         {
@@ -2778,10 +3547,16 @@
         "Hạ nhỏ lửa đun liu riu khoảng 20 phút đến khi thịt vịt mềm rục, nước kho sánh thơm nức mũi."
       ],
       "name": "Vịt kho gừng",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "2ff964e2-1d05-5668-9a1f-021b029d9396",
       "ingredients": [
         {
@@ -2823,10 +3598,16 @@
         "Trút thịt băm trở lại chảo đảo đều cùng đậu cô ve trong 1 phút, rắc tiêu thơm."
       ],
       "name": "Đậu cô ve xào thịt băm",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "3155f8ce-2418-5ad5-832a-5fc7f9d38ed7",
       "ingredients": [
         {
@@ -2886,10 +3667,16 @@
         "Vớt nem ra đĩa có lót giấy thấm dầu, ăn kèm bún, rau sống và nước mắm chua ngọt tỏi ớt."
       ],
       "name": "Chả giò nem rán truyền thống",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "31dbc3dc-072b-5c63-bc44-11314a03d367",
       "ingredients": [
         {
@@ -2937,10 +3724,16 @@
         "Nêm nước mắm, đường vừa vị chua ngọt thanh mát, đun sôi 3 phút rắc hành lá thì là."
       ],
       "name": "Canh sườn nấu chua dứa cà chua",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "3415f525-b225-5f6e-93de-5db3825f2085",
       "ingredients": [
         {
@@ -2994,10 +3787,16 @@
         "Trút thịt bò trở lại đảo đều 30 giây, rắc tiêu thơm rồi tắt bếp."
       ],
       "name": "Bò xào cần tỏi",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "356894d4-0e3a-53ad-b935-d84a76ea69a7",
       "ingredients": [
         {
@@ -3045,10 +3844,16 @@
         "Thêm 50ml nước lọc, đậy nắp kho lửa nhỏ 15 phút đến khi cạn nước, miếng gà thấm đẫm vị sả ớt cay thơm."
       ],
       "name": "Gà kho sả ớt cay nồng",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "365b86e1-7894-5f00-b7bf-806e7ae6726f",
       "ingredients": [
         {
@@ -3090,10 +3895,16 @@
         "Xào bông cải và cà rốt với chút dầu ăn và cho chín giòn, trút thịt bò vào đảo đều 1 phút."
       ],
       "name": "Bò xào bông cải xanh",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "38bb0558-d493-5fcb-94b7-0c51dfd054f9",
       "ingredients": [
         {
@@ -3147,10 +3958,16 @@
         "Trút gà chiên giòn vào chảo sốt đảo thật nhanh tay cho sốt bám đều óng ánh, rắc mè rang thơm."
       ],
       "name": "Gà sốt cay ngọt Hàn Quốc (Dakgangjeong)",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "38c1cfbc-39ae-55a7-b8ab-ddcc67d1f587",
       "ingredients": [
         {
@@ -3199,10 +4016,16 @@
         "Cho ớt chuông, hành tây vào đảo nhanh 1 phút, trút ra đĩa ăn kèm khoai tây chiên."
       ],
       "name": "Bò lúc lắc khoai tây",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "38fc0dcd-6952-5a4f-894f-71d3e750ba75",
       "ingredients": [
         {
@@ -3250,10 +4073,16 @@
         "Da cá vàng giòn thơm nức mùi sả ớt nướng, thịt bên trong trắng ngọt tự nhiên."
       ],
       "name": "Cá rô phi nướng sả ớt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "4509521e-2cda-5972-b593-6f37d244ef00",
       "ingredients": [
         {
@@ -3295,10 +4124,16 @@
         "Chặt gà thành miếng vừa ăn, rải lá chanh thái chỉ lên trên, chấm muối tiêu chanh ớt."
       ],
       "name": "Gà hấp lá chanh",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "456c72c5-a6b5-5b42-ae3e-ecdf23b2207e",
       "ingredients": [
         {
@@ -3334,10 +4169,16 @@
         "Dầm 2 viên chao béo ngậy với chút đường, sa tế ớt để làm nước chấm thơm ngon độc đáo."
       ],
       "name": "Đậu bắp luộc chấm chao",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "457cc0da-5ada-530c-9a69-ccd12f0eae9c",
       "ingredients": [
         {
@@ -3385,10 +4226,16 @@
         "Thả cá thu vào chảo sốt cà, rưới sốt lên mặt cá, đun nhỏ lửa 10 phút cho cá ngấm đều, rắc hành ngò."
       ],
       "name": "Cá thu sốt cà chua",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "45981d45-9c09-5354-b8b4-0eef8632852b",
       "ingredients": [
         {
@@ -3430,10 +4277,16 @@
         "Thả xà lách xoong vào nấu sôi trong 1 phút, trút thịt bò vào đảo đều rồi tắt bếp ngay tránh rau nát."
       ],
       "name": "Canh xà lách xoong nấu thịt bò",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "478eeb65-a3f5-5cf9-b807-f0b49a6e9ff0",
       "ingredients": [
         {
@@ -3487,10 +4340,16 @@
         "Trộn đều su hào cà rốt với nước sốt chua ngọt và rau thơm, rắc đậu phộng rang giã dập lên trên."
       ],
       "name": "Nộm su hào cà rốt chua ngọt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "48e7b90b-9ea9-59f7-8e42-2c92d813518d",
       "ingredients": [
         {
@@ -3532,10 +4391,16 @@
         "Nêm nước mắm vừa ăn, rắc hành ngò thái nhỏ và chút tiêu xay."
       ],
       "name": "Canh đu đủ hầm sườn non",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "4fb5a240-4b40-52f5-a2fb-d2100f7ce03c",
       "ingredients": [
         {
@@ -3583,10 +4448,16 @@
         "Cho khế chua vào đảo chung, nêm nước mắm và đường cho vị mặn ngọt chua cân bằng, rắc lá chanh thái chỉ."
       ],
       "name": "Tép đồng rang khế chua",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "56d40b0d-96ff-5a45-a64f-12610d27aa30",
       "ingredients": [
         {
@@ -3634,10 +4505,16 @@
         "Rắc đậu phộng rang giã dập lên trên đĩa nộm giòn mát."
       ],
       "name": "Nộm dưa leo thịt bò",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "581d6753-48a1-5133-897a-1a1b9e819035",
       "ingredients": [
         {
@@ -3691,10 +4568,16 @@
         "Vắt ráo hoa chuối, trộn đều cùng tai heo giòn sần sật, các loại rau thơm và nước sốt nộm, rắc lạc rang."
       ],
       "name": "Nộm hoa chuối tai heo",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "59b1d40e-aab7-5a34-8644-2b4d747a1164",
       "ingredients": [
         {
@@ -3748,10 +4631,16 @@
         "Kho lửa nhỏ liu riu đến khi thịt cá săn đanh lại, nước kho cạn sánh bóng, rắc thêm ớt hiểm và tiêu sọ."
       ],
       "name": "Cá bống kho tiêu",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "5a0ef719-61af-5283-b8c2-ea41c7df1b72",
       "ingredients": [
         {
@@ -3799,10 +4688,16 @@
         "Hầm lửa nhỏ liu riu trong 50 phút đến khi thịt bò mềm tan trong miệng, nước sốt rượu vang nâu sánh đậm đà."
       ],
       "name": "Bò hầm rượu vang kiểu Pháp (Boeuf Bourguignon)",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "5b16678d-91f2-5c2d-9909-36bb5264c1d8",
       "ingredients": [
         {
@@ -3844,10 +4739,16 @@
         "Đổ 1 lít nước lọc vào đun sôi, hạ nhỏ lửa đun liu riu 20 phút cho nước canh ngọt thanh đậm đà, nêm nước tương Hàn Quốc."
       ],
       "name": "Canh rong biển truyền thống Hàn Quốc (Miyeokguk)",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "5f6af644-157a-5e0f-a9bd-b2883ae7bac9",
       "ingredients": [
         {
@@ -3895,10 +4796,16 @@
         "Thêm 80ml nước sôi, đậy vung hạ lửa nhỏ kho liu riu 25 phút cho cá ngấm vị đậm đà và nước sánh lại."
       ],
       "name": "Cá ba sa kho nghệ",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "60152909-c073-5c4e-aa02-37820204329d",
       "ingredients": [
         {
@@ -3933,10 +4840,16 @@
         "Nêm nước mắm vừa ăn, khi cánh hoa vừa mềm chín giòn ngọt thì tắt bếp dọn ra đĩa."
       ],
       "name": "Bông bí xào tỏi",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "6360bdf3-f1bf-5196-a119-cce09a15b9ef",
       "ingredients": [
         {
@@ -3990,10 +4903,16 @@
         "Đun nóng chảo dầu, múc bột trải đều thành lớp bánh mỏng, chiên lửa vừa đến khi hai mặt vàng ruộm giòn tan chấm nước tương ớt."
       ],
       "name": "Bánh kếp kim chi hải sản Hàn Quốc (Haemul Kimchijeon)",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "63c54fb2-ba4c-5015-ba6e-3a77e503e7a7",
       "ingredients": [
         {
@@ -4041,10 +4960,16 @@
         "Đổ nước sôi vào nấu cùng đầu cá hồi trong 12 phút, nêm nước mắm đường cốt me chua cay đậm đà, rắc thì là hành lá."
       ],
       "name": "Canh chua đầu cá hồi măng chua",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "6460a33a-daf0-596f-aa48-517adf1f7b30",
       "ingredients": [
         {
@@ -4092,10 +5017,16 @@
         "Thả sấu và cà chua vào nấu thêm 10 phút, dầm sấu lấy vị chua thanh mát dịu, nêm nước mắm rắc hành mùi tàu."
       ],
       "name": "Canh sườn nấu sấu",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "661ae676-2893-5894-b4ab-87572ca39b31",
       "ingredients": [
         {
@@ -4150,10 +5081,16 @@
         "Cho trứng vào kho cùng thêm 20 phút đến khi thịt mềm rục, nước sánh vàng óng thì tắt bếp."
       ],
       "name": "Thịt kho tàu với trứng",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "6926a9aa-c3cf-59e0-ab24-afeb00d560d0",
       "ingredients": [
         {
@@ -4213,10 +5150,16 @@
         "Bày mì Ý ra đĩa, chan sốt bò băm nóng hổi lên trên, rắc phô mai Parmesan bào vụn."
       ],
       "name": "Mì Ý sốt thịt bò băm (Spaghetti Bolognese)",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "695455a6-39e3-5b01-abf5-ba1d698689e9",
       "ingredients": [
         {
@@ -4258,10 +5201,16 @@
         "Trút măng tây vào xào nhanh trên lửa lớn 2 phút, nêm chút muối tiêu rồi tắt bếp."
       ],
       "name": "Măng tây xào tỏi bơ",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "6a01a463-5a01-5771-b94a-39ab5ff07a26",
       "ingredients": [
         {
@@ -4309,10 +5258,16 @@
         "Cho cà rốt cắt khúc vào hầm thêm 15 phút, nước sốt sánh đậm đà, ăn cùng bánh mì hoặc cơm."
       ],
       "name": "Bò kho sả gừng nước dừa",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "6da3f756-3a2a-51d7-89b4-0a0e91fed919",
       "ingredients": [
         {
@@ -4360,10 +5315,16 @@
         "Nêm nước mắm vừa ăn, rắc hành ngò tiêu xay bổ dưỡng thơm dịu."
       ],
       "name": "Canh nấm hạt sen sườn non",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "6fcf9e1f-7f02-5c01-8a58-590469911d12",
       "ingredients": [
         {
@@ -4412,10 +5373,16 @@
         "Thả đậu hũ trắng vào nấu sôi thêm 3 phút, nêm đường, rắc hành lá cắt khúc."
       ],
       "name": "Canh kim chi đậu hũ thịt ba chỉ",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "70792543-d5c9-56fe-b83e-d8e9cf24ac04",
       "ingredients": [
         {
@@ -4463,10 +5430,16 @@
         "Cho đậu hũ chiên vào sốt cà chua, đun nhỏ lửa 5-7 phút cho ngấm gia vị, rắc hành lá cắt nhỏ."
       ],
       "name": "Đậu hũ sốt cà chua",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "70cc92f4-ac36-50f6-92ff-b2965332b103",
       "ingredients": [
         {
@@ -4508,10 +5481,16 @@
         "Thả rau muống vào nấu sôi trên lửa lớn 2-3 phút cho rau chín giòn xanh, rắc chút gừng đập dập thơm ấm."
       ],
       "name": "Canh hến nấu rau muống",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "7125a101-2b6c-556a-8944-7c9a09cbd4c2",
       "ingredients": [
         {
@@ -4553,10 +5532,16 @@
         "Áp chảo các cuộn thịt bò trên chảo nóng cho vàng xém các mặt, đổ nước sốt vào đảo đều 2 phút cho bóng đẹp rồi tắt bếp."
       ],
       "name": "Bò cuộn nấm kim châm áp chảo",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "74bceee7-cc89-534c-8fc8-02e25477d410",
       "ingredients": [
         {
@@ -4610,10 +5595,16 @@
         "Cà chua băm nhuyễn xào thành sốt, xếp đậu hũ vào om nhỏ lửa 15 phút cho ngấm sốt, rắc hành ngò."
       ],
       "name": "Đậu hũ nhồi thịt sốt cà chua",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "74dc8d98-4bb2-59ae-bc86-50c90aa11ecd",
       "ingredients": [
         {
@@ -4661,10 +5652,16 @@
         "Xào khoảng 3 phút đến khi miếng bí vừa trong chín giòn ngọt thanh, rắc hành lá tiêu xay rồi tắt bếp."
       ],
       "name": "Bí đao xào tỏi",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "750a1cc6-b5b7-50a2-95bf-d827611e4652",
       "ingredients": [
         {
@@ -4706,10 +5703,16 @@
         "Lớp phô mai chảy vàng óng xém mặt thơm béo ngậy quyện cùng thịt cá hồi ngọt mềm mọng nước."
       ],
       "name": "Cá hồi đút lò phô mai",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "7cc3d713-b931-5054-9d4a-ca842196d872",
       "ingredients": [
         {
@@ -4757,10 +5760,16 @@
         "Hạ lửa om 25 phút cho vịt mềm, dầm sấu lấy vị chua thanh dịu, thả rau rút và mùi tàu cắt khúc rồi tắt bếp."
       ],
       "name": "Vịt om sấu chua thanh",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "7d9e5a7d-85e6-5d3a-a266-bef14b6904ab",
       "ingredients": [
         {
@@ -4802,10 +5811,16 @@
         "Cho bông cải và cà rốt vào xào nhanh tay, nêm dầu hào, trút tôm vào đảo đều 1 phút rắc tiêu."
       ],
       "name": "Tôm xào bông cải",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "89ce3140-3132-5379-8f85-403abc8357a4",
       "ingredients": [
         {
@@ -4853,10 +5868,16 @@
         "Hâm nóng đậu trắng hầm sốt cà chua, bày toàn bộ ra đĩa lớn ăn kèm bánh mì nướng giòn."
       ],
       "name": "Trứng ốp la xúc xích đậu hầm sốt cà (English Breakfast)",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "8a311722-ff19-5061-96b9-01a0d4a5c8e9",
       "ingredients": [
         {
@@ -4910,10 +5931,16 @@
         "Trộn đều bắp cải, thịt gà xé, hành tây với nước sốt, rắc đậu phộng rang và hành phi giòn."
       ],
       "name": "Gỏi gà xé phay bắp cải",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "8a4e1f47-3d39-53cb-9fc5-10cc919a7526",
       "ingredients": [
         {
@@ -4974,10 +6001,16 @@
         "Trút tóp mỡ, ớt hiểm, tiêu xanh vào đảo đều 2 phút rồi tắt bếp, dùng chấm rau củ luộc."
       ],
       "name": "Thịt heo kho quẹt tóp mỡ",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "8c3d5323-e7fb-5169-b87a-5ae409853b6c",
       "ingredients": [
         {
@@ -5025,10 +6058,16 @@
         "Nêm nước mắm vừa miệng, rắc hành lá mùi tàu thái nhỏ và tiêu xay thơm nồng."
       ],
       "name": "Canh sườn hầm khoai tây cà rốt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "8f7a7b22-af3c-53a4-a7fb-6c1d4b8da421",
       "ingredients": [
         {
@@ -5070,10 +6109,16 @@
         "Đổ sốt xì dầu vào đảo đều 3 phút cho nấm ngấm vị đậm đà nâu bóng, rắc hành lá cắt khúc."
       ],
       "name": "Nấm đùi gà xào xì dầu",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "91536705-28ee-5fd3-9b2e-5849a8dfa69d",
       "ingredients": [
         {
@@ -5121,10 +6166,16 @@
         "Xào đến khi bắp cải chín mềm ngọt nhưng vẫn giữ được độ tươi giòn, rắc hành lá tiêu xay."
       ],
       "name": "Bắp cải xào cà chua",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "93c4ea70-665c-5080-9cb5-156bea12ae04",
       "ingredients": [
         {
@@ -5172,10 +6223,16 @@
         "Đổ mực vào đảo lại cùng rau trong 30 giây, nêm dầu hào và tiêu thơm rồi tắt bếp."
       ],
       "name": "Mực xào cần tỏi",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "93ece9d2-a1de-5326-83df-946cf3090753",
       "ingredients": [
         {
@@ -5223,10 +6280,16 @@
         "Pha sốt tiêu đen từ bơ, tiêu đen sọ giã dập, dầu hào, nước tương đun sôi sánh, rưới lên bít tết dùng kèm khoai tây chiên."
       ],
       "name": "Bò bít tết sốt tiêu đen (Beef Steak)",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "96fcd924-9a95-50cc-9616-251bd48012a2",
       "ingredients": [
         {
@@ -5274,10 +6337,16 @@
         "Thả ruột ngao vào đun sôi lại, nêm nước mắm vừa ăn, tắt bếp rắc hành lá thì là thơm ngát."
       ],
       "name": "Canh ngao nấu chua thì là",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "98f016c0-6e0d-5371-ac82-ff119f01b579",
       "ingredients": [
         {
@@ -5325,10 +6394,16 @@
         "Cho mướp vào xào nhanh trên lửa lớn vừa chín tới thì trút lòng gà vào đảo đều, rắc hành hoa tiêu xay."
       ],
       "name": "Lòng gà xào mướp hương",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "9ab7a379-351b-5e16-9304-fb265eaf006d",
       "ingredients": [
         {
@@ -5376,10 +6451,16 @@
         "Đổ nước sốt vào chảo sườn, đậy nắp đun lửa nhỏ đến khi sốt keo lại bám đều quanh miếng sườn."
       ],
       "name": "Sườn non rim mặn ngọt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "9adfb7a0-806e-5c9b-9cac-cf71ba06f1b2",
       "ingredients": [
         {
@@ -5421,10 +6502,16 @@
         "Nêm 1 muỗng tương ớt Gochujang, 1 muỗng nước tương, 1 muỗng đường đảo đều tay, rắc hành boa-rô và mè rang."
       ],
       "name": "Thịt heo xào kim chi cay Hàn Quốc",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "9b7109d6-2c15-57d8-8ae6-f84ee0218aff",
       "ingredients": [
         {
@@ -5466,10 +6553,16 @@
         "Tắt bếp nêm nếm lại rồi múc ra tô lớn thưởng thức."
       ],
       "name": "Canh nghêu nấu hoa thiên lý",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "9cb50e80-739f-5766-b998-c1fff3ae08d0",
       "ingredients": [
         {
@@ -5511,10 +6604,16 @@
         "Phi thơm tỏi băm, đổ sốt vào đun sôi sánh lại rồi rưới đều lên đĩa cải thìa luộc."
       ],
       "name": "Cải thìa sốt dầu hào",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "a1fd3434-5f3c-57dc-8018-b3aa8984f456",
       "ingredients": [
         {
@@ -5556,10 +6655,16 @@
         "Thả mướp hương vào đun sôi bùng trong 2 phút đến khi mướp vừa chín tới thơm lừng, nêm nước mắm rắc hành ngò."
       ],
       "name": "Canh mướp hương nấu tôm khô",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "a52e6390-7513-54ab-81bb-66399a30c6de",
       "ingredients": [
         {
@@ -5601,10 +6706,16 @@
         "Nêm nước mắm ngon và tiêu thơm rồi tắt bếp ngay để cải cúc giữ vị ngăm ngọt thơm nồng."
       ],
       "name": "Canh cải cúc nấu thịt băm",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "aa842747-d961-5118-85a3-709b6d65f746",
       "ingredients": [
         {
@@ -5652,10 +6763,16 @@
         "Đổ sốt vào chảo tôm, đảo đều tay trên lửa vừa đến khi nước sốt keo lại bám óng ánh quanh thân tôm."
       ],
       "name": "Tôm rim mặn ngọt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "ae25ff95-2cca-5d25-9926-a454ccf44e20",
       "ingredients": [
         {
@@ -5703,10 +6820,16 @@
         "Trút giá đỗ và hẹ vào đảo nhanh trên lửa lớn 1 phút, nêm nước mắm tiêu rồi tắt bếp ngay giữ độ giòn."
       ],
       "name": "Giá đỗ xào huyết heo",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "ae2766ff-1462-59a4-a01e-7e6ab3633476",
       "ingredients": [
         {
@@ -5748,10 +6871,16 @@
         "Nêm nước mắm vừa vị thanh mát giải nhiệt, tắt bếp dọn ăn nóng hoặc nguội."
       ],
       "name": "Canh rau má nấu thịt nạc",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "b06440e1-84a0-5007-b9b8-9d03a0a8f15a",
       "ingredients": [
         {
@@ -5799,10 +6928,16 @@
         "Cho chả lụa vào đảo đều tay trên lửa nhỏ đến khi sốt keo óng ả bám quanh miếng chả."
       ],
       "name": "Chả lụa rim nước mắm tiêu",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "b4825e54-2708-519b-b7e9-86d8164fd901",
       "ingredients": [
         {
@@ -5850,10 +6985,16 @@
         "Kho khoảng 15 phút đến khi nước cạn sánh sệt, rắc thêm ớt và tiêu hạt rồi tắt bếp."
       ],
       "name": "Thịt heo kho tiêu",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "b4dd6cfe-49e6-576c-8eed-8564f603187b",
       "ingredients": [
         {
@@ -5883,10 +7024,16 @@
         "Chấm rau dền cùng chén nước mắm ngon dầm trứng luộc hoặc nước mắm cá cơm tỏi ớt."
       ],
       "name": "Rau dền luộc chấm nước mắm",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "b6f913f6-95be-5945-b2b4-b7d0430f31e5",
       "ingredients": [
         {
@@ -5928,10 +7075,16 @@
         "Rưới trứng vào chảo, đảo đều tay nhẹ nhàng đến khi trứng chín bám quanh miếng khổ qua rồi tắt bếp."
       ],
       "name": "Khổ qua xào trứng",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "bdd9f587-25f8-53f8-b8f6-8a58cdb98572",
       "ingredients": [
         {
@@ -5973,10 +7126,16 @@
         "Gắp thịt ra để ráo dầu, cắt thành từng thanh dài, dọn kèm bắp cải thái sợi mỏng và sốt Tonkatsu mè rang."
       ],
       "name": "Thịt heo chiên xù kiểu Nhật (Tonkatsu)",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "bf5b05b9-2a11-5c2a-bd5c-d5e6f5711d63",
       "ingredients": [
         {
@@ -6024,10 +7183,16 @@
         "Rưới sốt bơ chanh tỏi thơm béo ngậy lên miếng cá hồi, ăn kèm măng tây hoặc khoai tây nghiền."
       ],
       "name": "Cá hồi áp chảo sốt bơ chanh tỏi",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "c09b3318-eb04-55b6-a7c6-11d5a89ef975",
       "ingredients": [
         {
@@ -6075,10 +7240,16 @@
         "Pha nước mắm tỏi ớt chanh chua ngọt đậm đà để chấm cùng, ăn kèm rau sống bánh tráng."
       ],
       "name": "Cá điêu hồng chiên giòn",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "c158e87e-3658-54eb-b9ed-e96739f4e138",
       "ingredients": [
         {
@@ -6132,10 +7303,16 @@
         "Trút mực và cần tây vào đảo đều nhanh 1 phút nữa, rắc tiêu rồi tắt bếp."
       ],
       "name": "Mực xào chua ngọt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "c59030cd-5026-5413-9e94-ae9be849b89f",
       "ingredients": [
         {
@@ -6171,10 +7348,16 @@
         "Chấm kèm kho quẹt tôm thịt hoặc trứng dầm nước mắm ngon."
       ],
       "name": "Củ quả luộc thập cẩm",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "c5a6dc55-f899-5d64-b7ed-6eee4775dd98",
       "ingredients": [
         {
@@ -6222,10 +7405,16 @@
         "Thả bầu vào nấu sôi bùng thêm 2 phút đến khi bầu vừa trong mềm, rắc hành ngò tiêu xay thơm nức."
       ],
       "name": "Canh bầu nấu cá lóc",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "c6f11b3d-a46c-5e50-ab75-faee43ea838f",
       "ingredients": [
         {
@@ -6261,10 +7450,16 @@
         "Nêm nước mắm ngon và, đảo đều 1 phút cho ngấm tỏi rồi trút ra đĩa."
       ],
       "name": "Ngọn bí xào tỏi",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "c8299a40-8cb6-5db6-8889-adc26460a273",
       "ingredients": [
         {
@@ -6312,10 +7507,16 @@
         "Đảo đều khoảng 4-5 phút cho măng ngấm đượm gia vị vàng giòn, rắc hành lá rồi tắt bếp."
       ],
       "name": "Măng xào tỏi ớt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "c896b9a2-f396-53e8-978d-110ce2da0a64",
       "ingredients": [
         {
@@ -6363,10 +7564,16 @@
         "Trút gà chiên vào đảo thật nhanh tay 1 phút cho sốt bám đều quanh da gà rồi tắt bếp."
       ],
       "name": "Gà chiên nước mắm giòn da",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "c8ab8243-1eb2-5def-8c49-ee885b42188a",
       "ingredients": [
         {
@@ -6414,10 +7621,16 @@
         "Đánh tan lòng đỏ trứng còn lại với chút dầu màu điều, quét đều lên mặt trứng rồi hấp tiếp 5 phút không đậy nắp cho mặt vàng đẹp."
       ],
       "name": "Trứng hấp thịt băm nấm mèo",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "c97e6fda-4aea-5808-9d05-79d254d56b1a",
       "ingredients": [
         {
@@ -6440,10 +7653,16 @@
         "Vớt bầu ra đĩa tròn, dùng nóng chấm cùng tộ thịt kho quẹt đậm đà béo ngậy tóp mỡ."
       ],
       "name": "Bầu luộc chấm kho quẹt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "c9c3abd0-f3aa-5825-b853-1439dc361ee7",
       "ingredients": [
         {
@@ -6491,10 +7710,16 @@
         "Thái thịt lát mỏng, dọn kèm dưa leo, rau sống và chén mắm tôm đánh sủi bọt với chanh ớt đường."
       ],
       "name": "Thịt ba chỉ luộc chấm mắm tôm",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "c9d3c30f-d51d-565d-a88d-a02f01ee89a0",
       "ingredients": [
         {
@@ -6542,10 +7767,16 @@
         "Nêm nước tương ngon vừa ăn, rắc hành hoa và vài giọt dầu mè thơm ngát."
       ],
       "name": "Canh rong biển đậu hũ thịt băm",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "c9dfe2c5-42b8-55f2-8de8-3d7f7daba1ce",
       "ingredients": [
         {
@@ -6599,10 +7830,16 @@
         "Phi thơm tỏi, trút cà chua, hành tây vào xào, sau đó cho sườn và sốt chua ngọt đảo đều 5 phút."
       ],
       "name": "Sườn xào chua ngọt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "cafef743-eb49-5ac5-aa45-758039839866",
       "ingredients": [
         {
@@ -6650,10 +7887,16 @@
         "Cho toàn bộ các nguyên liệu vào âu lớn, thêm sốt Mayonnaise, chút muối tiêu trộn nhẹ tay cho sốt bao đều rồi để ngăn mát 30 phút."
       ],
       "name": "Salad Nga thập cẩm khoai tây jambon",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "cdb399c4-c144-5158-a479-8f275da2aa33",
       "ingredients": [
         {
@@ -6695,10 +7938,16 @@
         "Vớt bắp bò ra ngâm nước đá, để thật nguội rồi thái lát mỏng chấm mắm gừng hoặc tương gừng."
       ],
       "name": "Bắp bò luộc gừng sả",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "ce055807-2682-5ede-89b9-2dba5ae77ee1",
       "ingredients": [
         {
@@ -6746,10 +7995,16 @@
         "Nêm nước mắm, đường, đổ nước dừa hoặc nước sôi ngập cá, đun sôi rồi hạ nhỏ lửa kho 45 phút cho nhừ xương."
       ],
       "name": "Cá nục kho cà chua",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "d2bdcb00-d106-54b6-a3de-8572c4884288",
       "ingredients": [
         {
@@ -6797,10 +8052,16 @@
         "Rắc rong biển vụn và mè rang thơm lừng lên trên chảo cơm chiên nóng hổi."
       ],
       "name": "Cơm chiên kim chi phô mai Hàn Quốc",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "d2f6f28a-b49d-550f-b941-20965f78a37c",
       "ingredients": [
         {
@@ -6848,10 +8109,16 @@
         "Thả khổ qua vào nấu sôi lại trong 1 phút để khổ qua chín tới giòn ngọt không đắng, nêm nước mắm rắc hành thì là."
       ],
       "name": "Canh cá thác lác nấu khổ qua",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "d302c6a5-c1b5-5527-9384-17113f8967fb",
       "ingredients": [
         {
@@ -6899,10 +8166,16 @@
         "Xào rau củ chín giòn, cho mì Udon và thịt bò vào cùng sốt xào Nhật Bản đảo đều tay trên lửa lớn 2 phút rồi rắc mè rang."
       ],
       "name": "Mì Udon xào thịt bò và rau cải",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "d4ba170e-cd15-5e5a-a8a7-86a3425d0b6c",
       "ingredients": [
         {
@@ -6950,10 +8223,16 @@
         "Cắt gà thành từng dải dày xếp lên tô cơm nóng, rưới sốt Teriyaki và rắc mè trắng rang."
       ],
       "name": "Cơm gà Teriyaki kiểu Nhật",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "d4cf10ec-56b5-51b8-9089-7cbf8f262325",
       "ingredients": [
         {
@@ -6995,10 +8274,16 @@
         "Thả hoa thiên lý vào nấu sôi 1 phút cho vừa chín tới giữ độ giòn ngọt, trút thịt bò vào đảo đều rồi tắt bếp ngay."
       ],
       "name": "Canh hoa thiên lý thịt bò",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "d5df9201-c170-5f73-b9d0-6dde31008e23",
       "ingredients": [
         {
@@ -7040,10 +8325,16 @@
         "Nêm đường, o sả rồi trút đậu hũ chiên vào xóc đều tay 1 phút cho bám quanh miếng đậu."
       ],
       "name": "Đậu hũ chiên sả ớt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "d773ca07-9490-5ee9-8d1a-ce931bf13ea9",
       "ingredients": [
         {
@@ -7091,10 +8382,16 @@
         "Rưới sốt xào hải sản dầu hào nước tương tiêu vào đảo đều trong 2 phút rồi rắc hành ngò tiêu xay."
       ],
       "name": "Mì xào hải sản kiểu Singapore",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "e1556065-8131-5dc0-8b9a-b0c97a2d06a8",
       "ingredients": [
         {
@@ -7130,10 +8427,16 @@
         "Cho rau lang vào đảo nhanh tay, nêm và nước mắm ngon, xào 2 phút rau vừa chín tới rồi trút ra đĩa."
       ],
       "name": "Rau lang xào tỏi",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "e7d281e3-8c24-5e4f-bdb6-2f748d802eaf",
       "ingredients": [
         {
@@ -7181,10 +8484,16 @@
         "Nêm nước mắm, đường, tiêu đảo nhanh tay đến khi sốt bám bóng miếng thịt, rắc hành lá rồi tắt bếp."
       ],
       "name": "Thịt ba chỉ rang cháy cạnh",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "e8e1fa2e-baea-5c90-917d-01dd0343c3c0",
       "ingredients": [
         {
@@ -7220,10 +8529,16 @@
         "Trút rau muống vào đảo nhanh tay, nêm nước mắm, cho nốt phần tỏi còn lại vào đảo đều 1 phút rồi tắt bếp."
       ],
       "name": "Rau muống xào tỏi",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "e92e9053-48c3-5a24-82fa-4e210cd36a81",
       "ingredients": [
         {
@@ -7271,10 +8586,16 @@
         "Nêm nếm lại gia vị, thêm chút ớt chuông hoặc hành tây đảo đều 2 phút rồi tắt bếp."
       ],
       "name": "Ếch xào sả ớt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "ea7d1369-7f04-55f7-8fff-3016b75e605a",
       "ingredients": [
         {
@@ -7310,10 +8631,16 @@
         "Rắc hành lá thái nhỏ và tiêu xay thơm rồi trút ra đĩa dùng nóng."
       ],
       "name": "Bông cải trắng xào tỏi",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "ec858fb7-ab17-503f-8abe-519f7aa63a65",
       "ingredients": [
         {
@@ -7343,10 +8670,16 @@
         "Nêm dầu hào vừa ăn, đảo nhanh tay thêm 1 phút cho rau chín giòn rồi trút ra đĩa."
       ],
       "name": "Cải ngọt xào tỏi",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "ef99e7d7-b92c-59c6-a9ab-6ab1402e2525",
       "ingredients": [
         {
@@ -7394,10 +8727,16 @@
         "Rắc hành lá, tiêu xay rồi múc ra đĩa dùng với cơm nóng."
       ],
       "name": "Thịt kho măng tươi",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "man",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "f157ea09-e359-504e-8421-8f706a3b58b9",
       "ingredients": [
         {
@@ -7451,10 +8790,16 @@
         "Khi mặt dưới vàng đều, lật mặt trên chiên tiếp 2 phút đến khi hai mặt vàng thơm nở xốp."
       ],
       "name": "Trứng chiên thịt băm",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "f39a20c1-e85a-51c8-98eb-9f01de428ada",
       "ingredients": [
         {
@@ -7502,10 +8847,16 @@
         "Nước canh ngọt thanh từ bắp cải và thịt băm, nêm nước mắm vừa miệng, rắc tiêu hành hoa."
       ],
       "name": "Canh bắp cải cuộn thịt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "f65f9b16-0644-5891-acf0-38aa9193058a",
       "ingredients": [
         {
@@ -7554,10 +8905,16 @@
         "Nêm nước mắm vừa ăn, rắc hành lá mùi tàu thái nhỏ."
       ],
       "name": "Canh mướp đắng nhồi thịt",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "rau",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "fa169063-ab1e-59e5-a1cf-d664f420473f",
       "ingredients": [
         {
@@ -7605,10 +8962,16 @@
         "Trộn đều xà lách với sốt Caesar, xếp ức gà nướng và bánh mì giòn lên trên, rắc thêm phô mai Parmesan bào nhuyễn."
       ],
       "name": "Salad Caesar ức gà nướng",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "fb9f23b8-54a9-5ff9-8a20-7039100dca63",
       "ingredients": [
         {
@@ -7651,10 +9014,16 @@
         "Trút thịt cua và gạch cua chưng thơm vào nồi canh, ăn cùng cà pháo giòn tan."
       ],
       "name": "Canh cua rau đay mồng tơi mướp",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "fdbfb928-c573-5d67-8799-45c1c4d6a02c",
       "ingredients": [
         {
@@ -7708,10 +9077,16 @@
         "Đánh tan lòng trắng trứng, rưới từ từ qua rây vào nồi súp khuấy nhẹ tạo vân sợi trắng đẹp mắt, thêm chút kem sữa tươi rắc tiêu ngò."
       ],
       "name": "Súp gà kem bắp non kiểu Âu",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "feb47d19-0c17-5fd8-aba7-be63e02c31ec",
       "ingredients": [
         {
@@ -7753,10 +9128,16 @@
         "Đổ 1 lít nước lọc vào đun sôi bùng lên trong 3-4 phút cho rau ngót chín mềm nước ngọt lịm, nêm nước mắm vừa ăn rồi tắt bếp."
       ],
       "name": "Canh rau ngót nấu thịt băm",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "fed27ada-1ccf-5aa7-979f-7690bbb03002",
       "ingredients": [
         {
@@ -7804,10 +9185,16 @@
         "Hạ nhỏ lửa, từ từ rưới trứng vào nồi đồng thời khuấy nhẹ theo một chiều tạo vân mây trứng bồng bềnh, rắc hành lá mùi tàu."
       ],
       "name": "Canh cà chua trứng đậu hũ trắng",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     },
     {
       "category": "canh",
+      "dietary_source_url": null,
+      "dietary_status": "unknown",
+      "dietary_verified_at": null,
       "id": "ff80b493-e40b-51bb-8251-3b18023b33de",
       "ingredients": [
         {
@@ -7843,7 +9230,10 @@
         "Nêm nước mắm ngọt lành thanh nhiệt ngày hè."
       ],
       "name": "Canh tôm nấu rau dền đỏ",
-      "servings": 4
+      "servings": 4,
+      "spice_level": null,
+      "spice_source_url": null,
+      "spice_verified_at": null
     }
   ]
 }

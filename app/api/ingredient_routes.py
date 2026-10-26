@@ -25,6 +25,10 @@ def list_ingredients(
             normalized_name=i.normalized_name,
             category=i.category,
             aliases=i.aliases,
+            allergens=i.allergens,
+            allergen_verification_status=i.allergen_verification_status,
+            allergen_source_url=i.allergen_source_url,
+            allergen_verified_at=i.allergen_verified_at,
         )
         for i in ings
     ]
@@ -44,4 +48,8 @@ def get_ingredient(
         normalized_name=ing.normalized_name,
         category=ing.category,
         aliases=ing.aliases,
+        allergens=ing.allergens,
+        allergen_verification_status=ing.allergen_verification_status,
+        allergen_source_url=ing.allergen_source_url,
+        allergen_verified_at=ing.allergen_verified_at,
     )

@@ -34,6 +34,12 @@ def list_recipes(
                 )
                 for ri in r.ingredients
             ],
+            dietary_status=r.dietary_status,
+            dietary_source_url=r.dietary_source_url,
+            dietary_verified_at=r.dietary_verified_at,
+            spice_level=r.spice_level,
+            spice_source_url=r.spice_source_url,
+            spice_verified_at=r.spice_verified_at,
         )
         for r in recipes
     ]
@@ -62,4 +68,10 @@ def get_recipe(
             )
             for ri in r.ingredients
         ],
+        dietary_status=r.dietary_status,
+        dietary_source_url=r.dietary_source_url,
+        dietary_verified_at=r.dietary_verified_at,
+        spice_level=r.spice_level,
+        spice_source_url=r.spice_source_url,
+        spice_verified_at=r.spice_verified_at,
     )

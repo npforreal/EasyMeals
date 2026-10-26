@@ -38,10 +38,22 @@ import com.easymeals.app.ui.theme.GeneratedTokens
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecipesScreen(repository: AppRepository) {
+    val context = LocalContext.current
+    val recipePreferences = remember { context.getSharedPreferences("recipe_preferences", android.content.Context.MODE_PRIVATE) }
     val recipes by repository.recipes.collectAsState()
+    val ingredients by repository.ingredients.collectAsState()
     val pantryLots by repository.pantryLots.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Tất cả") }
+    var dietaryFilter by remember { mutableStateOf(recipePreferences.getString("dietary_filter", "") ?: "") }
+    var showAvoidDialog by remember { mutableStateOf(false) }
+    var showPreferredDialog by remember { mutableStateOf(false) }
+    var avoidedIngredientIds by remember { mutableStateOf(recipePreferences.getStringSet("avoided_ingredient_ids", emptySet()).orEmpty()) }
+    var preferredIngredientIds by remember { mutableStateOf(recipePreferences.getStringSet("preferred_ingredient_ids", emptySet()).orEmpty()) }
+    var maxSpice by remember {
+        mutableStateOf(recipePreferences.getString("max_spice", "")?.toIntOrNull())
+    }
+    var showSpiceMenu by remember { mutableStateOf(false) }
     var selectedRecipe by remember { mutableStateOf<Recipe?>(null) }
     var isCookingMode by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
@@ -59,7 +71,7 @@ fun RecipesScreen(repository: AppRepository) {
         listOf("Tất cả") + cats
     }
 
-    val filteredRecipes = remember(recipes, searchQuery, selectedCategory) {
+    val filteredRecipes = remember(recipes, searchQuery, selectedCategory, dietaryFilter, avoidedIngredientIds, preferredIngredientIds, maxSpice) {
         recipes.filter { recipe ->
             val catLabel = com.easymeals.app.ui.theme.GeneratedTokens.Labels.dish_categories[recipe.category] ?: recipe.category
             val matchCat = selectedCategory == "Tất cả" || recipe.category == selectedCategory
@@ -67,8 +79,18 @@ fun RecipesScreen(repository: AppRepository) {
                     CatalogueLoader.matches(recipe.name, searchQuery) ||
                     CatalogueLoader.matches(recipe.category, searchQuery) ||
                     CatalogueLoader.matches(catLabel, searchQuery)
-            matchCat && matchQuery
-        }
+            val matchDiet = dietaryFilter.isEmpty() || (
+                    recipe.dietaryStatus == dietaryFilter &&
+                            !recipe.dietarySourceUrl.isNullOrBlank() &&
+                            !recipe.dietaryVerifiedAt.isNullOrBlank()
+                    )
+            val matchAvoid = recipe.ingredients.none { it.ingredientId in avoidedIngredientIds }
+            val matchSpice = maxSpice == null || (
+                    recipe.spiceLevel != null && recipe.spiceLevel <= maxSpice!! &&
+                            !recipe.spiceSourceUrl.isNullOrBlank() && !recipe.spiceVerifiedAt.isNullOrBlank()
+                    )
+            matchCat && matchQuery && matchDiet && matchAvoid && matchSpice
+        }.sortedByDescending { recipe -> recipe.ingredients.count { it.ingredientId in preferredIngredientIds } }
     }
 
     if (isCookingMode && selectedRecipe != null) {
@@ -95,6 +117,59 @@ fun RecipesScreen(repository: AppRepository) {
         return
     }
 
+    if (showAvoidDialog) {
+        AlertDialog(
+            onDismissRequest = { showAvoidDialog = false },
+            title = { Text("Dị ứng / nguyên liệu cần tránh") },
+            text = {
+                LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
+                    items(ingredients, key = { it.id }) { ingredient ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = ingredient.id in avoidedIngredientIds,
+                                onCheckedChange = { checked ->
+                                    val updated = avoidedIngredientIds.toMutableSet().apply {
+                                        if (checked) add(ingredient.id) else remove(ingredient.id)
+                                    }.toSet()
+                                    avoidedIngredientIds = updated
+                                    recipePreferences.edit().putStringSet("avoided_ingredient_ids", updated).apply()
+                                }
+                            )
+                            Text(ingredient.name)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showAvoidDialog = false }) { Text("Xong") } }
+        )
+    }
+    if (showPreferredDialog) {
+        AlertDialog(
+            onDismissRequest = { showPreferredDialog = false },
+            title = { Text("Nguyên liệu ưa thích") },
+            text = {
+                LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
+                    items(ingredients, key = { it.id }) { ingredient ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = ingredient.id in preferredIngredientIds,
+                                onCheckedChange = { checked ->
+                                    val updated = preferredIngredientIds.toMutableSet().apply {
+                                        if (checked) add(ingredient.id) else remove(ingredient.id)
+                                    }.toSet()
+                                    preferredIngredientIds = updated
+                                    recipePreferences.edit().putStringSet("preferred_ingredient_ids", updated).apply()
+                                }
+                            )
+                            Text(ingredient.name)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showPreferredDialog = false }) { Text("Xong") } }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -110,6 +185,58 @@ fun RecipesScreen(repository: AppRepository) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Chế độ ăn đã xác minh", style = MaterialTheme.typography.labelMedium)
+                TextButton(onClick = { showAvoidDialog = true }) {
+                    Text("Tránh nguyên liệu (${avoidedIngredientIds.size})")
+                }
+                TextButton(onClick = { showPreferredDialog = true }) {
+                    Text("Ưa thích (${preferredIngredientIds.size})")
+                }
+                Box {
+                    TextButton(onClick = { showSpiceMenu = true }) {
+                        Text("Cay tối đa: ${maxSpice?.toString() ?: "Không giới hạn"}")
+                    }
+                    DropdownMenu(expanded = showSpiceMenu, onDismissRequest = { showSpiceMenu = false }) {
+                        (listOf(null) + (0..5).toList()).forEach { level ->
+                            DropdownMenuItem(
+                                text = { Text(level?.toString() ?: "Không giới hạn") },
+                                onClick = {
+                                    maxSpice = level
+                                    recipePreferences.edit().putString("max_spice", level?.toString() ?: "").apply()
+                                    showSpiceMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+                FilterChip(
+                    selected = dietaryFilter == "vegetarian",
+                    onClick = {
+                        dietaryFilter = if (dietaryFilter == "vegetarian") "" else "vegetarian"
+                        recipePreferences.edit().putString("dietary_filter", dietaryFilter).apply()
+                    },
+                    label = { Text("Chay") }
+                )
+                FilterChip(
+                    selected = dietaryFilter == "vegan",
+                    onClick = {
+                        dietaryFilter = if (dietaryFilter == "vegan") "" else "vegan"
+                        recipePreferences.edit().putString("dietary_filter", dietaryFilter).apply()
+                    },
+                    label = { Text("Thuần chay") }
+                )
+            }
+            Text(
+                text = "Nguyên liệu tránh được lọc theo ID. Món thiếu xác minh không được coi là phù hợp; danh mục không chứng nhận an toàn dị ứng hoặc nhiễm chéo.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
             // Search field
             OutlinedTextField(
                 value = searchQuery,
@@ -154,7 +281,9 @@ fun RecipesScreen(repository: AppRepository) {
 
             // Results count
             Text(
-                text = "${filteredRecipes.size} món ăn chuẩn vị Việt",
+                text = if (filteredRecipes.isEmpty() && dietaryFilter.isNotEmpty()) {
+                    "Chưa có món nào được xác minh cho chế độ này."
+                } else "${filteredRecipes.size} món ăn chuẩn vị Việt",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)

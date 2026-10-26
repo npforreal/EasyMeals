@@ -15,6 +15,9 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION_FILE = ROOT / "supabase" / "migrations" / "202610240001_catalogue_baseline.sql"
 FULL_SCHEMA_FILE = ROOT / "supabase" / "full_schema.sql"
+DIETARY_MIGRATION_FILE = (
+    ROOT / "supabase" / "migrations" / "202610270001_dietary_catalogue_metadata.sql"
+)
 
 
 def test_catalogue_migration_files_exist():
@@ -67,6 +70,16 @@ def test_schema_enforces_strict_rls_and_read_only():
     # Thu hồi toàn bộ quyền ghi từ internet
     assert "revoke insert, update, delete on public.ingredients from anon" in content
     assert "revoke insert, update, delete on public.recipes from anon" in content
+
+
+def test_dietary_metadata_migration_is_unknown_by_default_and_evidence_backed():
+    content = DIETARY_MIGRATION_FILE.read_text(encoding="utf-8").lower()
+    assert "default 'unknown'" in content
+    assert "allergen_source_url is not null" in content
+    assert "dietary_source_url is not null" in content
+    assert "spice_source_url is not null" in content
+    assert "grant select on public.ingredients, public.recipes to anon, authenticated" in content
+    assert "revoke insert, update, delete on public.ingredients, public.recipes" in content
 
 
 @pytest.mark.integration

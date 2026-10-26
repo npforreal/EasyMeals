@@ -58,6 +58,25 @@ def validate_catalogue_integrity(bundle: dict[str, Any]) -> None:
         u = ing.get("default_unit")
         if u and u not in VALID_UNITS:
             raise ValueError(f"Nguyên liệu '{ing.get('name')}' có default_unit lạ: {u}")
+        status = ing.get("allergen_verification_status", "unknown")
+        if status not in {"unknown", "incomplete", "verified"}:
+            raise ValueError(f"Nguyên liệu '{ing.get('name')}' có trạng thái dị ứng lạ: {status}")
+        if status == "unknown" and ing.get("allergens"):
+            raise ValueError(
+                f"Nguyên liệu '{ing.get('name')}' có allergen nhưng trạng thái vẫn unknown"
+            )
+        if status == "verified" and not (
+            ing.get("allergen_source_url") and ing.get("allergen_verified_at")
+        ):
+            raise ValueError(
+                f"Nguyên liệu '{ing.get('name')}' được xác minh dị ứng nhưng thiếu nguồn/ngày"
+            )
+        if status == "incomplete" and bool(ing.get("allergen_source_url")) != bool(
+            ing.get("allergen_verified_at")
+        ):
+            raise ValueError(
+                f"Nguyên liệu '{ing.get('name')}' có nguồn/ngày xác minh không đồng nhất"
+            )
 
     rec_ids: set[str] = set()
     for rec in recipes:
@@ -69,6 +88,26 @@ def validate_catalogue_integrity(bundle: dict[str, Any]) -> None:
         cat = rec.get("category")
         if cat not in VALID_CATEGORIES:
             raise ValueError(f"Category công thức '{rec.get('name')}' không hợp lệ: {cat}")
+        dietary = rec.get("dietary_status", "unknown")
+        if dietary not in {"unknown", "incomplete", "omnivore", "vegetarian", "vegan"}:
+            raise ValueError(f"Công thức '{rec.get('name')}' có dietary_status lạ: {dietary}")
+        if dietary in {"omnivore", "vegetarian", "vegan"} and not (
+            rec.get("dietary_source_url") and rec.get("dietary_verified_at")
+        ):
+            raise ValueError(f"Công thức '{rec.get('name')}' có nhãn chế độ ăn thiếu nguồn/ngày")
+        if bool(rec.get("dietary_source_url")) != bool(rec.get("dietary_verified_at")):
+            raise ValueError(
+                f"Công thức '{rec.get('name')}' có nguồn/ngày chế độ ăn không đồng nhất"
+            )
+        spice = rec.get("spice_level")
+        if spice is not None and (
+            not isinstance(spice, int)
+            or not 0 <= spice <= 5
+            or not (rec.get("spice_source_url") and rec.get("spice_verified_at"))
+        ):
+            raise ValueError(
+                f"Công thức '{rec.get('name')}' có độ cay không hợp lệ hoặc thiếu nguồn/ngày"
+            )
 
         rec_ing_ids: set[str] = set()
         for ring in rec.get("ingredients", []):
@@ -118,7 +157,7 @@ def validate_catalogue_integrity(bundle: dict[str, Any]) -> None:
         raise ValueError(f"Phát hiện quy đổi đa bước/vòng liên quan đến ID: {chains}")
 
 
-def export_catalogue(output_path: Path) -> dict[str, Any]:
+def export_catalogue(output_path: Path, fixture_only: bool = False) -> dict[str, Any]:
     from app.storage.repository import (
         CATALOGUE_VERSION,
         FixtureCatalogueRepository,
@@ -130,7 +169,12 @@ def export_catalogue(output_path: Path) -> dict[str, Any]:
     supabase_url = os.environ.get("SUPABASE_URL")
     anon_key = os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_PUBLISHABLE_KEY")
 
-    if supabase_url and anon_key and not os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
+    if (
+        not fixture_only
+        and supabase_url
+        and anon_key
+        and not os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    ):
         print(f"-> Xuất danh mục từ Supabase ({supabase_url}) bằng anon key...")
         repo = SupabaseRepository(supabase_url, anon_key)
     else:
@@ -143,10 +187,20 @@ def export_catalogue(output_path: Path) -> dict[str, Any]:
     sorted_ingredients = sorted(bundle["ingredients"], key=lambda x: x["id"])
     for ing in sorted_ingredients:
         ing["aliases"] = sorted(ing.get("aliases", []))
+        ing.setdefault("allergens", [])
+        ing.setdefault("allergen_verification_status", "unknown")
+        ing.setdefault("allergen_source_url", None)
+        ing.setdefault("allergen_verified_at", None)
 
     sorted_recipes = sorted(bundle["recipes"], key=lambda x: x["id"])
     for rec in sorted_recipes:
         rec["ingredients"] = sorted(rec.get("ingredients", []), key=lambda x: x["ingredient_id"])
+        rec.setdefault("dietary_status", "unknown")
+        rec.setdefault("dietary_source_url", None)
+        rec.setdefault("dietary_verified_at", None)
+        rec.setdefault("spice_level", None)
+        rec.setdefault("spice_source_url", None)
+        rec.setdefault("spice_verified_at", None)
 
     categories = bundle.get("categories", [])
     conversions = bundle.get("conversions", [])
@@ -195,9 +249,12 @@ if __name__ == "__main__":
         default=DEFAULT_OUTPUT,
         help="Đường dẫn file đích (mặc định: data/catalogue.json)",
     )
+    parser.add_argument(
+        "--fixture-only", action="store_true", help="Chỉ dùng fixture, không kết nối Supabase"
+    )
     args = parser.parse_args()
     try:
-        export_catalogue(args.output)
+        export_catalogue(args.output, fixture_only=args.fixture_only)
     except Exception as e:
         print(f"Lỗi xuất danh mục: {e}", file=sys.stderr)
         sys.exit(1)

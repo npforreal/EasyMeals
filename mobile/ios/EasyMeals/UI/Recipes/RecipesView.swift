@@ -5,6 +5,19 @@ public struct RecipesView: View {
     @State private var searchText = ""
     @State private var selectedCategory = "all"
     @State private var canCookOnly = false
+    @AppStorage("easymeals.recipe.dietaryFilter") private var dietaryFilter = ""
+    @AppStorage("easymeals.recipe.avoidedIngredientIds") private var avoidedIngredientIDs = ""
+    @AppStorage("easymeals.recipe.preferredIngredientIds") private var preferredIngredientIDs = ""
+    @AppStorage("easymeals.recipe.maxSpice") private var maxSpiceFilter = -1
+    @State private var showingAvoidIngredients = false
+    @State private var editingPreferencesAsLikes = false
+
+    private var avoidedIDs: Set<String> {
+        Set(avoidedIngredientIDs.split(separator: ",").map(String.init))
+    }
+    private var preferredIDs: Set<String> {
+        Set(preferredIngredientIDs.split(separator: ",").map(String.init))
+    }
 
     var filteredRecipes: [Recipe] {
         storage.recipes.filter { r in
@@ -13,9 +26,25 @@ public struct RecipesView: View {
             if !matchesQuery || !matchesCat { return false }
             if canCookOnly {
                 let (canCook, _) = EasyMealsEngine.checkRecipeStock(recipe: r, pantryLots: storage.pantryLots)
-                return canCook
+                if !canCook { return false }
             }
+            if !dietaryFilter.isEmpty {
+                guard r.dietaryStatus == dietaryFilter,
+                      r.dietarySourceURL != nil,
+                      r.dietaryVerifiedAt != nil else { return false }
+            }
+            if maxSpiceFilter >= 0 {
+                guard let level = r.spiceLevel,
+                      level <= maxSpiceFilter,
+                      r.spiceSourceURL != nil,
+                      r.spiceVerifiedAt != nil else { return false }
+            }
+            if r.ingredients.contains(where: { avoidedIDs.contains($0.ingredientId) }) { return false }
             return true
+        }.sorted { first, second in
+            let firstScore = first.ingredients.filter { preferredIDs.contains($0.ingredientId) }.count
+            let secondScore = second.ingredients.filter { preferredIDs.contains($0.ingredientId) }.count
+            return firstScore > secondScore
         }
     }
 
@@ -23,6 +52,33 @@ public struct RecipesView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Category Filter Chips
+                Picker("Chế độ ăn (đã xác minh)", selection: $dietaryFilter) {
+                    Text("Mọi chế độ").tag("")
+                    Text("Chay").tag("vegetarian")
+                    Text("Thuần chay").tag("vegan")
+                }
+                .pickerStyle(.menu)
+                .padding(.horizontal)
+                Picker("Độ cay tối đa (đã xác minh)", selection: $maxSpiceFilter) {
+                    Text("Không giới hạn").tag(-1)
+                    ForEach(0...5, id: \.self) { level in Text("Mức \(level)").tag(level) }
+                }
+                .pickerStyle(.menu)
+                .padding(.horizontal)
+                Button("Dị ứng / tránh nguyên liệu (\(avoidedIDs.count))") {
+                    editingPreferencesAsLikes = false
+                    showingAvoidIngredients = true
+                }
+                .padding(.horizontal)
+                Button("Nguyên liệu ưa thích (\(preferredIDs.count))") {
+                    editingPreferencesAsLikes = true
+                    showingAvoidIngredients = true
+                }
+                .padding(.horizontal)
+                Text("Nguyên liệu tránh được lọc theo ID. Món thiếu xác minh không được coi là phù hợp; danh mục không chứng nhận an toàn dị ứng hoặc nhiễm chéo.")
+                    .font(.footnote)
+                    .foregroundColor(AppColors.textSecondary)
+                    .padding(.horizontal)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         filterChip(title: "Tất cả", key: "all")
@@ -78,9 +134,46 @@ public struct RecipesView: View {
                         .padding(.vertical, 4)
                     }
                 }
+                .overlay(alignment: .top) {
+                    if !dietaryFilter.isEmpty && filteredRecipes.isEmpty {
+                        Text("Chưa có món nào được xác minh cho chế độ này.")
+                            .font(.footnote)
+                            .padding(8)
+                            .background(AppColors.secondarySurface)
+                    }
+                }
                 .searchable(text: $searchText, prompt: "Tìm theo tên món (ví dụ: kho quẹt, bò xào...)")
             }
             .navigationTitle("Công thức")
+            .sheet(isPresented: $showingAvoidIngredients) {
+                NavigationStack {
+                    List(storage.ingredients) { ingredient in
+                        Button {
+                            var updated = editingPreferencesAsLikes ? preferredIDs : avoidedIDs
+                            if updated.contains(ingredient.id) { updated.remove(ingredient.id) }
+                            else { updated.insert(ingredient.id) }
+                            if editingPreferencesAsLikes {
+                                preferredIngredientIDs = updated.sorted().joined(separator: ",")
+                            } else {
+                                avoidedIngredientIDs = updated.sorted().joined(separator: ",")
+                            }
+                        } label: {
+                            HStack {
+                                Text(ingredient.name)
+                                Spacer()
+                                if (editingPreferencesAsLikes ? preferredIDs : avoidedIDs).contains(ingredient.id) {
+                                    Image(systemName: "checkmark").foregroundColor(AppColors.primary)
+                                }
+                            }
+                        }
+                        .foregroundColor(AppColors.textPrimary)
+                    }
+                    .navigationTitle(editingPreferencesAsLikes ? "Nguyên liệu ưa thích" : "Nguyên liệu cần tránh")
+                    .toolbar { ToolbarItem(placement: .confirmationAction) {
+                        Button("Xong") { showingAvoidIngredients = false }
+                    } }
+                }
+            }
         }
     }
 

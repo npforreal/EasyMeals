@@ -23,6 +23,16 @@ export const LEGACY_SCHEMA_VERSION = 1;
 export const VALID_UNITS = ["g", "kg", "ml", "l", "piece"];
 export const VALID_CATEGORIES = ["man", "rau", "canh"];
 
+/** Store personal preferences in IndexedDB so they participate in local backups. */
+export async function getLocalSetting(key) {
+  const entry = await getItem("settings", key);
+  return entry?.value;
+}
+
+export async function setLocalSetting(key, value) {
+  await putItem("settings", { key, value });
+}
+
 /**
  * Generate a cryptographically secure UUIDv4.
  */

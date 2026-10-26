@@ -26,6 +26,10 @@ class IngredientResponse(BaseModel):
     normalized_name: str
     category: str | None = None
     aliases: list[str] = Field(default_factory=list)
+    allergens: list[str] = Field(default_factory=list)
+    allergen_verification_status: str = "unknown"
+    allergen_source_url: str | None = None
+    allergen_verified_at: date | None = None
 
 
 class RecipeIngredientResponse(BaseModel):
@@ -42,6 +46,12 @@ class RecipeResponse(BaseModel):
     instructions: list[str]
     servings: int
     ingredients: list[RecipeIngredientResponse]
+    dietary_status: str = "unknown"
+    dietary_source_url: str | None = None
+    dietary_verified_at: date | None = None
+    spice_level: int | None = Field(default=None, ge=0, le=5)
+    spice_source_url: str | None = None
+    spice_verified_at: date | None = None
 
 
 class CatalogueBundleResponse(BaseModel):

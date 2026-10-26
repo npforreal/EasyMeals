@@ -117,6 +117,10 @@ class Ingredient:
     category: str | None = "khac"
     default_unit: QuantityUnit = QuantityUnit.GRAM
     aliases: list[str] = field(default_factory=list)
+    allergens: list[str] = field(default_factory=list)
+    allergen_verification_status: str = "unknown"
+    allergen_source_url: str | None = None
+    allergen_verified_at: date | None = None
 
 
 @dataclass
@@ -136,6 +140,12 @@ class Recipe:
     instructions: list[str]
     servings: int
     ingredients: list[RecipeIngredient] = field(default_factory=list)
+    dietary_status: str = "unknown"
+    dietary_source_url: str | None = None
+    dietary_verified_at: date | None = None
+    spice_level: int | None = None
+    spice_source_url: str | None = None
+    spice_verified_at: date | None = None
 
 
 @dataclass

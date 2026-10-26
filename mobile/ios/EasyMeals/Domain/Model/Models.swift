@@ -71,14 +71,22 @@ public struct Ingredient: Identifiable, Codable, Equatable, Sendable {
     public var category: String
     public var defaultUnit: String
     public let aliases: [String]
+    public let allergens: [String]
+    public let allergenVerificationStatus: String
+    public let allergenSourceURL: String?
+    public let allergenVerifiedAt: String?
 
-    public init(id: String, name: String, normalizedName: String, category: String = "khac", defaultUnit: String = "g", aliases: [String] = []) {
+    public init(id: String, name: String, normalizedName: String, category: String = "khac", defaultUnit: String = "g", aliases: [String] = [], allergens: [String] = [], allergenVerificationStatus: String = "unknown", allergenSourceURL: String? = nil, allergenVerifiedAt: String? = nil) {
         self.id = id
         self.name = name
         self.normalizedName = normalizedName
         self.category = category
         self.defaultUnit = defaultUnit
         self.aliases = aliases
+        self.allergens = allergens
+        self.allergenVerificationStatus = allergenVerificationStatus
+        self.allergenSourceURL = allergenSourceURL
+        self.allergenVerifiedAt = allergenVerifiedAt
     }
 
     enum CodingKeys: String, CodingKey {
@@ -88,6 +96,10 @@ public struct Ingredient: Identifiable, Codable, Equatable, Sendable {
         case category
         case defaultUnit = "default_unit"
         case aliases
+        case allergens
+        case allergenVerificationStatus = "allergen_verification_status"
+        case allergenSourceURL = "allergen_source_url"
+        case allergenVerifiedAt = "allergen_verified_at"
     }
 
     public init(from decoder: Decoder) throws {
@@ -98,6 +110,10 @@ public struct Ingredient: Identifiable, Codable, Equatable, Sendable {
         self.category = try container.decodeIfPresent(String.self, forKey: .category) ?? "khac"
         self.defaultUnit = try container.decodeIfPresent(String.self, forKey: .defaultUnit) ?? "g"
         self.aliases = try container.decodeIfPresent([String].self, forKey: .aliases) ?? []
+        self.allergens = try container.decodeIfPresent([String].self, forKey: .allergens) ?? []
+        self.allergenVerificationStatus = try container.decodeIfPresent(String.self, forKey: .allergenVerificationStatus) ?? "unknown"
+        self.allergenSourceURL = try container.decodeIfPresent(String.self, forKey: .allergenSourceURL)
+        self.allergenVerifiedAt = try container.decodeIfPresent(String.self, forKey: .allergenVerifiedAt)
     }
 }
 
@@ -130,18 +146,36 @@ public struct Recipe: Identifiable, Codable, Equatable, Sendable {
     public let servings: Int
     public let instructions: [String]
     public let ingredients: [RecipeIngredient]
+    public let dietaryStatus: String
+    public let dietarySourceURL: String?
+    public let dietaryVerifiedAt: String?
+    public let spiceLevel: Int?
+    public let spiceSourceURL: String?
+    public let spiceVerifiedAt: String?
 
-    public init(id: String, name: String, category: String, servings: Int = 4, instructions: [String] = [], ingredients: [RecipeIngredient] = []) {
+    public init(id: String, name: String, category: String, servings: Int = 4, instructions: [String] = [], ingredients: [RecipeIngredient] = [], dietaryStatus: String = "unknown", dietarySourceURL: String? = nil, dietaryVerifiedAt: String? = nil, spiceLevel: Int? = nil, spiceSourceURL: String? = nil, spiceVerifiedAt: String? = nil) {
         self.id = id
         self.name = name
         self.category = category
         self.servings = servings
         self.instructions = instructions
         self.ingredients = ingredients
+        self.dietaryStatus = dietaryStatus
+        self.dietarySourceURL = dietarySourceURL
+        self.dietaryVerifiedAt = dietaryVerifiedAt
+        self.spiceLevel = spiceLevel
+        self.spiceSourceURL = spiceSourceURL
+        self.spiceVerifiedAt = spiceVerifiedAt
     }
 
     enum CodingKeys: String, CodingKey {
         case id, name, category, servings, instructions, ingredients
+        case dietaryStatus = "dietary_status"
+        case dietarySourceURL = "dietary_source_url"
+        case dietaryVerifiedAt = "dietary_verified_at"
+        case spiceLevel = "spice_level"
+        case spiceSourceURL = "spice_source_url"
+        case spiceVerifiedAt = "spice_verified_at"
     }
 
     public init(from decoder: Decoder) throws {
@@ -152,6 +186,12 @@ public struct Recipe: Identifiable, Codable, Equatable, Sendable {
         self.servings = try container.decodeIfPresent(Int.self, forKey: .servings) ?? 4
         self.instructions = try container.decodeIfPresent([String].self, forKey: .instructions) ?? []
         self.ingredients = try container.decodeIfPresent([RecipeIngredient].self, forKey: .ingredients) ?? []
+        self.dietaryStatus = try container.decodeIfPresent(String.self, forKey: .dietaryStatus) ?? "unknown"
+        self.dietarySourceURL = try container.decodeIfPresent(String.self, forKey: .dietarySourceURL)
+        self.dietaryVerifiedAt = try container.decodeIfPresent(String.self, forKey: .dietaryVerifiedAt)
+        self.spiceLevel = try container.decodeIfPresent(Int.self, forKey: .spiceLevel)
+        self.spiceSourceURL = try container.decodeIfPresent(String.self, forKey: .spiceSourceURL)
+        self.spiceVerifiedAt = try container.decodeIfPresent(String.self, forKey: .spiceVerifiedAt)
     }
 }
 

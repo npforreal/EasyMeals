@@ -15,6 +15,7 @@ import re
 import unicodedata
 import uuid
 from abc import ABC, abstractmethod
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -24,7 +25,7 @@ from app.domain.models import DishCategory, Ingredient, QuantityUnit, Recipe, Re
 
 ROOT = Path(__file__).resolve().parents[2]
 
-CATALOGUE_VERSION = "2026.10.27"
+CATALOGUE_VERSION = "2026.10.28"
 SUPABASE_PAGE_SIZE = 1000
 
 NAMESPACE = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")  # DNS namespace UUID
@@ -643,6 +644,12 @@ class FixtureCatalogueRepository(Repository):
                 "category": i.category,
                 "default_unit": i.default_unit.value,
                 "aliases": sorted(i.aliases),
+                "allergens": sorted(i.allergens),
+                "allergen_verification_status": i.allergen_verification_status,
+                "allergen_source_url": i.allergen_source_url,
+                "allergen_verified_at": i.allergen_verified_at.isoformat()
+                if i.allergen_verified_at
+                else None,
             }
             for i in self.ingredients.values()
         ]
@@ -662,6 +669,16 @@ class FixtureCatalogueRepository(Repository):
                     }
                     for ri in r.ingredients
                 ],
+                "dietary_status": r.dietary_status,
+                "dietary_source_url": r.dietary_source_url,
+                "dietary_verified_at": r.dietary_verified_at.isoformat()
+                if r.dietary_verified_at
+                else None,
+                "spice_level": r.spice_level,
+                "spice_source_url": r.spice_source_url,
+                "spice_verified_at": r.spice_verified_at.isoformat()
+                if r.spice_verified_at
+                else None,
             }
             for r in self.recipes.values()
         ]
@@ -700,7 +717,9 @@ class SupabaseRepository(Repository):
 
     def get_ingredients(self, search: str | None = None) -> list[Ingredient]:
         query = self.client.table("ingredients").select(
-            "id, name, normalized_name, category, default_unit, ingredient_aliases(alias)"
+            "id, name, normalized_name, category, default_unit, allergens, "
+            "allergen_verification_status, allergen_source_url, allergen_verified_at, "
+            "ingredient_aliases(alias)"
         )
         if search:
             # PostgREST filter injection protection: remove control characters
@@ -726,6 +745,13 @@ class SupabaseRepository(Repository):
                     category=row.get("category") or "khac",
                     default_unit=du,
                     aliases=aliases,
+                    allergens=row.get("allergens") or [],
+                    allergen_verification_status=row.get("allergen_verification_status")
+                    or "unknown",
+                    allergen_source_url=row.get("allergen_source_url"),
+                    allergen_verified_at=date.fromisoformat(row["allergen_verified_at"])
+                    if row.get("allergen_verified_at")
+                    else None,
                 )
             )
         return results
@@ -733,7 +759,11 @@ class SupabaseRepository(Repository):
     def get_ingredient_by_id(self, ingredient_id: UUID) -> Ingredient | None:
         response = (
             self.client.table("ingredients")
-            .select("id, name, normalized_name, category, default_unit, ingredient_aliases(alias)")
+            .select(
+                "id, name, normalized_name, category, default_unit, allergens, "
+                "allergen_verification_status, allergen_source_url, allergen_verified_at, "
+                "ingredient_aliases(alias)"
+            )
             .eq("id", str(ingredient_id))
             .limit(1)
             .execute()
@@ -754,11 +784,19 @@ class SupabaseRepository(Repository):
             category=row.get("category") or "khac",
             default_unit=du,
             aliases=aliases,
+            allergens=row.get("allergens") or [],
+            allergen_verification_status=row.get("allergen_verification_status") or "unknown",
+            allergen_source_url=row.get("allergen_source_url"),
+            allergen_verified_at=date.fromisoformat(row["allergen_verified_at"])
+            if row.get("allergen_verified_at")
+            else None,
         )
 
     def get_recipes(self, category: DishCategory | None = None) -> list[Recipe]:
         query = self.client.table("recipes").select(
-            "id, name, category, servings, instructions, "
+            "id, name, category, servings, instructions, dietary_status, "
+            "dietary_source_url, dietary_verified_at, "
+            "spice_level, spice_source_url, spice_verified_at, "
             "recipe_ingredients(ingredient_id, quantity, unit, ingredients(name))"
         )
         if category:
@@ -789,6 +827,16 @@ class SupabaseRepository(Repository):
                     instructions=row.get("instructions") or [],
                     servings=row.get("servings", 1),
                     ingredients=ingredients,
+                    dietary_status=row.get("dietary_status") or "unknown",
+                    dietary_source_url=row.get("dietary_source_url"),
+                    dietary_verified_at=date.fromisoformat(row["dietary_verified_at"])
+                    if row.get("dietary_verified_at")
+                    else None,
+                    spice_level=row.get("spice_level"),
+                    spice_source_url=row.get("spice_source_url"),
+                    spice_verified_at=date.fromisoformat(row["spice_verified_at"])
+                    if row.get("spice_verified_at")
+                    else None,
                 )
             )
         return recipes
@@ -797,7 +845,8 @@ class SupabaseRepository(Repository):
         response = (
             self.client.table("recipes")
             .select(
-                "id, name, category, servings, instructions, "
+                "id, name, category, servings, instructions, dietary_status, "
+                "dietary_source_url, dietary_verified_at, spice_level, spice_source_url, "
                 "recipe_ingredients(ingredient_id, quantity, unit, ingredients(name))"
             )
             .eq("id", str(recipe_id))
@@ -828,6 +877,16 @@ class SupabaseRepository(Repository):
             instructions=row.get("instructions") or [],
             servings=row.get("servings", 1),
             ingredients=ingredients,
+            dietary_status=row.get("dietary_status") or "unknown",
+            dietary_source_url=row.get("dietary_source_url"),
+            dietary_verified_at=date.fromisoformat(row["dietary_verified_at"])
+            if row.get("dietary_verified_at")
+            else None,
+            spice_level=row.get("spice_level"),
+            spice_source_url=row.get("spice_source_url"),
+            spice_verified_at=date.fromisoformat(row["spice_verified_at"])
+            if row.get("spice_verified_at")
+            else None,
         )
 
     def get_catalogue_bundle(self) -> dict[str, Any]:
@@ -842,6 +901,12 @@ class SupabaseRepository(Repository):
                 "category": i.category,
                 "default_unit": i.default_unit.value,
                 "aliases": sorted(i.aliases),
+                "allergens": sorted(i.allergens),
+                "allergen_verification_status": i.allergen_verification_status,
+                "allergen_source_url": i.allergen_source_url,
+                "allergen_verified_at": i.allergen_verified_at.isoformat()
+                if i.allergen_verified_at
+                else None,
             }
             for i in ingredients
         ]
@@ -861,6 +926,16 @@ class SupabaseRepository(Repository):
                     }
                     for ri in r.ingredients
                 ],
+                "dietary_status": r.dietary_status,
+                "dietary_source_url": r.dietary_source_url,
+                "dietary_verified_at": r.dietary_verified_at.isoformat()
+                if r.dietary_verified_at
+                else None,
+                "spice_level": r.spice_level,
+                "spice_source_url": r.spice_source_url,
+                "spice_verified_at": r.spice_verified_at.isoformat()
+                if r.spice_verified_at
+                else None,
             }
             for r in recipes
         ]

@@ -9,6 +9,30 @@
   </div>
 
   <div class="card" style="margin-bottom: var(--space-3);">
+    <div style="display:flex; gap:var(--space-3); flex-wrap:wrap; align-items:end; margin-bottom:var(--space-3);">
+      <label for="recipe-diet-filter">Chế độ ăn đã xác minh
+        <select id="recipe-diet-filter">
+          <option value="">Không lọc</option>
+          <option value="vegetarian">Chay</option>
+          <option value="vegan">Thuần chay</option>
+        </select>
+      </label>
+      <label for="recipe-spice-filter">Độ cay tối đa đã xác minh
+        <select id="recipe-spice-filter">
+          <option value="">Không giới hạn</option>
+          <option value="0">0 — Không cay</option><option value="1">1</option>
+          <option value="2">2</option><option value="3">3</option>
+          <option value="4">4</option><option value="5">5 — Rất cay</option>
+        </select>
+      </label>
+      <label for="recipe-avoid-ingredients">Dị ứng / nguyên liệu cần tránh (chọn nhiều)
+        <select id="recipe-avoid-ingredients" multiple size="3" aria-describedby="recipe-filter-note"></select>
+      </label>
+      <label for="recipe-preferred-ingredients">Nguyên liệu ưa thích (chọn nhiều)
+        <select id="recipe-preferred-ingredients" multiple size="3"></select>
+      </label>
+    </div>
+    <p id="recipe-filter-note" role="status">Nguyên liệu cần tránh được loại theo ID chính tắc. Nhãn chế độ ăn/độ cay chỉ lọc món đã xác minh; dữ liệu thiếu không được coi là phù hợp. Danh mục không xác nhận an toàn dị ứng hoặc nhiễm chéo.</p>
     <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
       <button class="btn btn-primary btn-sm filter-btn active" data-cat="" type="button">Tất cả các món</button>
       <button class="btn btn-outline btn-sm filter-btn" data-cat="man" type="button">

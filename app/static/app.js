@@ -15,6 +15,8 @@ import {
 } from "./js/db.js";
 import {
   getPantryLots,
+  getLocalSetting,
+  setLocalSetting,
   addPantryLot,
   updatePantryLot,
   deletePantryLot,
@@ -60,6 +62,7 @@ import {
   reverseStockMovements as engineReverseStockMovements,
   getTotalIngredientStock as engineGetTotalIngredientStock,
 } from "./js/engine.js";
+import { filterRecipesByPreferences } from "./js/recipe-preferences.js";
 import {
   formatDateVN,
   formatRelativeDate,
@@ -1995,7 +1998,49 @@ async function initPlannerPage() {
 async function initRecipesPage() {
   const grid = document.getElementById("recipes-grid");
   const filterBtns = document.querySelectorAll(".filter-btn");
+  const dietFilter = document.getElementById("recipe-diet-filter");
+  const spiceFilter = document.getElementById("recipe-spice-filter");
+  const avoidFilter = document.getElementById("recipe-avoid-ingredients");
+  const preferredFilter = document.getElementById("recipe-preferred-ingredients");
   let activeCat = "";
+  const preferenceKey = "recipe_preferences_v1";
+  let preferences = (await getLocalSetting(preferenceKey)) || {};
+  if (dietFilter) dietFilter.value = preferences.diet || "";
+  if (spiceFilter) spiceFilter.value = preferences.maxSpice ?? "";
+
+  const cachedAtStart = await getCachedCatalogue();
+  let availableIngredients = cachedAtStart?.ingredients || [];
+  if (!availableIngredients.length) {
+    try {
+      const response = await fetch("/api/ingredients");
+      if (response.ok) availableIngredients = await response.json();
+    } catch { /* Catalogue filters remain usable when offline cache exists. */ }
+  }
+  if (avoidFilter || preferredFilter) {
+    availableIngredients.slice().sort((a, b) => a.name.localeCompare(b.name, "vi")).forEach((ingredient) => {
+      [
+        [avoidFilter, preferences.avoidedIngredientIds || []],
+        [preferredFilter, preferences.preferredIngredientIds || []],
+      ].forEach(([select, selectedIds]) => {
+        if (!select) return;
+        const option = document.createElement("option");
+        option.value = ingredient.id;
+        option.textContent = ingredient.name;
+        option.selected = selectedIds.includes(ingredient.id);
+        select.appendChild(option);
+      });
+    });
+  }
+
+  async function savePreferences() {
+    preferences = {
+      diet: dietFilter?.value || "",
+      maxSpice: spiceFilter?.value || "",
+      avoidedIngredientIds: avoidFilter ? Array.from(avoidFilter.selectedOptions, (option) => option.value) : [],
+      preferredIngredientIds: preferredFilter ? Array.from(preferredFilter.selectedOptions, (option) => option.value) : [],
+    };
+    await setLocalSetting(preferenceKey, preferences);
+  }
 
   async function loadAndRender() {
     if (!grid) return;
@@ -2013,9 +2058,7 @@ async function initRecipesPage() {
         if (res.ok) recipes = await res.json();
       }
 
-      if (activeCat) {
-        recipes = recipes.filter((r) => r.category === activeCat);
-      }
+      recipes = filterRecipesByPreferences(recipes, preferences, activeCat);
 
       if (!recipes.length) {
         grid.innerHTML = `
@@ -2073,6 +2116,10 @@ async function initRecipesPage() {
         card.addEventListener("click", () => openRecipeModal(r.id));
         grid.appendChild(card);
       });
+
+      const unknownCount = (cached?.recipes || []).filter((recipe) => recipe.dietary_status === "unknown" || !recipe.dietary_source_url || !recipe.dietary_verified_at).length;
+      const note = document.getElementById("recipe-filter-note");
+      if (note && !preferences.diet) note.textContent = `${unknownCount} món đang thiếu thông tin chế độ ăn đã xác minh; không thể kết luận món phù hợp với dị ứng.`;
     } catch (err) {
       grid.innerHTML = "";
       const p = document.createElement("p");
@@ -2091,6 +2138,10 @@ async function initRecipesPage() {
       activeCat = btn.getAttribute("data-cat") || "";
       loadAndRender();
     });
+  });
+
+  [dietFilter, spiceFilter, avoidFilter, preferredFilter].filter(Boolean).forEach((control) => {
+    control.addEventListener("change", async () => { await savePreferences(); await loadAndRender(); });
   });
 
   loadAndRender();

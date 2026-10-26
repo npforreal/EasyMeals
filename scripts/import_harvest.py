@@ -244,6 +244,14 @@ def import_ingredients(client: Any | None, apply: bool) -> dict[str, Any]:
             "normalized_name": vi_normalized,
             "category": row.get("category"),
         }
+        # Only carry editorial allergen facts when the source explicitly provides evidence.
+        if row.get("allergen_verification_status") in {"incomplete", "verified"}:
+            payload.update(
+                allergens=row.get("allergens") or [],
+                allergen_verification_status=row["allergen_verification_status"],
+                allergen_source_url=row.get("allergen_source_url"),
+                allergen_verified_at=row.get("allergen_verified_at"),
+            )
         index[normalized] = {"id": uid, "name": vi_name, "source_id": source_id}
         index[vi_normalized] = {"id": uid, "name": vi_name, "source_id": source_id}
         if apply:
@@ -339,6 +347,17 @@ def import_recipes(client: Any | None, apply: bool, ing_index: dict[str, Any]) -
             "instructions": instructions,
             "servings": servings,
         }
+        # Preserve only explicitly sourced editorial labels; never infer from names/ingredients.
+        for field in (
+            "dietary_status",
+            "dietary_source_url",
+            "dietary_verified_at",
+            "spice_level",
+            "spice_source_url",
+            "spice_verified_at",
+        ):
+            if field in row:
+                payload[field] = row[field]
         if apply:
             assert client is not None
             try:

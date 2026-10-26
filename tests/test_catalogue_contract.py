@@ -75,6 +75,14 @@ def test_catalogue_json_structure() -> None:
         assert "category" in ing, f"Nguyên liệu {ing['id']} thiếu category"
         assert ing["category"] in cat_ids, f"Nguyên liệu {ing['id']} category lạ: {ing['category']}"
         assert ing.get("default_unit"), f"Nguyên liệu {ing['id']} thiếu default_unit"
+        status = ing.get("allergen_verification_status", "unknown")
+        assert status in {"unknown", "incomplete", "verified"}
+        if status == "unknown":
+            assert not ing.get("allergens"), (
+                f"Không được gán allergen cho dữ liệu chưa xác minh: {ing['id']}"
+            )
+        if status == "verified":
+            assert ing.get("allergen_source_url") and ing.get("allergen_verified_at")
 
     # 3. Hợp đồng món ăn (Recipes)
     rec_ids = set()
@@ -93,6 +101,18 @@ def test_catalogue_json_structure() -> None:
             f"Món ăn {rec['id']} thiếu ingredients"
         )
         assert len(rec["ingredients"]) > 0, f"Món ăn {rec['id']} không có nguyên liệu nào"
+        assert rec.get("dietary_status", "unknown") in {
+            "unknown",
+            "incomplete",
+            "omnivore",
+            "vegetarian",
+            "vegan",
+        }
+        if rec.get("dietary_status", "unknown") in {"omnivore", "vegetarian", "vegan"}:
+            assert rec.get("dietary_source_url") and rec.get("dietary_verified_at")
+        if rec.get("spice_level") is not None:
+            assert 0 <= rec["spice_level"] <= 5
+            assert rec.get("spice_source_url") and rec.get("spice_verified_at")
 
         for ring in rec["ingredients"]:
             ing_fk = ring.get("ingredient_id")

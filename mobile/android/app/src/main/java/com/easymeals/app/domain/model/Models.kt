@@ -35,7 +35,11 @@ data class Ingredient(
     @SerialName("normalized_name") @SerializedName("normalized_name") val normalizedName: String,
     val category: String? = "khac",
     @SerialName("default_unit") @SerializedName("default_unit") val defaultUnit: String? = null,
-    val aliases: List<String> = emptyList()
+    val aliases: List<String> = emptyList(),
+    val allergens: List<String> = emptyList(),
+    @SerialName("allergen_verification_status") val allergenVerificationStatus: String = "unknown",
+    @SerialName("allergen_source_url") val allergenSourceUrl: String? = null,
+    @SerialName("allergen_verified_at") val allergenVerifiedAt: String? = null
 )
 
 @Serializable
@@ -53,7 +57,13 @@ data class Recipe(
     val category: String,
     val servings: Int = 4,
     val instructions: List<String> = emptyList(),
-    val ingredients: List<RecipeIngredient> = emptyList()
+    val ingredients: List<RecipeIngredient> = emptyList(),
+    @SerialName("dietary_status") val dietaryStatus: String = "unknown",
+    @SerialName("dietary_source_url") val dietarySourceUrl: String? = null,
+    @SerialName("dietary_verified_at") val dietaryVerifiedAt: String? = null,
+    @SerialName("spice_level") val spiceLevel: Int? = null,
+    @SerialName("spice_source_url") val spiceSourceUrl: String? = null,
+    @SerialName("spice_verified_at") val spiceVerifiedAt: String? = null
 )
 
 @Serializable
