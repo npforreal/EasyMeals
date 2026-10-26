@@ -1226,6 +1226,13 @@ async function initPlannerPage() {
             dName.style.color = "var(--text-muted)";
           }
           left.appendChild(dName);
+          if (dish.selection_reason) {
+            const reason = document.createElement("span");
+            reason.style.color = "var(--text-muted)";
+            reason.style.fontSize = "var(--text-xs)";
+            reason.textContent = dish.selection_reason;
+            left.appendChild(reason);
+          }
 
           const catBadge = document.createElement("span");
           catBadge.className = `badge badge-${dish.category}`;
@@ -1332,6 +1339,39 @@ async function initPlannerPage() {
         });
 
         mealCard.appendChild(dishList);
+
+        // C3: ghi chú thuộc từng bữa, lưu cục bộ trong IndexedDB.
+        const notesLabel = document.createElement("label");
+        notesLabel.textContent = "Ghi chú bữa ăn";
+        const notesInput = document.createElement("textarea");
+        notesInput.maxLength = 500;
+        notesInput.rows = 2;
+        notesInput.value = meal.notes || "";
+        notesInput.setAttribute("aria-label", `Ghi chú ${PERIOD_LABELS[meal.meal_period] || meal.meal_period} ${formatRelativeDate(d)}`);
+        notesInput.style.width = "100%";
+        notesInput.style.marginBottom = "var(--space-2)";
+        notesInput.disabled = Boolean(meal.eaten_at);
+        notesLabel.appendChild(notesInput);
+        mealCard.appendChild(notesLabel);
+        if (!meal.eaten_at) {
+          const saveNotes = document.createElement("button");
+          saveNotes.type = "button";
+          saveNotes.className = "btn btn-outline btn-sm";
+          saveNotes.textContent = "Lưu ghi chú";
+          saveNotes.addEventListener("click", async () => {
+            const value = notesInput.value.trim();
+            const allPlans = await getMealPlans();
+            const updated = allPlans.map((p) => p.id === meal.id ? { ...p, notes: value || null } : p);
+            try {
+              await saveMealPlans(updated);
+              meal.notes = value || null;
+              showToast("Đã lưu ghi chú trên thiết bị này.", "success");
+            } catch (err) {
+              showToast(`Không lưu được ghi chú: ${err.message}`, "danger");
+            }
+          });
+          mealCard.appendChild(saveNotes);
+        }
 
         // Action Buttons
         const actionRow = document.createElement("div");
