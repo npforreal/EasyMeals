@@ -563,26 +563,20 @@ fun MealPlanCard(
             }
 
             plan.dishes.forEach { dish ->
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(vertical = 4.dp)
                 ) {
-                    Text(
-                        text = dish.recipeName,
-                        fontSize = 15.sp,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp)
-                    )
+                    Text(text = dish.recipeName, fontSize = 15.sp)
                     dish.selectionReason?.let { reason ->
                         Text(reason, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    // Các nút nằm dòng riêng và tự xuống dòng để không bị ép trên màn hình hẹp.
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
                         if (dish.isLeftover) {
                             SuggestionChip(

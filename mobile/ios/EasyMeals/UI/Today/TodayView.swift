@@ -307,58 +307,64 @@ public struct TodayView: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(plan.dishes) { dish in
-                    HStack(spacing: 8) {
-                        Image(systemName: categoryIcon(dish.category))
-                            .foregroundColor(AppColors.primary)
-                        Text(dish.recipeName)
-                            .font(.body)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                        if let reason = dish.selectionReason, !reason.isEmpty {
-                            Text(reason)
+                    // Tên món + lý do ở trên, các nút ở dòng riêng để không bị ép trên màn hình hẹp.
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: categoryIcon(dish.category))
+                                .foregroundColor(AppColors.primary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(dish.recipeName)
+                                    .font(.body)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                if let reason = dish.selectionReason, !reason.isEmpty {
+                                    Text(reason)
+                                        .font(.caption)
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                            }
+                        }
+                        HStack(spacing: 12) {
+                            if dish.isLeftover {
+                                Text("Ăn lại")
+                                    .font(.caption2)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(AppColors.warning.opacity(0.15))
+                                    .foregroundColor(AppColors.warning)
+                                    .cornerRadius(6)
+                            }
+                            Button {
+                                if let recipe = storage.recipes.first(where: { $0.id == dish.recipeId }) {
+                                    selectedRecipe = recipe
+                                    selectedServings = dish.servings
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "book.pages")
+                                    Text("Xem công thức")
+                                }
                                 .font(.caption)
-                                .foregroundColor(AppColors.textSecondary)
-                        }
-                        Spacer(minLength: 4)
-                        if dish.isLeftover {
-                            Text("Ăn lại")
-                                .font(.caption2)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(AppColors.warning.opacity(0.15))
-                                .foregroundColor(AppColors.warning)
-                                .cornerRadius(6)
-                        }
-                        Button {
-                            if let recipe = storage.recipes.first(where: { $0.id == dish.recipeId }) {
-                                selectedRecipe = recipe
-                                selectedServings = dish.servings
+                                .foregroundColor(AppColors.primary)
                             }
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "book.pages")
-                                Text("Xem công thức")
-                            }
-                            .font(.caption)
-                            .foregroundColor(AppColors.primary)
-                        }
-                        .buttonStyle(.borderless)
-                        if plan.eatenAt == nil {
-                            Button("Đổi") {
-                                pickerRequest = PickerRequest(mealPlanId: plan.id, mode: .swap(oldDishId: dish.id, category: dish.category))
-                            }
-                            .font(.caption)
                             .buttonStyle(.borderless)
-                            .frame(minWidth: 44, minHeight: 44)
-                            .accessibilityLabel("Đổi món \(dish.recipeName)")
-                            .accessibilityIdentifier("swap-dish-\(dish.id)")
-                            Button("Bỏ") {
-                                try? storage.removeDish(mealPlanId: plan.id, dishId: dish.id)
+                            .frame(minHeight: 44)
+                            if plan.eatenAt == nil {
+                                Button("Đổi") {
+                                    pickerRequest = PickerRequest(mealPlanId: plan.id, mode: .swap(oldDishId: dish.id, category: dish.category))
+                                }
+                                .font(.caption)
+                                .buttonStyle(.borderless)
+                                .frame(minWidth: 44, minHeight: 44)
+                                .accessibilityLabel("Đổi món \(dish.recipeName)")
+                                .accessibilityIdentifier("swap-dish-\(dish.id)")
+                                Button("Bỏ") {
+                                    try? storage.removeDish(mealPlanId: plan.id, dishId: dish.id)
+                                }
+                                .font(.caption)
+                                .buttonStyle(.borderless)
+                                .frame(minWidth: 44, minHeight: 44)
+                                .accessibilityLabel("Bỏ món \(dish.recipeName)")
                             }
-                            .font(.caption)
-                            .buttonStyle(.borderless)
-                            .frame(minWidth: 44, minHeight: 44)
-                            .accessibilityLabel("Bỏ món \(dish.recipeName)")
                         }
                     }
                 }
