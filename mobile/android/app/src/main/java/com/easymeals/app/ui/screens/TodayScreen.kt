@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DinnerDining
@@ -26,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -88,6 +91,8 @@ internal fun LeftoverOptionsRow(
     }
 }
 
+private data class PickerState(val mealPlanId: String, val mode: RecipePickerMode)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayScreen(repository: AppRepository) {
@@ -100,6 +105,9 @@ fun TodayScreen(repository: AppRepository) {
     val avoidedIds = remember { context.getSharedPreferences("recipe_preferences", Context.MODE_PRIVATE).getStringSet("avoided_ingredient_ids", emptySet()).orEmpty() }
     val staleAvoidedIds = avoidedIds - ingredients.map { it.id }.toSet()
 
+    // D2b: chọn món thủ công cho bữa chưa ăn.
+    var pickerState by remember { mutableStateOf<PickerState?>(null) }
+    var pickerError by remember { mutableStateOf<String?>(null) }
     var viewingRecipe by remember { mutableStateOf<Recipe?>(null) }
     var viewingServings by remember { mutableIntStateOf(2) }
     var isCookingMode by remember { mutableStateOf(false) }
@@ -340,11 +348,46 @@ fun TodayScreen(repository: AppRepository) {
                             },
                             onRegenerate = {
                                 repository.regenerateMeal(plan.id)
+                            },
+                            onAddDish = { pickerState = PickerState(plan.id, RecipePickerMode.Add) },
+                            onSwapDish = { dishId, category ->
+                                pickerState = PickerState(plan.id, RecipePickerMode.Swap(dishId, category))
+                            },
+                            onRemoveDish = { dishId ->
+                                runCatching { repository.removeDish(plan.id, dishId) }
+                                    .onFailure { pickerError = it.message }
                             }
                         )
                     }
                 }
             }
+        }
+
+        pickerState?.let { state ->
+            RecipePickerDialog(
+                mode = state.mode,
+                recipes = recipes,
+                ingredients = ingredients,
+                avoidedIngredientIds = avoidedIds,
+                onPick = { recipe, confirmed ->
+                    runCatching {
+                        when (val m = state.mode) {
+                            is RecipePickerMode.Add -> repository.addDish(state.mealPlanId, recipe.id, confirmedAvoidance = confirmed)
+                            is RecipePickerMode.Swap -> repository.swapDish(state.mealPlanId, m.oldDishId, recipe.id, confirmedAvoidance = confirmed)
+                        }
+                    }.onSuccess { pickerState = null }
+                        .onFailure { pickerError = it.message; pickerState = null }
+                },
+                onDismiss = { pickerState = null }
+            )
+        }
+        pickerError?.let { message ->
+            AlertDialog(
+                onDismissRequest = { pickerError = null },
+                title = { Text("Không thực hiện được") },
+                text = { Text(message) },
+                confirmButton = { TextButton(onClick = { pickerError = null }) { Text("Đóng") } }
+            )
         }
 
         deficitAlert?.let { alert ->
@@ -474,7 +517,10 @@ fun MealPlanCard(
     onViewRecipe: (String, Int) -> Unit,
     onEat: () -> Unit,
     onUndo: () -> Unit,
-    onRegenerate: () -> Unit
+    onRegenerate: () -> Unit,
+    onAddDish: () -> Unit = {},
+    onSwapDish: (dishId: String, category: String) -> Unit = { _, _ -> },
+    onRemoveDish: (dishId: String) -> Unit = {}
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -552,7 +598,29 @@ fun MealPlanCard(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("Xem công thức", fontSize = 12.sp)
                         }
+                        if (plan.eatenAt == null) {
+                            TextButton(
+                                onClick = { onSwapDish(dish.id, dish.category) },
+                                modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Đổi món ${dish.recipeName}" },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                            ) { Text("Đổi", fontSize = 12.sp) }
+                            TextButton(
+                                onClick = { onRemoveDish(dish.id) },
+                                modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Bỏ món ${dish.recipeName}" },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                            ) { Text("Bỏ", fontSize = 12.sp) }
+                        }
                     }
+                }
+            }
+            if (plan.eatenAt == null) {
+                TextButton(
+                    onClick = onAddDish,
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Thêm món")
                 }
             }
 
