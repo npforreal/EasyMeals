@@ -1,7 +1,13 @@
 """Upload toàn bộ danh mục hoàn chỉnh (data/catalogue.json) lên Supabase.
 
-Mặc định chạy ở chế độ DRY-RUN (chỉ thống kê, không ghi DB).
-Chỉ thực hiện ghi khi có cờ --apply.
+Cách chạy (chỉ cần điền 2 biến trước lệnh, không cần cờ --apply):
+
+    SUPABASE_URL="https://<id>.supabase.co" SUPABASE_SERVICE_ROLE_KEY="<key>" \\
+        python scripts/upload_catalogue_to_supabase.py
+
+- Có SUPABASE_SERVICE_ROLE_KEY trong môi trường -> tự ghi lên Supabase (APPLY).
+- Không có khoá -> DRY-RUN (chỉ thống kê, không ghi DB).
+- --dry-run ép chỉ thống kê dù có khoá; --apply vẫn dùng được như trước.
 Tuỳ chọn --clean để xoá sạch dữ liệu cũ trước khi nạp mới.
 """
 
@@ -25,14 +31,25 @@ CATALOGUE_FILE = ROOT / "data" / "catalogue.json"
 BATCH_SIZE = 50
 
 
+def _env(name: str) -> str:
+    """Đọc biến môi trường, bỏ khoảng trắng và dấu nháy thừa khi dán từ terminal."""
+    return os.environ.get(name, "").strip().strip("\"'").strip()
+
+
 def build_client(apply: bool) -> Any:
     if not apply:
         return None
-    url = os.environ.get("SUPABASE_URL", "").strip()
-    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    url = _env("SUPABASE_URL")
+    key = _env("SUPABASE_SERVICE_ROLE_KEY")
     if not url or not key or url.startswith("https://your-project"):
         print(
-            "Lỗi: Cần SUPABASE_URL và SUPABASE_SERVICE_ROLE_KEY để thực hiện --apply.",
+            "Lỗi: Cần SUPABASE_URL và SUPABASE_SERVICE_ROLE_KEY để ghi lên Supabase.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+    if not url.startswith("https://"):
+        print(
+            "Lỗi: SUPABASE_URL phải bắt đầu bằng https:// (dạng https://<id>.supabase.co).",
             file=sys.stderr,
         )
         sys.exit(2)
@@ -220,9 +237,9 @@ def upload_catalogue(apply: bool = False, clean: bool = False) -> dict[str, Any]
         print(f"  - Liên kết nguyên liệu: {len(ri_rows)}")
         print(f"  - Quy đổi: {len(conversions)}")
         print("\n--> Để ghi thật vào Supabase, hãy chạy:")
-        print("    python scripts/upload_catalogue_to_supabase.py --apply")
-        print("--> Hoặc xoá sạch trước rồi nạp mới:")
-        print("    python scripts/upload_catalogue_to_supabase.py --apply --clean")
+        print('    SUPABASE_URL="https://<id>.supabase.co" SUPABASE_SERVICE_ROLE_KEY="<key>" \\')
+        print("        python scripts/upload_catalogue_to_supabase.py")
+        print("    (thêm --clean để xoá sạch danh mục cũ rồi nạp mới)")
 
     return {
         "categories": len(cat_rows),
@@ -239,7 +256,12 @@ def main() -> None:
     parser.add_argument(
         "--apply",
         action="store_true",
-        help="Thực hiện ghi vào Supabase (mặc định dry-run).",
+        help="Ép ghi vào Supabase (mặc định tự ghi khi có SUPABASE_SERVICE_ROLE_KEY).",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Chỉ thống kê, không ghi DB dù đã có SUPABASE_SERVICE_ROLE_KEY.",
     )
     parser.add_argument(
         "--clean",
@@ -247,7 +269,14 @@ def main() -> None:
         help="Xoá sạch dữ liệu danh mục cũ trên Supabase trước khi nạp mới.",
     )
     args = parser.parse_args()
-    upload_catalogue(apply=args.apply, clean=args.clean)
+    if args.apply and args.dry_run:
+        parser.error("Không dùng --apply cùng --dry-run.")
+    apply = args.apply or (not args.dry_run and bool(_env("SUPABASE_SERVICE_ROLE_KEY")))
+    if apply and not args.apply:
+        print(
+            "Phát hiện SUPABASE_SERVICE_ROLE_KEY -> chạy chế độ APPLY (thêm --dry-run để chỉ xem)."
+        )
+    upload_catalogue(apply=apply, clean=args.clean)
 
 
 if __name__ == "__main__":

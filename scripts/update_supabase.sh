@@ -57,6 +57,19 @@ if [ "$APPLY" = 0 ]; then
 fi
 
 echo "==> 3/4 Ghi lên Supabase"
+# Nếu đã đặt sẵn 2 biến trước lệnh thì dùng luôn, không hỏi lại:
+#   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... bash scripts/update_supabase.sh --apply
+# (hoặc chạy thẳng: SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... python scripts/upload_catalogue_to_supabase.py)
+if [ -n "${SUPABASE_URL:-}" ] && [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+  if [ "$CLEAN" = 1 ]; then
+    "$PY" scripts/upload_catalogue_to_supabase.py --apply --clean
+  else
+    "$PY" scripts/upload_catalogue_to_supabase.py --apply
+  fi
+  echo "==> 4/4 Kiểm chứng RLS bằng anon key (cần SUPABASE_ANON_KEY trong .env)"
+  env -u SUPABASE_SERVICE_ROLE_KEY "$PY" scripts/verify_rls.py
+  exit 0
+fi
 if [ -z "${SUPABASE_URL:-}" ]; then
   read -r -p "SUPABASE_URL (https://<id>.supabase.co) — Enter để dùng .env: " SUPABASE_URL_IN || true
   [ -n "${SUPABASE_URL_IN:-}" ] && export SUPABASE_URL="$SUPABASE_URL_IN"
