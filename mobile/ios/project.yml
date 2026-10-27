@@ -24,6 +24,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.easymeals.app
+        MARKETING_VERSION: "2.0.0"
+        CURRENT_PROJECT_VERSION: "7"
         GENERATE_INFOPLIST_FILE: YES
   EasyMealsUITests:
     type: bundle.ui-testing

@@ -78,6 +78,8 @@ python scripts/upload_catalogue_to_supabase.py --apply
 > [!CAUTION] **QUY TẮC BẢO MẬT BẮT BUỘC**
 > `SUPABASE_SERVICE_ROLE_KEY` chỉ được truyền qua biến môi trường dòng lệnh trong phiên chạy script seed của chủ dự án. **Tuyệt đối không lưu khoá này vào file `.env` hoặc đưa lên Vercel.** Backend FastAPI sẽ từ chối khởi động và báo lỗi ngay lập tức nếu phát hiện biến `SUPABASE_SERVICE_ROLE_KEY` trong môi trường runtime.
 
+> **Cập nhật nhanh khi phát hành bản mới:** dùng `bash scripts/update_supabase.sh` (dry-run mặc định), `--migrations` để liệt kê SQL cần chạy, `--apply` để nạp danh mục (script hỏi `service_role` key ở dạng ẩn, không lưu, rồi tự kiểm chứng RLS bằng anon key). Chỉ chủ dự án chạy script này.
+
 ### Bước 2.4: Kiểm Chứng RLS Thực Tế Trên Supabase
 Sau khi chạy migration và nạp seed, kiểm tra trực tiếp chính sách RLS bằng script `scripts/verify_rls.py` (chạy thủ công, chỉ dùng anon key):
 

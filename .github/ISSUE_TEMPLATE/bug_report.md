@@ -25,7 +25,7 @@ Nếu có, hãy đính kèm ảnh chụp màn hình để hỗ trợ giải thí
 **Môi trường thử nghiệm:**
  - Nền tảng: [ví dụ: Web / Android / iOS]
  - Trình duyệt / Phiên bản OS: [ví dụ: Chrome 122, Android 14, iOS 17]
- - Phiên bản EasyMeals: [ví dụ: 1.4.0]
+ - Phiên bản EasyMeals: [ví dụ: 2.0.0]
 
 **Thông tin bổ sung**
 Thêm bất kỳ ngữ cảnh nào khác về vấn đề tại đây.

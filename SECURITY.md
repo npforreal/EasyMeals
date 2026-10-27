@@ -11,7 +11,7 @@ Chúng tôi chỉ phát hành các bản vá bảo mật cho phiên bản mới 
 | Phiên bản | Được hỗ trợ |
 |---|---|
 | main (phiên bản mới nhất) | :white_check_mark: |
-| < 1.4.0 | :x: |
+| < 2.0.0 | :x: |
 
 ---
 

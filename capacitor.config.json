@@ -1,8 +1,0 @@
-{
-  "appId": "com.easymeals.app",
-  "appName": "EasyMeals",
-  "webDir": "www",
-  "server": {
-    "androidScheme": "https"
-  }
-}

@@ -38,7 +38,7 @@ app = FastAPI(
     title="EasyMeals",
     description="Ứng dụng lên lịch bữa ăn theo nguyên liệu có sẵn, dữ liệu cá nhân "
     "lưu trữ cục bộ trên thiết bị và backend tính toán không trạng thái.",
-    version="1.4.0",
+    version="2.0.0",
     docs_url=None if is_production else "/docs",
     redoc_url=None if is_production else "/redoc",
     openapi_url=None if is_production else "/openapi.json",
