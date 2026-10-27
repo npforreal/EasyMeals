@@ -1,0 +1,21 @@
+recipe_id,name,reviewed_prep_min,reviewed_cook_min,reviewed_difficulty,source_url,evidence,note
+0959dae9-e69b-536e-b230-3ba73911a8c6,Tôm rang thịt ba chỉ,15,30,de,https://www.dienmayxanh.com/vao-bep/3-cong-thuc-cho-mon-tom-rang-thit-la-ma-quen-dam-da-hao-com--01449,"Chuẩn bị 15 phút, Chế biến 30 phút, Dễ",
+1bd57492-4cd5-5648-8ee5-e20df510a9ad,Chả cá thát lát chiên cốm,15,20,de,https://www.dienmayxanh.com/vao-bep/3-cach-lam-cha-ca-thac-lac-chien-gion-dai-de-thuc-hien-tai-09831,"Chuẩn bị 15, Chế biến 20, Dễ (chiên cốm xanh)",
+2e2fcc9b-2425-5e3f-9645-7171139e696d,Dưa leo dầm tỏi ớt chua ngọt,20,15,de,https://www.dienmayxanh.com/vao-bep/cach-lam-dua-leo-muoi-chua-ngot-gion-rum-an-lien-cuc-don-gian-23455,"Chuẩn bị 20 phút, Chế biến 15 phút, Dễ","dưa leo muối chua ngọt ăn liền, món gần nhất"
+38bb0558-d493-5fcb-94b7-0c51dfd054f9,Gà sốt cay ngọt Hàn Quốc (Dakgangjeong),20,40,,https://www.beyondkimchee.com/wprm_print/dakgangjeong-korean-fried-chicken-nuggets,"Prep Time 20 minutes, Cook Time 40 minutes",độ khó không nêu
+4fb5a240-4b40-52f5-a2fb-d2100f7ce03c,Tép đồng rang khế chua,15,25,de,https://www.dienmayxanh.com/vao-bep/cach-lam-tep-rang-khe-chua-thom-ngon-dan-da-chuan-vi-mien-tay-05843,"Chuẩn bị 15 phút, Chế biến 25 phút, Dễ",
+5a0ef719-61af-5283-b8c2-ea41c7df1b72,Bò hầm rượu vang kiểu Pháp (Boeuf Bourguignon),25,155,,https://www.tastingtable.com/686771/boeuf-bourguignon-beef-stew-french-wine-bacon-one-pot/,"Prep Time 25 min, Cook Time 2h35",độ khó không nêu
+6360bdf3-f1bf-5196-a119-cce09a15b9ef,Bánh kếp kim chi hải sản Hàn Quốc (Haemul Kimchijeon),,,,,,"không tìm được (chỉ có haemul pajeon, không phải kimchijeon)"
+6926a9aa-c3cf-59e0-ab24-afeb00d560d0,Mì Ý sốt thịt bò băm (Spaghetti Bolognese),20,40,de,https://www.weightwatchers.com/uk/recipe/spaghetti-bolognese/5625c0b0f630250a34a4aef7,"Prep time 20 min, Cook time 40 min, Easy",
+6da3f756-3a2a-51d7-89b4-0a0e91fed919,Canh nấm hạt sen sườn non,,,,,,không tìm được
+7cc3d713-b931-5054-9d4a-ca842196d872,Vịt om sấu chua thanh,20,40,de,https://www.dienmayxanh.com/vao-bep/cach-nau-vit-om-sau-dac-san-ha-noi-00571,"Chuẩn bị 20 phút, Chế biến 40 phút, Dễ",
+8a4e1f47-3d39-53cb-9fc5-10cc919a7526,Thịt heo kho quẹt tóp mỡ,10,15,de,https://www.dienmayxanh.com/vao-bep/cach-lam-top-mo-kho-quet-thom-ngon-dam-da-chuan-vi-lai-cuc-08250,"Chuẩn bị 10 phút, Chế biến 15 phút, Dễ","công thức tóp mỡ kho quẹt, không có thịt heo"
+93ece9d2-a1de-5326-83df-946cf3090753,Bò bít tết sốt tiêu đen (Beef Steak),15,45,de,https://www.dienmayxanh.com/vao-bep/cach-lam-bo-bit-tet-sot-tieu-den-thom-ngon-don-gian-tai-nha-13591,"Chuẩn bị 15 phút, Chế biến 45 phút, Dễ",
+9ab7a379-351b-5e16-9304-fb265eaf006d,Sườn non rim mặn ngọt,10,15,de,https://www.dienmayxanh.com/vao-bep/cach-lam-suon-rim-man-ngot-ngon-dam-da-cuc-hao-com-don-gian-10045,"Chuẩn bị 10 phút, Chế biến 15 phút, Dễ",
+ae2766ff-1462-59a4-a01e-7e6ab3633476,Canh rau má nấu thịt nạc,10,15,de,https://www.dienmayxanh.com/vao-bep/cach-nau-canh-rau-ma-thit-bam-thom-ngon-ngot-nuoc-thanh-mat-11490,"Chuẩn bị 10 phút, Chế biến 15 phút, Dễ",công thức dùng thịt heo xay
+bf5b05b9-2a11-5c2a-bd5c-d5e6f5711d63,Cá hồi áp chảo sốt bơ chanh tỏi,45,25,de,https://www.dienmayxanh.com/vao-bep/cach-lam-ca-hoi-sot-bo-toi-thom-lung-beo-ngay-ngon-ngat-ngay-03910,"Chuẩn bị 45 phút, Chế biến 25 phút, Dễ",cá hồi sốt bơ tỏi (không có chanh)
+c9c3abd0-f3aa-5825-b853-1439dc361ee7,Thịt ba chỉ luộc chấm mắm tôm,,,,,,không tìm được
+d2f6f28a-b49d-550f-b941-20965f78a37c,Canh cá thác lác nấu khổ qua,30,20,de,https://www.dienmayxanh.com/vao-bep/cach-nau-canh-kho-qua-ca-thac-lac-ngon-ngot-don-gian-tai-nha-06615,"Chuẩn bị 30 phút, Chế biến 20 phút, Dễ",
+d773ca07-9490-5ee9-8d1a-ce931bf13ea9,Mì xào hải sản kiểu Singapore,20,15,de,https://www.weightwatchers.com/nz/recipe/seafood-singapore-noodles-1/562688f6ec4c630a34d83452,"Prep time 20 min, Cook time 15 min, Easy",
+f65f9b16-0644-5891-acf0-38aa9193058a,Canh mướp đắng nhồi thịt,20,35,,https://mytour.vn/vi/blog/bai-viet/cach-nau-canh-kho-qua-nhoi-thit-ngon-va-khong-co-vi-dang.html,20 phút để chuẩn bị; 35 phút để chế biến,độ khó không nêu
+fdbfb928-c573-5d67-8799-45c1c4d6a02c,Súp gà kem bắp non kiểu Âu,5,20,de,https://www.dienmayxanh.com/vao-bep/cach-nau-sup-ga-ngo-non-va-sup-ga-nam-thom-ngon-bo-duong-4182,"Chuẩn bị 5 phút, Chế biến 20 phút, Dễ","súp gà ngô non, không phải kiểu Âu"

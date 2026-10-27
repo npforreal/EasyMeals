@@ -32,7 +32,7 @@ COLUMNS = [
     "batch", "recipe_id", "name", "category", "step_count", "ingredient_count",
     "est_prep_min", "est_cook_min", "est_difficulty", "basis",
     "reviewed_prep_min", "reviewed_cook_min", "reviewed_difficulty",
-    "reviewer", "verified_at", "note",
+    "reviewer", "verified_at", "note", "source_url",
 ]  # fmt: skip
 BATCH1_QUOTA = {"man": 18, "canh": 11, "rau": 11}
 DIFFICULTIES = {"de", "trung_binh", "kho"}
@@ -178,8 +178,9 @@ def build_overlay(csv_path: Path) -> list[dict]:
         for line_no, row in enumerate(csv.DictReader(fh), start=2):
             reviewer = (row.get("reviewer") or "").strip()
             verified_at = (row.get("verified_at") or "").strip()
-            if not reviewer or not verified_at:
-                continue  # chưa rà soát: bỏ qua, không bao giờ lấy est_*
+            source = (row.get("source_url") or "").strip()
+            if not reviewer or not verified_at or not source:
+                continue  # chưa rà soát hoặc thiếu nguồn: bỏ qua, không bao giờ lấy est_*
             rid = (row.get("recipe_id") or "").strip()
             where = f"dòng {line_no} (recipe_id={rid or '?'})"
             if not rid:
@@ -193,7 +194,8 @@ def build_overlay(csv_path: Path) -> list[dict]:
                 raise ValueError(
                     f"{where}: reviewed_difficulty={diff!r} không thuộc {sorted(DIFFICULTIES)}"
                 )
-            source = f"project-review:{reviewer}"
+            if not re.fullmatch(r"https?://\S+", source):
+                raise ValueError(f"{where}: source_url={source!r} phải là URL http(s)")
             item: dict = {"recipe_id": rid}
             for name, value in (
                 ("prep_time_minutes", prep),

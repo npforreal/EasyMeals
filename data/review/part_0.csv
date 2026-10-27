@@ -1,0 +1,21 @@
+recipe_id,name,reviewed_prep_min,reviewed_cook_min,reviewed_difficulty,source_url,evidence,note
+0256e3d5-c953-5180-b47f-0c1a5c731dc0,Súp kem nấm gà kiểu Âu,20,20,de,https://www.dienmayxanh.com/vao-bep/cach-lam-sup-ga-kem-nam-thom-ngon-dinh-duong-13830,"Chuẩn bị 20 phút, Chế biến 20 phút, Dễ",
+13f374af-f020-5577-9943-063d22aa96e3,Cơm chiên Dương Châu lạp xưởng tôm,10,23,de,https://www.dienmayxanh.com/vao-bep/3-cach-lam-mon-com-chien-thom-ngon-cho-bua-com-gia-dinh-01761,"Chuẩn bị 10 phút, Chế biến 15-30 phút, Dễ",cook là trung điểm 15-30
+2dd67426-2b93-51c7-b9de-be3188a3c5de,Canh chua cá lóc miền Tây,15,25,de,https://www.dienmayxanh.com/vao-bep/cach-nau-canh-chua-ca-loc-chuan-nhat-ngon-00828,"Chuẩn bị 15 phút, Chế biến 25 phút, Dễ",
+3155f8ce-2418-5ad5-832a-5fc7f9d38ed7,Chả giò nem rán truyền thống,15,30,de,https://www.dienmayxanh.com/vao-bep/cach-lam-mon-nem-ran-thom-ngon-chuan-vi-don-gian-tai-nha-00430,"Chuẩn bị 15 phút, Chế biến 30 phút, Dễ",
+478eeb65-a3f5-5cf9-b807-f0b49a6e9ff0,Nộm su hào cà rốt chua ngọt,20,10,de,https://www.dienmayxanh.com/vao-bep/cach-lam-nom-su-hao-ca-rot-thai-mieng-gion-ngon-giai-ngay-cho-23968,"Chuẩn bị 20 phút, Chế biến 10 phút, Dễ",
+581d6753-48a1-5133-897a-1a1b9e819035,Nộm hoa chuối tai heo,20,40,de,https://www.dienmayxanh.com/vao-bep/cach-lam-goi-hoa-chuoi-tai-heo-man-ngot-gion-ngon-doi-vi-02908,"Chuẩn bị 20 phút, Chế biến 40 phút, Dễ",trang gọi là gỏi hoa chuối tai heo
+60152909-c073-5c4e-aa02-37820204329d,Bông bí xào tỏi,,15,de,https://www.dienmayxanh.com/vao-bep/2-cach-lam-bi-nu-xao-toi-va-xao-thit-bo-moi-la-thom-ngon-cho-09681,"Chế biến 15 phút, Độ khó Dễ","món bí nụ xào tỏi; trang chỉ có 1 mốc Chế biến, không có sơ chế"
+661ae676-2893-5894-b4ab-87572ca39b31,Thịt kho tàu với trứng,20,45,,https://mytour.vn/vi/blog/bai-viet/bi-quyet-nau-thit-kho-tau-trung-cut-thom-ngon-thit-mem-beo.html,"Chuẩn bị 20 phút, Chế biến 45 phút",bản trứng cút; không nêu độ khó
+6a01a463-5a01-5771-b94a-39ab5ff07a26,Bò kho sả gừng nước dừa,50,70,trung_binh,https://mytour.vn/vi/blog/bai-viet/2-cach-nau-bo-kho-nuoc-dua-phong-cach-nam-bo-doc-dao-mytour.html,"Chuẩn bị 50 phút, Chế biến 70 phút, Trung bình",
+74bceee7-cc89-534c-8fc8-02e25477d410,Đậu hũ nhồi thịt sốt cà chua,20,30,de,https://www.dienmayxanh.com/vao-bep/cach-lam-dau-hu-nhoi-thit-sot-ca-chua-don-gian-dam-da-02146,"Chuẩn bị 20 phút, Chế biến 30 phút, Dễ",
+8a311722-ff19-5061-96b9-01a0d4a5c8e9,Gỏi gà xé phay bắp cải,20,30,de,https://www.dienmayxanh.com/vao-bep/cach-lam-goi-ga-bap-cai-gion-ngon-don-gian-02493,"Chuẩn bị 20 phút, Chế biến 30 phút, Dễ",gỏi gà bắp cải
+8f7a7b22-af3c-53a4-a7fb-6c1d4b8da421,Nấm đùi gà xào xì dầu,20,15,de,https://www.dienmayxanh.com/vao-bep/cach-lam-nam-dui-ga-kho-xi-dau-dam-vi-thom-ngon-18028,"Chuẩn bị 20 phút, Chế biến 15 phút, Dễ",trang là nấm đùi gà kho xì dầu (món gần nhất)
+98f016c0-6e0d-5371-ac82-ff119f01b579,Lòng gà xào mướp hương,,,,,,không tìm được
+ae25ff95-2cca-5d25-9926-a454ccf44e20,Giá đỗ xào huyết heo,,,,,,không tìm được
+b4825e54-2708-519b-b7e9-86d8164fd901,Thịt heo kho tiêu,10,15,de,https://www.dienmayxanh.com/vao-bep/cach-lam-thit-kho-tieu-don-gian-thom-ngon-bat-com-cho-bua-an-06877,"Chuẩn bị 10 phút, Chế biến 15 phút, Dễ",thịt ba chỉ kho tiêu
+c8ab8243-1eb2-5def-8c49-ee885b42188a,Trứng hấp thịt băm nấm mèo,,,,,,không tìm được
+d2bdcb00-d106-54b6-a3de-8572c4884288,Cơm chiên kim chi phô mai Hàn Quốc,30,30,de,https://www.dienmayxanh.com/vao-bep/cach-lam-com-chien-kim-chi-pho-mai-jambon-beo-ngay-cay-cay-02979,"Chuẩn bị 30 phút, Chế biến 30 phút, Dễ",
+d4ba170e-cd15-5e5a-a8a7-86a3425d0b6c,Cơm gà Teriyaki kiểu Nhật,,30,de,https://www.dienmayxanh.com/vao-bep/cach-lam-com-ga-sot-teriyaki-kieu-nhat-thom-ngon-dam-da-don-04553,"Chế biến 30 phút, Độ khó Dễ",trang không nêu thời gian chuẩn bị
+ef99e7d7-b92c-59c6-a9ab-6ab1402e2525,Thịt kho măng tươi,10,20,de,https://www.dienmayxanh.com/vao-bep/cach-lam-thit-kho-voi-mang-tuoi-thit-kho-mang-chua-dam-da-01432,"Chuẩn bị 10 phút, Chế biến 20 phút, Dễ",
+fb9f23b8-54a9-5ff9-8a20-7039100dca63,Canh cua rau đay mồng tơi mướp,20,30,de,https://www.dienmayxanh.com/vao-bep/2-cach-nau-canh-cua-rau-day-va-canh-cua-hoa-thien-ly-thom-00679,"Chuẩn bị 20 phút, Chế biến 30 phút, Dễ",

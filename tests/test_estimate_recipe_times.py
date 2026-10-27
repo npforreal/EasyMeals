@@ -100,9 +100,9 @@ def test_apply_nothing_for_unreviewed(tmp_path, capsys):
 def test_apply_emits_sorted_deterministic(tmp_path):
     rows = [
         {"recipe_id": "z", "reviewer": "An", "verified_at": "2026-10-01", "reviewed_prep_min": "15",
-         "reviewed_difficulty": "de"},
+         "reviewed_difficulty": "de", "source_url": "https://example.org/z"},
         {"recipe_id": "m", "reviewer": "An", "verified_at": "2026-10-01",
-         "reviewed_cook_min": "40"},
+         "reviewed_cook_min": "40", "source_url": "https://example.org/m"},
     ]  # fmt: skip
     path = _csv(tmp_path, rows)
     out = tmp_path / "o.jsonl"
@@ -115,10 +115,10 @@ def test_apply_emits_sorted_deterministic(tmp_path):
     assert items[0] == {
         "recipe_id": "m",
         "cook_time_minutes": 40,
-        "cook_time_source_url": "project-review:An",
+        "cook_time_source_url": "https://example.org/m",
         "cook_time_verified_at": "2026-10-01",
     }
-    assert items[1]["difficulty_source_url"] == "project-review:An"
+    assert items[1]["difficulty_source_url"] == "https://example.org/z"
     assert "cook_time_minutes" not in items[1]
 
 
@@ -130,11 +130,29 @@ def test_apply_emits_sorted_deterministic(tmp_path):
         {"reviewed_cook_min": "abc"},
         {"reviewed_difficulty": "hard"},
         {"verified_at": "01/10/2026"},
+        {"source_url": "project-review:An"},
     ],
 )
 def test_apply_rejects_bad_rows(tmp_path, capsys, bad):
-    row = {"recipe_id": "bad-1", "reviewer": "An", "verified_at": "2026-10-01"} | bad
+    row = {
+        "recipe_id": "bad-1",
+        "reviewer": "An",
+        "verified_at": "2026-10-01",
+        "source_url": "https://example.org/bad",
+    } | bad
     out = tmp_path / "o.jsonl"
     assert mod.main(["apply", "--csv", str(_csv(tmp_path, [row])), "--out", str(out)]) == 1
     assert "bad-1" in capsys.readouterr().err
+    assert not out.exists()
+
+
+def test_apply_skips_rows_without_source(tmp_path, capsys):
+    row = {
+        "recipe_id": "n",
+        "reviewer": "An",
+        "verified_at": "2026-10-01",
+        "reviewed_cook_min": "9",
+    }
+    out = tmp_path / "o.jsonl"
+    assert mod.main(["apply", "--csv", str(_csv(tmp_path, [row])), "--out", str(out)]) == 0
     assert not out.exists()
