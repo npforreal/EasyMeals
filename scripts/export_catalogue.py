@@ -30,6 +30,10 @@ VALID_UNITS = {"g", "kg", "ml", "l", "piece"}
 VALID_CATEGORIES = {"man", "rau", "canh"}
 
 
+sys.path.insert(0, str(ROOT / "scripts"))
+from storage_rules import apply_overlay, apply_storage_rules  # noqa: E402
+
+
 def validate_catalogue_integrity(bundle: dict[str, Any]) -> None:
     ingredients = bundle.get("ingredients", [])
     recipes = bundle.get("recipes", [])
@@ -214,6 +218,11 @@ def export_catalogue(output_path: Path, fixture_only: bool = False) -> dict[str,
         rec.setdefault("storage_tips", [])
         rec.setdefault("storage_source_url", None)
         rec.setdefault("storage_verified_at", None)
+
+    # E3-data: mẹo bảo quản theo luật có nguồn + overlay metadata tuỳ chọn
+    ing_cat = {i["id"]: i.get("category", "") for i in sorted_ingredients}
+    apply_storage_rules(sorted_recipes, ing_cat)
+    apply_overlay(sorted_recipes)
 
     categories = bundle.get("categories", [])
     conversions = bundle.get("conversions", [])

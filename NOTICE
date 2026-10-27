@@ -11,3 +11,11 @@ International Public License (CC BY-SA 4.0).
 This product includes the Fraunces font family, created by Undercase Type
 (Phaedra Charles and Flavia Zimbardi), licensed under the SIL Open Font License,
 Version 1.1 (http://scripts.sil.org/OFL).
+
+Food-storage guidance in data/open/storage_rules.json is paraphrased (in
+Vietnamese, with Fahrenheit converted to Celsius) from the U.S. Food and Drug
+Administration page "Safe Food Handling"
+(https://www.fda.gov/food/buy-store-serve-safe-food/safe-food-handling).
+FDA website content is in the public domain per
+https://www.fda.gov/about-fda/about-website/website-policies. This is not an
+endorsement by the FDA.

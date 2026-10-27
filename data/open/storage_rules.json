@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "fetched_at": "2026-10-27",
+  "sources": [
+    {
+      "id": "fda_safe_food_handling",
+      "title": "Safe Food Handling",
+      "publisher": "U.S. Food and Drug Administration (FDA)",
+      "url": "https://www.fda.gov/food/buy-store-serve-safe-food/safe-food-handling",
+      "license_note": "FDA website policies (https://www.fda.gov/about-fda/about-website/website-policies, fetched 2026-10-27): 'Unless otherwise noted, the contents of the FDA website ... are not copyrighted ... in the public domain and may be republished, reprinted and otherwise used freely.' Tips are Vietnamese paraphrases; Fahrenheit converted to Celsius."
+    }
+  ],
+  "precedence": "Mỗi công thức nhận đúng MỘT luật chính, xét theo thứ tự: (1) canh_soup nếu category của công thức là 'canh'; (2) protein_dish nếu có ít nhất một nguyên liệu thuộc category thit, gia_cam (gồm trứng) hoặc hai_san; (3) other_dish cho các món còn lại (man/rau không có đạm động vật). Ngoài ra luôn áp dụng thêm luật chung universal_safe_handling. Mẹo cuối cùng = mẹo luật chính + mẹo luật chung (không trùng). storage_source_url = url của nguồn thuộc luật chính.",
+  "rules": [
+    {
+      "id": "canh_soup",
+      "name_vi": "Món canh, súp",
+      "kind": "primary",
+      "order": 1,
+      "match": {
+        "recipe_category": [
+          "canh"
+        ]
+      },
+      "tips": [
+        "Khi hâm lại canh, súp, nước sốt, hãy đun sôi.",
+        "Chia canh còn nhiều vào hộp nông để nguội nhanh hơn trong tủ lạnh."
+      ],
+      "source_id": "fda_safe_food_handling"
+    },
+    {
+      "id": "protein_dish",
+      "name_vi": "Món có thịt, gia cầm, trứng, hải sản",
+      "kind": "primary",
+      "order": 2,
+      "match": {
+        "recipe_category": [
+          "man",
+          "rau"
+        ],
+        "any_ingredient_category": [
+          "thit",
+          "gia_cam",
+          "hai_san"
+        ]
+      },
+      "tips": [
+        "Món có thịt, gia cầm, trứng, hải sản: cho vào tủ lạnh hoặc ngăn đông trong vòng 2 giờ sau khi nấu.",
+        "Chia đồ ăn thừa vào hộp nông để nguội nhanh hơn trong tủ lạnh."
+      ],
+      "source_id": "fda_safe_food_handling"
+    },
+    {
+      "id": "other_dish",
+      "name_vi": "Món nấu khác (không có đạm động vật)",
+      "kind": "primary",
+      "order": 3,
+      "match": {
+        "recipe_category": [
+          "man",
+          "rau"
+        ],
+        "any_ingredient_category": []
+      },
+      "tips": [
+        "Món nấu là thực phẩm dễ hỏng: nên cho vào tủ lạnh hoặc ngăn đông trong vòng 2 giờ.",
+        "Chia đồ ăn thừa vào hộp nông để nguội nhanh hơn trong tủ lạnh."
+      ],
+      "source_id": "fda_safe_food_handling"
+    },
+    {
+      "id": "universal_safe_handling",
+      "name_vi": "Quy tắc chung",
+      "kind": "universal",
+      "order": 9,
+      "match": {
+        "all": true
+      },
+      "tips": [
+        "Nếu trời nóng trên 32°C (90°F), cho vào tủ lạnh trong vòng 1 giờ.",
+        "Giữ tủ lạnh ở 4°C (40°F) trở xuống và ngăn đông ở -18°C (0°F).",
+        "Hâm đồ ăn thừa và món casserole đến nhiệt độ bên trong 74°C (165°F)."
+      ],
+      "source_id": "fda_safe_food_handling"
+    }
+  ]
+}
