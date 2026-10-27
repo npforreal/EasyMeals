@@ -1,106 +1,72 @@
-# EasyMeals — Sổ Tay Bữa Ăn Thông Minh
+# EasyMeals — Sổ Tay Bếp Thông Minh
 
-> Ứng dụng web, PWA & Mobile lập kế hoạch bữa ăn dựa trên nguyên liệu sẵn có trong tủ lạnh, tự động trừ kho khi nấu và giữ lại đồ thừa cho thực đơn sau theo chuẩn văn hoá ẩm thực gia đình Việt.
->
-> **Đặc trưng kiến trúc**: Không lưu dữ liệu cá nhân trên server (Zero Server-side Personal Data). Toàn bộ thực phẩm, thực đơn và lịch sử kho lưu trong IndexedDB của thiết bị; Backend FastAPI hoàn toàn không trạng thái (stateless); Supabase chỉ lưu danh mục công khai chỉ đọc cho Web.
->
-> **Hai đường dữ liệu chuyên biệt**:
-> - **Bản Web (Desktop & Mobile Browser / PWA)**: Đồng bộ danh mục từ Supabase (`/api/catalogue` với ETag 304). Dữ liệu cá nhân lưu trong IndexedDB của trình duyệt.
-> - **Bản Mobile (Native Android / iOS)**: **Chạy 100% offline hoàn toàn**, không gọi Supabase, không gọi backend. Danh mục được đóng gói sẵn trong ứng dụng (`catalogue.json`), thuật toán lập thực đơn và trừ kho FIFO chạy trực tiếp trên thiết bị bằng JavaScript Engine (`engine.js`) với số học Decimal chính xác.
+[![Live Web App](https://img.shields.io/badge/Web%20App-easymeals--nine.vercel.app-2ea44f?style=flat-square&logo=vercel)](https://easymeals-nine.vercel.app)
+[![Latest Release](https://img.shields.io/github/v/release/npforreal/EasyMeals?style=flat-square&color=blue)](https://github.com/npforreal/EasyMeals/releases)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square)](LICENSE)
+[![Culinary Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC_BY--SA_4.0-lightgrey.svg?style=flat-square)](data/LICENSE)
 
+Ứng dụng lập kế hoạch bữa ăn dựa trên nguyên liệu sẵn có trong tủ lạnh, tự động tính toán định lượng mâm cơm gia đình Việt, trừ kho theo nguyên tắc FIFO và tái sử dụng đồ ăn dư để chống lãng phí thực phẩm.
 
----
-
-## MỤC LỤC
-- [Phần 1: Hướng dẫn dành cho Người dùng (User Guide)](#phần-1-hướng-dẫn-dành-cho-người-dùng-user-guide)
-  - [1. Giới thiệu tổng quan](#1-giới-thiệu-tổng-quan)
-  - [2. Các tính năng chính](#2-các-tính-năng-chính)
-  - [3. Hướng dẫn sử dụng chi tiết](#3-hướng-dẫn-sử-dụng-chi-tiết)
-  - [4. Quản lý dữ liệu, Sao lưu & Phục hồi](#4-quản-lý-dữ-liệu-sao-lưu--phục-hồi)
-  - [5. Cài đặt ứng dụng (PWA & Mobile)](#5-cài-đặt-ứng-dụng-pwa--mobile)
-- [Phần 2: Hướng dẫn dành cho Lập trình viên (Developer Guide)](#phần-2-hướng-dẫn-dành-cho-lập-trình-viên-developer-guide)
-  - [1. Yêu cầu môi trường](#1-yêu-cầu-môi-trường)
-  - [2. Cài đặt và chạy Local](#2-cài-đặt-và-chạy-local)
-  - [3. Cấu trúc thư mục dự án](#3-cấu-trúc-thư-mục-dự-án)
-  - [4. Cơ sở dữ liệu danh mục & RLS](#4-cơ-sở-dữ-liệu-danh-mục--rls)
-  - [5. Kiểm thử và đảm bảo chất lượng](#5-kiểm-thử-và-đảm-bảo-chất-lượng)
-  - [6. Triển khai (Deployment Guide)](#6-triển-khai-deployment-guide)
+- 🌐 **Truy cập bản Web**: [https://easymeals-nine.vercel.app](https://easymeals-nine.vercel.app)
+- 📦 **Tải ứng dụng Mobile (v2.0.0)**: [GitHub Releases](https://github.com/npforreal/EasyMeals/releases) (APK Android & gói cài iOS)
+- 📚 **Tài liệu**: [Kiến trúc](docs/architecture.md) • [Cài đặt](INSTALL.md) • [Triển khai](docs/deploy.md) • [Quy trình phát hành](docs/release.md) • [Bảo mật](SECURITY.md)
 
 ---
 
-# Phần 1: Hướng dẫn dành cho Người dùng (User Guide)
+## Điểm Khác Biệt Trong Kiến Trúc
 
-### 1. Giới thiệu tổng quan
-**EasyMeals** được thiết kế theo phong cách *"Sổ tay bếp"* (kitchen notebook) ấm cúng, tối giản và trực quan, hỗ trợ đầy đủ cả chế độ **Sáng (Light Mode)** và **Tối (Dark Mode)**, tương thích xuất sắc trên cả máy tính lẫn điện thoại di động.
+EasyMeals được xây dựng theo nguyên tắc **Zero Server-side Personal Data (Không lưu dữ liệu cá nhân trên máy chủ)** và **Local-first**:
 
-Điểm nổi bật nhất của EasyMeals là **Bảo vệ quyền riêng tư tuyệt đối**: Bạn không cần đăng ký tài khoản hay đăng nhập. Mọi thông tin về đồ ăn trong nhà, lịch sử ăn uống hoàn toàn nằm trên máy của bạn và không bao giờ bị thu thập lên máy chủ.
-
----
-
-### 2. Các tính năng chính
-- 🥦 **Quản lý tủ lạnh (Pantry Tracking)**: Theo dõi khối lượng từng loại thịt, cá, rau củ theo đơn vị chuẩn (`g`, `kg`, `ml`, `l`, `cái`).
-- 📅 **Lập thực đơn chuẩn mâm cơm gia đình (Meal Planning)**:
-  - Cân bằng dinh dưỡng: Món Mặn, Món Rau, Món Canh trong một bữa (tối đa 2 món mỗi nhóm).
-  - Thuật toán thông minh **không lặp lại món đã nấu** trong chu kỳ đợt.
-  - Tự động tận dụng thức ăn còn dư (leftovers) từ bữa trước để tránh lãng phí.
-- 🍲 **Sổ tay công thức (Recipes)**: ~133 món ăn thuần Việt và quốc tế chuẩn hoá kèm 147 nguyên liệu với định lượng và hướng dẫn nấu chi tiết.
-- 🛒 **Danh sách đi chợ (Shopping List)**: Tự động tổng hợp danh sách nguyên liệu cần mua bổ sung nếu tủ lạnh thiếu đồ để nấu đủ món mới.
-- ✅ **Đánh dấu "Đã ăn" & Trừ kho tự động**:
-  - Trừ kho theo nguyên tắc FIFO (nguyên liệu mua trước dùng trước).
-  - Giao dịch nguyên tử (atomic transaction): Chống trừ đúp khi bấm nhiều lần; có nút "Hoàn tác" để phục hồi nguyên liệu ngay lập tức.
-- 💾 **Sao lưu & Khôi phục dữ liệu**: Xuất và nhập file sao lưu định dạng JSON bảo mật, độc lập giữa các thiết bị.
+1. **Không tài khoản, không theo dõi**: Không đăng ký, không cookie định danh, không có bảng dữ liệu người dùng trên cloud.
+2. **Lưu trữ cục bộ trên thiết bị**: Toàn bộ dữ liệu tủ lạnh, thực đơn, danh sách đi chợ và lịch sử biến động kho nằm hoàn toàn trong **IndexedDB** (trên Web) hoặc cơ sở dữ liệu cục bộ trên máy (Android Room / iOS SwiftData). Hỗ trợ xuất/nhập file sao lưu JSON an toàn giữa các thiết bị.
+3. **Hai nền tảng phục vụ**:
+   - **Bản Web & PWA**: Backend FastAPI trên Vercel hoàn toàn không trạng thái (stateless), tiếp nhận dữ liệu từ client để tính toán thực đơn và biến động kho rồi trả kết quả về máy người dùng mà **không ghi gì xuống database hay ổ đĩa**. Cơ sở dữ liệu Supabase chỉ đóng vai trò kho danh mục công khai ở chế độ **chỉ đọc (SELECT-only via RLS)**.
+   - **Bản Mobile Native (Android & iOS)**: Viết bằng **Kotlin / Jetpack Compose** (Android) và **SwiftUI** (iOS), **chạy 100% offline**, không cần kết nối mạng. Danh mục món ăn (`catalogue.json`) được đóng gói sẵn trong ứng dụng; toàn bộ thuật toán tính toán và trừ kho chạy trực tiếp trên thiết bị với số học Decimal chính xác.
 
 ---
 
-### 3. Hướng dẫn sử dụng chi tiết
+## Tính Năng Chính
 
-#### Bước 1: Khai báo nguyên liệu trong tủ
-1. Tại trang **Tủ lạnh** (`/`), nhập tên nguyên liệu vào ô tìm kiếm (gợi ý tự động cả tiếng Việt như *"Thịt ba chỉ"*, *"Rau muống"* và các tên gọi đồng nghĩa).
-2. Nhập số lượng và chọn đơn vị tính (`g`, `kg`, `ml`, `l`, `cái`).
-3. Bấm **Lưu vào tủ lạnh**. Nguyên liệu sẽ xuất hiện ngay trong danh sách tồn kho trên máy của bạn.
-
-#### Bước 2: Tạo kế hoạch bữa ăn
-1. Chuyển sang trang **Thực đơn** (`/planner`).
-2. Chọn khoảng thời gian (mặc định 1 tuần), tuỳ chọn cho phép ăn lại đồ dư thừa.
-3. Bấm **Tạo thực đơn tự động**: Hệ thống sẽ tính toán và lên lịch chi tiết từng bữa ăn cân đối.
-4. Nếu tủ còn thiếu nguyên liệu, cảnh báo sẽ xuất hiện kèm liên kết dẫn đến trang **Cần mua** (`/shopping-list`).
-
-#### Bước 3: Nấu ăn và Đánh dấu hoàn thành
-1. Bấm vào món ăn để xem chi tiết công thức và các bước nấu.
-2. Sau khi dùng bữa, bấm nút **Đánh dấu Đã ăn (Trừ kho)**:
-   - Các nguyên liệu tương ứng sẽ tự động được trừ khỏi tủ lạnh theo nguyên tắc FIFO.
-   - Thao tác có thể hoàn tác bất kỳ lúc nào bằng nút **Hoàn tác bữa ăn**.
+- 🥬 **Quản lý tủ lạnh (Pantry)**: Quản lý chi tiết từng lô thực phẩm theo ngày mua, hạn dùng, đơn vị đo (`g`, `kg`, `ml`, `l`, `piece`). Cảnh báo thực phẩm sắp hết hạn và hỗ trợ gia hạn độ tươi.
+- 📅 **Lập thực đơn mâm cơm gia đình (Meal Planning)**:
+  - Linh hoạt từ 1 đến 7 ngày (mặc định 3 ngày).
+  - Cân bằng cơ cấu mâm cơm truyền thống (Món Mặn, Rau, Canh).
+  - Tuyệt đối không lặp lại món ăn trong đợt; tự động tránh các nguyên liệu dị ứng theo cài đặt.
+  - Tuỳ chọn bữa ăn (sáng/trưa/tối), khẩu phần ăn mỗi người, và bỏ qua các ngày ăn ngoài.
+- 🍲 **Tái sử dụng đồ ăn dư (Leftovers)**: Tự động tính toán lượng thức ăn dư từ bữa trước để dùng lại trong 1–3 ngày tiếp theo, tránh lãng phí.
+- 🍚 **Quy đổi nguyên liệu thông minh**: Tự động quy đổi tỷ lệ thực phẩm (ví dụ: *Gạo $\leftrightarrow$ Cơm* với tỷ lệ nở 1:2.5) để trừ kho và lên danh sách mua chuẩn xác.
+- 📖 **Sổ tay 133 món ăn chuẩn hoá**: Danh mục 133 món Việt và quốc tế kèm 148 nguyên liệu, hướng dẫn nấu, thời gian chuẩn bị/nấu và mẹo bảo quản thực phẩm theo hướng dẫn FDA.
+- 🛒 **Danh sách đi chợ thông minh (Shopping List)**: Tự động tổng hợp các nguyên liệu còn thiếu khi lên thực đơn; cho phép gộp các món cùng nguyên liệu và chuyển đồ đã mua thẳng vào tủ lạnh.
+- ⚡ **Trừ kho FIFO & Hoàn tác giao dịch**: Trừ kho nguyên liệu mua trước dùng trước, chống trừ lặp (idempotency key), cho phép hoàn tác phục hồi kho bất cứ lúc nào.
+- 🔄 **Sao lưu & Khôi phục JSON**: Xuất và nhập dữ liệu cá nhân dạng JSON độc lập, hỗ trợ cả 2 chế độ Hợp nhất (Merge) hoặc Ghi đè (Replace).
 
 ---
 
-### 4. Quản lý dữ liệu, Sao lưu & Phục hồi
-Truy cập trang **Dữ liệu** (`/settings`):
-- **Xuất tệp sao lưu**: Bấm **Xuất file sao lưu (JSON)** để tải toàn bộ nguyên liệu, thực đơn và lịch sử kho về máy tính/điện thoại.
-- **Nhập từ file sao lưu**: Chọn file sao lưu đã có. Bạn có thể chọn **Hợp nhất (Merge)** hoặc **Ghi đè (Replace)**.
-- **Xoá sạch dữ liệu**: Bấm **Xoá toàn bộ dữ liệu trên máy này** (yêu cầu xác nhận 2 bước) để dọn sạch dữ liệu cục bộ.
+## Cài Đặt Ứng Dụng
+
+### 1. Web & PWA
+Truy cập [https://easymeals-nine.vercel.app](https://easymeals-nine.vercel.app). 
+- Trên Chrome (Android / Desktop): Bấm biểu tượng cài đặt trên thanh địa chỉ hoặc menu `⋮` $\rightarrow$ **Cài đặt EasyMeals**.
+- Trên Safari (iOS): Bấm biểu tượng Chia sẻ $\rightarrow$ **Thêm vào Màn hình chính (Add to Home Screen)**.
+
+### 2. Bản Cài Đặt Mobile Native
+Tải tệp cài đặt mới nhất từ [GitHub Releases](https://github.com/npforreal/EasyMeals/releases):
+- **Android**: Tải file `EasyMeals-vX.Y.Z-android-debug.apk` và cài đặt trực tiếp.
+- **iOS**: Xem hướng dẫn build mã nguồn qua Xcode trong [mobile/README.md](mobile/README.md).
 
 ---
 
-### 5. Cài đặt ứng dụng (PWA & Mobile)
-- **Trên Android (Chrome)**: Mở trang web -> Bấm biểu tượng ba chấm `⋮` -> Chọn **Cài đặt ứng dụng** (Install App).
-- **Trên iOS / iPhone (Safari)**: Mở trang web -> Bấm biểu tượng **Chia sẻ** -> Chọn **Thêm vào MH chính** (Add to Home Screen).
-- **Ứng dụng Native**: Android (Kotlin/Jetpack Compose) tại `mobile/android/`, iOS (SwiftUI) tại `mobile/ios/`. Xem [`mobile/README.md`](mobile/README.md) và quy trình phát hành tại [`docs/release.md`](docs/release.md).
+## Hướng Dẫn Phát Triển (Developer Guide)
 
----
+### Yêu Cầu Môi Trường
+- **Python**: $\ge$ 3.12
+- **Node.js**: $\ge$ 20 (dùng cho công cụ build asset và kiểm thử Playwright)
+- **Android Studio / Xcode**: Dành cho phát triển ứng dụng di động native
 
-# Phần 2: Hướng dẫn dành cho Lập trình viên (Developer Guide)
-
-### 1. Yêu cầu môi trường
-- **Python**: Phiên bản 3.12 trở lên.
-- **Node.js**: Phiên bản 20 trở lên (để chạy Playwright e2e và JS tests).
-- **Supabase**: Một project Supabase (chỉ cần Anon / Public Key cho runtime).
-
----
-
-### 2. Cài đặt và chạy Local
+### Khởi Chạy Local (Backend & Web)
 
 ```bash
-# 1. Clone repository
+# 1. Clone mã nguồn
 git clone https://github.com/npforreal/EasyMeals.git
 cd EasyMeals
 
@@ -110,116 +76,91 @@ source .venv/bin/activate
 pip install -e .
 pip install ruff pytest
 
-# 3. Cài đặt Node dependencies & Playwright browsers
+# 3. Cài đặt Node dependencies
 npm install
-npx playwright install chromium
 
-# 4. Thiết lập biến môi trường
+# 4. Cấu hình môi trường dev
 cp .env.example .env
-# Mặc định APP_ENV=development app sẽ tự động dùng FixtureCatalogueRepository
-# (không bắt buộc phải có kết nối Supabase thật để chạy dev hay test)
+# Mặc định APP_ENV=development, hệ thống tự động nạp FixtureCatalogueRepository
+# (không cần kết nối Supabase thật để chạy test và dev cục bộ)
 
-# 5. Khởi chạy ứng dụng dev server
+# 5. Khởi chạy máy chủ phát triển
 uvicorn app.main:app --reload --port 8000
 ```
-Truy cập trình duyệt tại `http://localhost:8000`.
+Mở trình duyệt tại: `http://localhost:8000`
 
 ---
 
-### 3. Cấu trúc thư mục dự án
+## Kiểm Thử & Đảm Bảo Chất Lượng
 
-```text
-EasyMeals/
-├── app/
-│   ├── main.py              # Khởi tạo FastAPI app, middleware (256KB limit, CSP, lockdown /docs)
-│   ├── schemas.py           # Pydantic schemas (Stateless request/response validation)
-│   ├── api/                 # REST API Routers không trạng thái
-│   │   ├── deps.py          # Dependency injection (Repository provider)
-│   │   ├── catalogue_routes.py  # GET /api/catalogue (ETag / If-None-Match caching)
-│   │   ├── ingredient_routes.py # Tra cứu nguyên liệu
-│   │   ├── planner_routes.py    # /generate, /eat, /undo-eat (tính toán không trạng thái)
-│   │   └── recipe_routes.py     # Tra cứu công thức
-│   ├── domain/              # Logic nghiệp vụ độc lập framework
-│   │   ├── models.py        # Domain entities (Ingredient, Recipe, PantryLot...)
-│   │   ├── inventory.py     # Thuật toán trừ kho FIFO, hoàn tác biến động kho
-│   │   └── planner.py       # Quy tắc thực đơn (cân bằng mặn/rau/canh, không lặp món)
-│   ├── storage/
-│   │   └── repository.py    # Repository danh mục chỉ đọc: Fixture vs Supabase (anon key)
-│   ├── static/              # Assets tĩnh & Client Storage
-│   │   ├── app.js           # UI Controller điều khiển toàn bộ logic cục bộ
-│   │   ├── sw.js            # Service Worker offline cache
-│   │   ├── styles.css       # Design tokens, responsive CSS & dark mode
-│   │   └── js/
-│   │       ├── db.js        # IndexedDB wrapper (pantry, plans, movements, settings, catalogue)
-│   │       ├── engine.js    # Client computational engine (Decimal math, FIFO deduction, planner offline)
-│   │       └── storage.js   # Client CRUD, atomic eat/undo, JSON export/import, bundled/remote catalogue
-│   └── templates/           # Jinja2 HTML templates (5 trang: index, planner, recipes, shopping, settings)
-├── docs/
-│   ├── architecture.md      # Tài liệu kiến trúc Zero Server-side Personal Data (Web vs Mobile)
-│   ├── security.md          # Đánh giá và mô hình bảo mật
-│   └── deploy.md            # Hướng dẫn chi tiết triển khai Supabase, Vercel & đóng gói Mobile Offline
-├── scripts/
-│   ├── check.sh             # Một lệnh chạy toàn bộ test: Ruff lint, Pytest, Node test, Playwright e2e
-│   ├── export_catalogue.py  # Xuất gói danh mục catalogue.json cho Mobile App
-│   ├── build_mobile_web.py  # Đóng gói trang web tĩnh vào www/ cho kiểm thử E2E Offline (quét sạch bí mật)
-│   ├── verify_rls.py        # Kiểm chứng RLS Supabase chỉ đọc với khoá anon
-│   └── seed_catalogue.py    # Nạp dữ liệu danh mục ban đầu vào Supabase (idempotent)
-├── supabase/
-│   ├── full_schema.sql      # Schema SQL tổng hợp của 4 bảng danh mục
-│   └── migrations/
-│       └── 202610240001_catalogue_baseline.sql # Migration duy nhất cho danh mục chỉ đọc & RLS
-├── tests/
-│   ├── e2e/                 # Playwright E2E tests (Desktop Chrome & Pixel 5 Mobile)
-│   ├── js/                  # Node unit tests cho IndexedDB storage
-│   ├── test_api.py          # Test endpoints không trạng thái
-│   ├── test_catalogue_schema.py # Test RLS và schema Supabase
-│   └── ...
-└── INSTALL.md               # Hướng dẫn cài đặt chi tiết
-```
+Dự án áp dụng quy chuẩn kiểm thử một lệnh duy nhất:
 
----
-
-### 4. Cơ sở dữ liệu danh mục & RLS
-
-Cơ sở dữ liệu Supabase được tái cấu trúc thành **Shared Read-Only Catalogue**:
-- Chỉ lưu 4 bảng: `ingredients`, `ingredient_aliases`, `recipes`, `recipe_ingredients`.
-- RLS được kích hoạt 100%: Chỉ cho phép quyền `SELECT` cho role `anon` và `authenticated`.
-- Thu hồi tường minh toàn bộ quyền ghi (`INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`).
-- Script nạp seed [`scripts/seed_catalogue.py`](scripts/seed_catalogue.py) là công cụ duy nhất dùng `SUPABASE_SERVICE_ROLE_KEY` và chỉ chạy 1 lần ngoại tuyến từ máy lập trình viên. Server web runtime tuyệt đối cấm khoá này.
-
----
-
-### 5. Kiểm thử và đảm bảo chất lượng
-
-Dự án tuân thủ nghiêm ngặt nguyên tắc **một lệnh chạy tất cả**:
 ```bash
+# Chạy nhanh trong quá trình code (bỏ qua Playwright e2e):
+bash scripts/check.sh --fast
+
+# Chạy kiểm tra toàn diện trước khi phát hành:
 bash scripts/check.sh
 ```
 
-Quy trình tự động thực hiện 5 bước:
-1. `ruff check`: Kiểm tra cú pháp và quy chuẩn mã nguồn Python.
-2. `ruff format --check`: Kiểm tra định dạng code.
-3. `pytest tests/`: Chạy toàn bộ bài kiểm thử unit test Python (thuật toán FIFO, quy tắc thực đơn, bảo mật DoS, schema catalogue, fixture tương đương).
-4. `npm run test:js`: Kiểm thử unit test cho tầng lưu trữ IndexedDB, transaction nguyên tử, kiểm tra sao lưu và engine tính toán JS.
-5. `npx playwright test`: Kiểm thử tự động hành trình người dùng toàn diện (E2E User Journey) trên cả Desktop Chrome, Mobile Chrome và static build offline.
+Quy trình tự động xác minh:
+1. Đồng bộ Design Tokens (`tokens.json` & `labels.json`) và số phiên bản ở tất cả nền tảng.
+2. Kiểm tra cú pháp và định dạng mã (`ruff check`, `ruff format`).
+3. Chạy toàn bộ unit test logic Python (`pytest` - thuật toán FIFO, quy tắc thực đơn, an toàn RLS, xử lý lỗi).
+4. Chạy kiểm thử JavaScript trên môi trường Node (`npm run test:js` - IndexedDB, tính tương đương của Engine).
+5. Đóng gói mã nguồn tĩnh và quét kiểm tra an toàn thư mục `www/`.
+6. Kiểm thử hành trình người dùng E2E trên trình duyệt thực với Playwright (Desktop & Mobile).
+
+Với mã nguồn Native Mobile:
+```bash
+# Kiểm tra Android Unit Tests & iOS Swift Tests:
+bash scripts/check_mobile.sh
+```
 
 ---
 
-### 6. Triển khai (Deployment Guide)
-Xem tài liệu hướng dẫn chi tiết tại [docs/deploy.md](docs/deploy.md).
+## Cấu Trúc Dự Án
+
+```text
+EasyMeals/
+├── app/                      # Backend FastAPI stateless & Web Frontend
+│   ├── main.py               # Khởi tạo FastAPI, middleware bảo mật, xử lý lỗi
+│   ├── schemas.py            # Pydantic schemas xác thực request/response
+│   ├── api/                  # Endpoints tính toán không trạng thái (/planner, /catalogue...)
+│   ├── domain/               # Logic nghiệp vụ độc lập (inventory, planner, models)
+│   ├── storage/              # Repository danh mục: Fixture (dev) vs Supabase (prod)
+│   ├── static/               # Mã nguồn giao diện Web: app.js, css, icons
+│   │   └── js/               # IndexedDB (db.js), Engine tính toán cục bộ (engine.js)
+│   └── templates/            # Giao diện Jinja2 HTML (index, planner, recipes, shopping, settings)
+├── data/                     # Dữ liệu danh mục chuẩn hoá (catalogue.json, open/*.jsonl)
+├── mobile/                   # Ứng dụng di động Native 100%
+│   ├── android/              # Mã nguồn Android (Kotlin / Jetpack Compose)
+│   └── ios/                  # Mã nguồn iOS (SwiftUI)
+├── supabase/                 # Migration SQL và schema danh mục chỉ đọc
+│   ├── full_schema.sql       # Toàn bộ schema 6 bảng danh mục chuẩn
+│   └── migrations/           # Các bản migration có đánh số phiên bản
+├── docs/                     # Tài liệu kỹ thuật chi tiết
+│   ├── architecture.md       # Thiết kế kiến trúc Local-first & Zero Server-side Personal Data
+│   ├── deploy.md             # Hướng dẫn triển khai Supabase & Vercel
+│   ├── release.md            # Chính sách phiên bản và quy trình phát hành
+│   └── parity.md             # Bảng đối sánh tính năng giữa Web, Android và iOS
+└── scripts/                  # Bộ script tiện ích tự động hoá
+    ├── check.sh              # Kiểm tra tổng hợp toàn bộ dự án
+    ├── check_mobile.sh       # Kiểm tra toàn bộ mã nguồn Android & iOS
+    └── upload_catalogue_to_supabase.py # Nạp danh mục lên Supabase
+```
 
 ---
 
-## Đóng góp (Contributing)
-Xem hướng dẫn chi tiết tại [CONTRIBUTING.md](CONTRIBUTING.md) và quy tắc ứng xử tại [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Mọi báo cáo về bảo mật xin gửi riêng tư theo hướng dẫn tại [SECURITY.md](SECURITY.md).
+## Đóng Góp & Bảo Mật
+
+- Hướng dẫn đóng góp mã nguồn: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Quy tắc ứng xử cộng đồng: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- Chính sách báo cáo lỗ hổng bảo mật: [SECURITY.md](SECURITY.md)
 
 ---
 
-## Giấy phép (License) & Bản quyền (Copyright)
+## Giấy Phép & Bản Quyền
 
-Dự án EasyMeals áp dụng hai giấy phép riêng biệt cho mã nguồn và dữ liệu ẩm thực:
-
-- **Mã nguồn (Source Code)**: Phát hành theo giấy phép **Apache License 2.0** (xem tệp [LICENSE](LICENSE) và [NOTICE](NOTICE)).
-  `Copyright 2026 EasyMeals Contributors. Licensed under the Apache License, Version 2.0.`
-- **Dữ liệu công thức & nguyên liệu (Culinary Data)**: Toàn bộ dữ liệu công thức và nguyên liệu trong thư mục `data/` được phát hành theo giấy phép **Creative Commons Ghi nhận công của tác giả - Chia sẻ tương tự 4.0 Quốc tế (CC BY-SA 4.0)** (xem tệp [data/LICENSE](data/LICENSE)).
-  *Dữ liệu công thức được biên soạn với sự hỗ trợ của mô hình AI, đã được chuẩn hoá định lượng và cấu trúc đơn vị.*
+- **Mã nguồn (Source Code)**: Phát hành theo giấy phép **Apache License 2.0** (xem [LICENSE](LICENSE) và [NOTICE](NOTICE)).
+- **Dữ liệu ẩm thực (Culinary Data)**: Dữ liệu công thức và nguyên liệu trong thư mục `data/` được cấp phép theo **Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)** (xem [data/LICENSE](data/LICENSE)).
