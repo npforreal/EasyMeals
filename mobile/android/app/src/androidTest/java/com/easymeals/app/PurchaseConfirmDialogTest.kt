@@ -2,6 +2,7 @@ package com.easymeals.app
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
@@ -60,7 +61,7 @@ class PurchaseConfirmDialogTest {
         composeTestRule.onNodeWithText("Cho 2 món vào tủ lạnh").assertIsDisplayed()
 
         // Sửa lượng thực mua của mục đầu: 1000 -> 850.
-        composeTestRule.onNodeWithText("Thực mua (g)").performTextReplacement("850")
+        composeTestRule.onAllNodesWithText("Thực mua (g)")[0].performTextReplacement("850")
 
         composeTestRule.onNodeWithText("Cho 2 món vào tủ lạnh").performClick()
         val overrides = confirmed

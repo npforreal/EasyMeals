@@ -39,7 +39,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun RecipesScreen(repository: AppRepository) {
     val context = LocalContext.current
@@ -216,15 +216,22 @@ fun RecipesScreen(repository: AppRepository) {
             )
         }
     ) { padding ->
-        Column(
+        // Toàn bộ bộ lọc là item đầu của danh sách để cuộn cùng nhau; nếu cố định ở đầu màn hình,
+        // trên máy thật bộ lọc chiếm hết chiều cao và đẩy danh mục/thời gian/độ khó ra khỏi màn hình.
+        LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(padding),
+            contentPadding = PaddingValues(bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
+            item {
+            Column {
+            FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text("Chế độ ăn đã xác minh", style = MaterialTheme.typography.labelMedium)
                 TextButton(onClick = { showAvoidDialog = true }) {
@@ -367,14 +374,10 @@ fun RecipesScreen(repository: AppRepository) {
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
 
-            // Recipe List
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(filteredRecipes, key = { it.id }) { recipe ->
+            }
+            }
+            items(filteredRecipes, key = { it.id }) { recipe ->
+                Box(Modifier.padding(horizontal = 16.dp)) {
                     RecipeCard(
                         recipe = recipe,
                         onClick = { selectedRecipe = recipe }

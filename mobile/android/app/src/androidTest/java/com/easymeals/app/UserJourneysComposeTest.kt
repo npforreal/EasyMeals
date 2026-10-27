@@ -3,6 +3,7 @@ package com.easymeals.app
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -50,6 +51,12 @@ class UserJourneysComposeTest {
         composeTestRule.waitForIdle()
 
         // Chip lọc danh mục
-        composeTestRule.onNodeWithText("Tất cả").assertIsDisplayed()
+        // "Tất cả" xuất hiện ở chip danh mục và các bộ lọc thời gian/độ khó; chỉ cần có ít nhất một cái đang hiển thị.
+        val chips = composeTestRule.onAllNodesWithText("Tất cả")
+        val count = chips.fetchSemanticsNodes().size
+        val anyDisplayed = (0 until count).any { i ->
+            runCatching { chips[i].assertIsDisplayed() }.isSuccess
+        }
+        assertTrue("Không có chip 'Tất cả' nào hiển thị", anyDisplayed)
     }
 }

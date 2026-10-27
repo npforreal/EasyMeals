@@ -47,6 +47,7 @@ private data class DeficitAlertState(
  * Hàng tuỳ chọn đồ ăn dư: bật/tắt dùng lại đồ dư và số ngày dùng lại (1-3, mặc định 2).
  * Ghép với cả hai chỗ tạo thực đơn trong TodayScreen, đọc/ghi qua AppRepository.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun LeftoverOptionsRow(
     allowLeftovers: Boolean,
@@ -64,8 +65,8 @@ internal fun LeftoverOptionsRow(
             )
         }
         if (allowLeftovers) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            FlowRow(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.padding(start = 16.dp)
             ) {
                 Text(
