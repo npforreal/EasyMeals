@@ -214,7 +214,11 @@ fun PantryLotItem(
             )
             Spacer(modifier = Modifier.width(12.dp))
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Xoá", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Xoá ${lot.ingredientName} khỏi tủ",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

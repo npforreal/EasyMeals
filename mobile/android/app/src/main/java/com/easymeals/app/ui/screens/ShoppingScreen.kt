@@ -269,11 +269,11 @@ fun ShoppingScreen(repository: AppRepository) {
                                 }
                                 IconButton(
                                     onClick = { repository.deleteShoppingItem(item.id) },
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(48.dp)
                                 ) {
                                     Icon(
                                         Icons.Default.Delete,
-                                        contentDescription = "Xoá",
+                                        contentDescription = "Xoá ${item.ingredientName} khỏi danh sách đi chợ",
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                         modifier = Modifier.size(18.dp)
                                     )

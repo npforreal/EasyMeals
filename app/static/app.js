@@ -147,6 +147,86 @@ const CAT_LABELS = { man: "Món Mặn", rau: "Món Rau", canh: "Món Canh" };
 const PERIOD_LABELS = { breakfast: "Bữa Sáng", lunch: "Bữa Trưa", dinner: "Bữa Tối" };
 
 // ==========================================
+// G3 — Modal/Dialog accessibility
+// ==========================================
+// Đưa focus vào hộp thoại, giữ Tab trong hộp thoại, đóng bằng Escape và trả
+// focus về nút đã mở. Chỉ một hộp thoại hoạt động tại một thời điểm.
+const DIALOG_FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+let activeDialog = null;
+
+function isElementVisible(el) {
+  return !!(el && (el.offsetWidth || el.offsetHeight || el.getClientRects().length));
+}
+
+export function activateDialog(overlay, { onEscape = null, initialFocus = null } = {}) {
+  if (!overlay) return () => {};
+  if (activeDialog && activeDialog.overlay === overlay) return activeDialog.deactivate;
+
+  if (activeDialog) activeDialog.deactivate({ restoreFocus: false });
+  const previous = document.activeElement;
+  const modal = overlay.querySelector(".modal") || overlay;
+  if (!modal.hasAttribute("role")) modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  if (!modal.hasAttribute("tabindex")) modal.setAttribute("tabindex", "-1");
+
+  const focusables = () => Array.from(modal.querySelectorAll(DIALOG_FOCUSABLE)).filter(isElementVisible);
+
+  const onKeydown = (event) => {
+    if (!isElementVisible(overlay)) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      if (onEscape) onEscape();
+      else overlay.dispatchEvent(new CustomEvent("dialog:cancel"));
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const items = focusables();
+    if (!items.length) {
+      event.preventDefault();
+      modal.focus();
+      return;
+    }
+    const first = items[0];
+    const last = items[items.length - 1];
+    const current = document.activeElement;
+    if (event.shiftKey && (current === first || current === modal || !modal.contains(current))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (current === last || !modal.contains(current))) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  const deactivate = ({ restoreFocus = true } = {}) => {
+    document.removeEventListener("keydown", onKeydown, true);
+    if (activeDialog && activeDialog.overlay === overlay) activeDialog = null;
+    if (restoreFocus && previous && typeof previous.focus === "function" && document.contains(previous)) {
+      previous.focus({ preventScroll: true });
+    }
+  };
+
+  activeDialog = { overlay, deactivate };
+  document.addEventListener("keydown", onKeydown, true);
+
+  const target = initialFocus && isElementVisible(initialFocus) ? initialFocus : focusables()[0] || modal;
+  // Chờ một nhịp để trình duyệt hiển thị overlay trước khi đặt focus.
+  setTimeout(() => {
+    if (document.contains(target)) target.focus({ preventScroll: true });
+  }, 0);
+  return deactivate;
+}
+
+export function deactivateDialog(overlay) {
+  if (activeDialog && (!overlay || activeDialog.overlay === overlay)) {
+    activeDialog.deactivate();
+    return true;
+  }
+  return false;
+}
+
+// ==========================================
 // Recipe Modal & Cooking Mode
 // ==========================================
 
@@ -367,7 +447,11 @@ export function showDeficitDialog(deficitsList, onEatPartial, onAddToShopping) {
   });
   dlgOverlay.style.display = "flex";
 
-  const closeDlg = () => { dlgOverlay.style.display = "none"; };
+  const closeDlg = () => {
+    dlgOverlay.style.display = "none";
+    deactivateDialog(dlgOverlay);
+  };
+  activateDialog(dlgOverlay, { onEscape: closeDlg });
   dlgOverlay.querySelector("#btn-cancel-deficit").onclick = closeDlg;
   dlgOverlay.querySelector("#btn-add-shopping").onclick = () => {
     onAddToShopping();
@@ -436,8 +520,10 @@ export function askPlanConflictChoice() {
     overlay.appendChild(modal);
     overlay.style.display = "flex";
     document.body.appendChild(overlay);
+    activateDialog(overlay, { onEscape: () => close(null) });
 
     const close = (value) => {
+      deactivateDialog(overlay);
       overlay.remove();
       resolve(value);
     };
@@ -472,6 +558,7 @@ export async function openRecipeModal(recipeId, initialServings = null) {
   loadingP.textContent = "Đang tải công thức...";
   modalContent.appendChild(loadingP);
   modalOverlay.style.display = "flex";
+  activateDialog(modalOverlay, { onEscape: closeRecipeModal });
 
   try {
     let recipe = null;
@@ -743,7 +830,10 @@ export async function openRecipeModal(recipeId, initialServings = null) {
 
 export function closeRecipeModal() {
   const modalOverlay = document.getElementById("recipe-modal-overlay");
-  if (modalOverlay) modalOverlay.style.display = "none";
+  if (modalOverlay) {
+    modalOverlay.style.display = "none";
+    deactivateDialog(modalOverlay);
+  }
 }
 
 // ==========================================
@@ -981,6 +1071,7 @@ async function initPantryPage() {
         extBtn.style.padding = "2px 8px";
         extBtn.textContent = "+3 ngày";
         extBtn.title = "Gia hạn thêm 3 ngày khi sơ chế / bảo quản lại";
+        extBtn.setAttribute("aria-label", `Gia hạn thêm 3 ngày cho ${lot.ingredient_name || "nguyên liệu"}`);
         extBtn.addEventListener("click", async () => {
           const d = new Date(lot.expires_at);
           d.setDate(d.getDate() + 3);
@@ -997,6 +1088,7 @@ async function initPantryPage() {
       delBtn.className = "btn btn-outline btn-sm";
       delBtn.style.color = "var(--danger)";
       delBtn.textContent = "Xoá";
+      delBtn.setAttribute("aria-label", `Xoá ${lot.ingredient_name || "nguyên liệu"} khỏi tủ lạnh`);
       delBtn.addEventListener("click", async () => {
         if (confirm(`Xoá '${lot.ingredient_name}' khỏi tủ lạnh?`)) {
           await deletePantryLot(lot.id);
@@ -1376,6 +1468,7 @@ async function initPlannerPage() {
           viewBtn.style.padding = "2px 8px";
           viewBtn.style.fontSize = "0.75rem";
           viewBtn.textContent = "Xem";
+          viewBtn.setAttribute("aria-label", `Xem công thức ${dish.recipe_name}`);
           viewBtn.addEventListener("click", () => {
             openRecipeModal(dish.recipe_id, dish.servings || 4);
           });
@@ -1390,6 +1483,7 @@ async function initPlannerPage() {
             swapBtn.style.fontSize = "0.75rem";
             swapBtn.textContent = "Đổi";
             swapBtn.title = "Đổi món này sang món khác cùng nhóm";
+            swapBtn.setAttribute("aria-label", `Đổi món ${dish.recipe_name}`);
             swapBtn.addEventListener("click", async () => {
               const catalogue = await getCachedCatalogue();
               if (!catalogue || !catalogue.recipes) return;
@@ -1442,6 +1536,7 @@ async function initPlannerPage() {
               removeBtn.style.fontSize = "0.75rem";
               removeBtn.textContent = "✕";
               removeBtn.title = "Bỏ món này khỏi bữa ăn";
+              removeBtn.setAttribute("aria-label", `Bỏ món ${dish.recipe_name}`);
               removeBtn.addEventListener("click", async () => {
                 if (!confirm(`Bạn có chắc muốn bỏ món "${dish.recipe_name}" khỏi bữa ăn này?`)) return;
                 try {
@@ -2464,14 +2559,18 @@ async function initShoppingPage() {
         const check = document.createElement("input");
         check.type = "checkbox";
         check.checked = Boolean(item.bought);
+        check.setAttribute("aria-label", `Đánh dấu đã mua ${item.ingredient_name}`);
         check.addEventListener("change", async () => {
           await toggleShoppingItemBought(item.id);
           item.bought = check.checked;
           renderList(items);
         });
+        const checkWrap = document.createElement("label");
+        checkWrap.className = "shopping-check";
+        checkWrap.appendChild(check);
 
         const label = document.createElement("div");
-        label.style.flex = "1";
+        label.className = "shopping-item-label";
         const nameRow = document.createElement("div");
         nameRow.style.display = "flex";
         nameRow.style.alignItems = "center";
@@ -2490,6 +2589,7 @@ async function initShoppingPage() {
         editQtyBtn.style.cssText = "font-size: 10px; padding: 1px 5px; margin-left: 4px; border-color: var(--border);";
         editQtyBtn.textContent = "Sửa lượng";
         editQtyBtn.title = "Chỉnh sửa số lượng cần mua";
+        editQtyBtn.setAttribute("aria-label", `Sửa số lượng cần mua ${item.ingredient_name}`);
         editQtyBtn.addEventListener("click", async (e) => {
           e.stopPropagation();
           const newQty = prompt(`Nhập số lượng cần mua mới cho "${item.ingredient_name}" (${item.unit}):`, item.needed_quantity);
@@ -2532,6 +2632,7 @@ async function initShoppingPage() {
         priceInput.className = "shopping-price-input";
         priceInput.placeholder = "Giá (đ)";
         priceInput.value = item.price || "";
+        priceInput.setAttribute("aria-label", `Giá tiền cho ${item.ingredient_name} (đồng)`);
         priceInput.style.cssText = "width: 85px; padding: 4px 6px; font-size: var(--text-xs); border: 1px solid var(--border); border-radius: var(--radius-sm);";
         priceInput.addEventListener("input", () => {
           priceInput.value = priceInput.value.replace(/[^0-9]/g, "");
@@ -2547,7 +2648,7 @@ async function initShoppingPage() {
         });
         priceBox.appendChild(priceInput);
 
-        row.appendChild(check);
+        row.appendChild(checkWrap);
         row.appendChild(label);
         row.appendChild(priceBox);
 
@@ -2569,6 +2670,7 @@ async function initShoppingPage() {
           qtyInput.min = "0";
           qtyInput.step = "any";
           qtyInput.value = actualQty;
+          qtyInput.setAttribute("aria-label", `Số lượng thực mua ${item.ingredient_name} (${item.unit})`);
           qtyInput.style.cssText =
             "width:70px;padding:3px 4px;font-size:11px;border:1px solid var(--border);border-radius:var(--radius-sm);";
           qtyInput.addEventListener("input", () => {
@@ -2582,6 +2684,7 @@ async function initShoppingPage() {
           const expInput = document.createElement("input");
           expInput.type = "date";
           expInput.value = actualExp;
+          expInput.setAttribute("aria-label", `Hạn dùng của ${item.ingredient_name}`);
           expInput.style.cssText =
             "width:115px;padding:3px 4px;font-size:11px;border:1px solid var(--border);border-radius:var(--radius-sm);";
           expInput.addEventListener("input", () => {
@@ -2601,6 +2704,7 @@ async function initShoppingPage() {
         deleteBtn.style.cssText = "color: var(--danger); border-color: var(--border); padding: 4px 6px;";
         deleteBtn.innerHTML = "✕";
         deleteBtn.title = "Xoá món này";
+        deleteBtn.setAttribute("aria-label", `Xoá ${item.ingredient_name} khỏi danh sách đi chợ`);
         deleteBtn.addEventListener("click", async () => {
           await deleteShoppingItemsByIds([item.id]);
           const newItems = items.filter((it) => it.id !== item.id);
@@ -2701,6 +2805,12 @@ async function initShoppingPage() {
   if (addCustomBtn && customModal) {
     addCustomBtn.addEventListener("click", () => {
       customModal.style.display = "flex";
+      activateDialog(customModal, {
+        onEscape: () => {
+          customModal.style.display = "none";
+          deactivateDialog(customModal);
+        },
+      });
       const nameInput = document.getElementById("custom-item-name");
       if (nameInput) nameInput.focus();
     });
@@ -2708,6 +2818,7 @@ async function initShoppingPage() {
   if (closeCustomBtn && customModal) {
     closeCustomBtn.addEventListener("click", () => {
       customModal.style.display = "none";
+      deactivateDialog(customModal);
     });
   }
   if (customForm) {
@@ -2732,6 +2843,7 @@ async function initShoppingPage() {
       );
       showToast(`Đã thêm "${name}" vào danh sách đi chợ!`, "success");
       customModal.style.display = "none";
+      deactivateDialog(customModal);
       customForm.reset();
       await loadAndRender();
     });
@@ -3064,8 +3176,10 @@ async function initSettingsPage() {
           const closeModal = () => {
             modal.style.display = "none";
             importInput.value = "";
+            deactivateDialog(modal);
           };
 
+          activateDialog(modal, { onEscape: closeModal });
           cancelBtn.onclick = closeModal;
 
           replaceBtn.onclick = async () => {
@@ -3101,14 +3215,18 @@ async function initSettingsPage() {
   const confirmClearBtn = document.getElementById("btn-confirm-clear");
 
   if (clearBtn && clearModal) {
+    const closeClearModal = () => {
+      clearModal.style.display = "none";
+      deactivateDialog(clearModal);
+    };
+
     clearBtn.addEventListener("click", () => {
       clearModal.style.display = "flex";
+      activateDialog(clearModal, { onEscape: closeClearModal });
     });
 
     if (cancelClearBtn) {
-      cancelClearBtn.addEventListener("click", () => {
-        clearModal.style.display = "none";
-      });
+      cancelClearBtn.addEventListener("click", closeClearModal);
     }
 
     if (confirmClearBtn) {
@@ -3116,7 +3234,7 @@ async function initSettingsPage() {
         await clearAllPersonalData();
         localStorage.removeItem("easymeals_shopping_list");
         showToast("Đã xoá sạch toàn bộ dữ liệu cá nhân trên máy!", "info");
-        clearModal.style.display = "none";
+        closeClearModal();
         refreshBackupBadge();
         renderHistory();
       });

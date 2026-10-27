@@ -482,6 +482,30 @@ textarea { padding: var(--space-3) 14px; }
 input:hover, select:hover, textarea:hover { border-color: var(--ink-muted); }
 input::placeholder, textarea::placeholder { color: var(--ink-muted); }
 input[type="number"] { text-align: right; font-variant-numeric: tabular-nums; }
+/* G3: checkbox/radio không bị style như ô nhập chữ; giữ hình vuông dễ nhận biết. */
+input[type="checkbox"],
+input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  flex: none;
+  accent-color: var(--primary);
+}
+.shopping-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  flex: none;
+  cursor: pointer;
+}
+.shopping-item-row { flex-wrap: wrap; }
+.shopping-item-label { flex: 1 1 220px; min-width: 0; }
+@media (max-width: 520px) {
+  .shopping-item-label { flex-basis: 100%; }
+}
 
 .form-row {
   display: grid;
@@ -529,6 +553,8 @@ input[type="number"] { text-align: right; font-variant-numeric: tabular-nums; }
 .btn-danger:hover { background: var(--danger-soft); border-color: var(--ink); }
 
 .btn-sm { min-height: 44px; padding: 0 var(--space-3); font-size: var(--text-xs); }
+/* G3: nút hành động nhỏ trong bảng vẫn phải đủ vùng chạm 44×44 px. */
+.btn-xs { min-width: 44px; min-height: 44px; padding: 0 10px; font-size: var(--text-xs); }
 
 /* ---------- 7. Chips, badges, filters ---------- */
 .badge {

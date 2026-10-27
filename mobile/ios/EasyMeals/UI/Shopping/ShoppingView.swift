@@ -163,8 +163,10 @@ public struct ShoppingView: View {
                                                 Image(systemName: "trash")
                                                     .font(.caption)
                                                     .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                                                    .frame(width: 44, height: 44)
                                             }
                                             .buttonStyle(.plain)
+                                            .accessibilityLabel("Xoá \(item.ingredientName) khỏi danh sách đi chợ")
                                             .padding(.leading, 6)
                                         }
                                         .contentShape(Rectangle())
@@ -205,6 +207,7 @@ public struct ShoppingView: View {
                         ShareLink(item: shareText) {
                             Image(systemName: "square.and.arrow.up")
                         }
+                        .accessibilityLabel("Chia sẻ danh sách đi chợ")
                     }
                 }
                 ToolbarItem(placement: .topBarLeading) {
@@ -213,6 +216,7 @@ public struct ShoppingView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Thêm mục cần mua ngoài kế hoạch")
                 }
             }
             .sheet(isPresented: $showingAddSheet) {

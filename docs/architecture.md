@@ -407,6 +407,8 @@ Nhằm đảm bảo trải nghiệm thống nhất giữa Web (FastAPI/Jinja2), 
 
 ### 6.3 Bảng Đối chiếu 11 Tính năng Cốt lõi (Web vs Android vs iOS)
 
+> Bảng dưới đây là bản tóm tắt lịch sử. **Ma trận parity đầy đủ 23 nhóm chức năng, kèm bằng chứng test và phần chưa kiểm chứng, nằm ở [`docs/parity.md`](parity.md)** (Giai đoạn G — Vòng 13).
+
 | STT | Tính năng cốt lõi | Web App (FastAPI + JS) | Android App (Compose) | iOS App (SwiftUI) | Trạng thái đồng bộ & Điểm khác biệt cố ý |
 |---|---|---|---|---|---|
 | 1 | **Thêm đồ vào tủ lạnh** | Hộp thoại / trang tủ lạnh, gợi ý autocomplete tên nguyên liệu, tự điền hạn theo danh mục (2 ngày, 5 ngày, 30 ngày,...), chọn vị trí (ngăn mát, ngăn đá, tủ khô). Footer nút bấm Lưu rõ ràng. | BottomSheet Compose với `skipPartiallyExpanded=true`, bàn phím `imePadding()`, gợi ý nguyên liệu danh mục, tự điền hạn, chọn vị trí. Footer nút "Lưu một chạm" ghim cố định. | Sheet SwiftUI `.presentationDetents([.large])`, gợi ý nguyên liệu danh mục, tự điền hạn, chọn vị trí. Nút "Lưu một chạm" ghim footer an toàn bàn phím. | **Đồng bộ 100%**: Cùng dùng danh mục chuẩn, cùng logic gợi ý & tự điền hạn; khác biệt về thành phần UI native (Modal vs Compose BottomSheet vs SwiftUI Sheet). |

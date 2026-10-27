@@ -274,9 +274,11 @@ public struct PantryView: View {
                                             .font(.system(size: 11, weight: .bold))
                                             .padding(.horizontal, 6)
                                             .padding(.vertical, 2)
+                                            .frame(minWidth: 44, minHeight: 44)
                                             .background(AppColors.secondarySurface)
                                             .foregroundColor(AppColors.primary)
                                             .cornerRadius(6)
+                                            .accessibilityLabel("Gia hạn thêm 3 ngày cho \(lot.ingredientName)")
                                         }
                                     }
                                 }
@@ -289,7 +291,7 @@ public struct PantryView: View {
                                 Button(role: .destructive) {
                                     storage.removePantryLot(id: lot.id)
                                 } label: {
-                                    Label("Xoá", systemImage: "trash")
+                                    Label("Xoá \(lot.ingredientName)", systemImage: "trash")
                                 }
                             }
                         }
@@ -309,6 +311,7 @@ public struct PantryView: View {
                         .clipShape(Circle())
                         .shadow(radius: 6)
                 }
+                .accessibilityLabel("Thêm thực phẩm vào tủ")
                 .padding()
             }
             .navigationTitle("Tủ lạnh")
