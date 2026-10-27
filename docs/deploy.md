@@ -82,7 +82,7 @@ python scripts/upload_catalogue_to_supabase.py --apply
 > ```bash
 > SUPABASE_URL="https://<id>.supabase.co" SUPABASE_SERVICE_ROLE_KEY="<key>" python scripts/upload_catalogue_to_supabase.py
 > ```
-> Có khoá trong môi trường thì script tự ghi; không có khoá thì chỉ dry-run; `--dry-run` để chỉ xem; `--clean` để xoá sạch rồi nạp lại. `bash scripts/update_supabase.sh` bọc thêm bước kiểm tra, `--migrations` (liệt kê SQL cần chạy trước nếu đổi schema) và `verify_rls.py`.
+> Có khoá trong môi trường thì script tự ghi; không có khoá thì chỉ dry-run; `--dry-run` để chỉ xem; `--clean` để xoá sạch rồi nạp lại. Sau khi nạp, chạy `scripts/verify_rls.py` để xác minh an toàn RLS.
 
 ### Bước 2.4: Kiểm Chứng RLS Thực Tế Trên Supabase
 Sau khi chạy migration và nạp seed, kiểm tra trực tiếp chính sách RLS bằng script `scripts/verify_rls.py` (chạy thủ công, chỉ dùng anon key):

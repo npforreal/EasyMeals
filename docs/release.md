@@ -38,7 +38,7 @@ Không được kiểm tự động (đổi tay khi cần): hàng `< X.0.0` tron
    - iOS: `cd mobile/ios && xcodegen generate`, rồi `xcodebuild -scheme EasyMeals -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO build` (gói `Payload/EasyMeals.app` thành `.ipa` chưa ký) và `-sdk iphonesimulator` (nén `.app` thành zip).
    - APK debug và IPA chưa ký chỉ để thử nghiệm. Chưa có artifact ký cho cửa hàng ứng dụng (chủ dự án tự ký).
 5. Commit `release: vX.Y.Z — ...`, tag, rồi `gh release create vX.Y.Z --notes-file ...` kèm artifact; ghi rõ phần chưa kiểm chứng.
-6. Nếu đổi schema/dữ liệu danh mục: chạy migration SQL rồi `bash scripts/update_supabase.sh` (xem `docs/deploy.md`).
+6. Nếu đổi schema/dữ liệu danh mục: chạy migration SQL rồi chạy `scripts/upload_catalogue_to_supabase.py` và `scripts/verify_rls.py` (xem `docs/deploy.md`).
 7. Dọn thư mục build (`mobile/ios/.build`, `mobile/android/{build,app/build,.gradle}`, `www/`, cache) khi không còn dùng.
 
 ## 4. Quy ước push và phát hành
