@@ -10,7 +10,10 @@
     "build:web": "python scripts/build_mobile_web.py",
     "cap:sync": "python scripts/build_mobile_web.py && npx cap sync",
     "cap:open:android": "npx cap open android",
-    "cap:open:ios": "npx cap open ios"
+    "cap:open:ios": "npx cap open ios",
+    "workflow:audit": "python3 scripts/audit_workflow.py",
+    "workflow:handoff": "python3 scripts/handoff.py",
+    "workflow:archive": "python3 scripts/archive_logs.py"
   },
   "dependencies": {
     "@capacitor/core": "^7.0.0"

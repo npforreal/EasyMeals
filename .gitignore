@@ -48,6 +48,7 @@ REVIEW.md
 skills/
 design/
 .vscode/
+handoff.md
 
 # Cấu hình cục bộ của agent (quyền, chặn đọc .env)
 .claude/
