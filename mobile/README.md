@@ -112,6 +112,8 @@ Kiểm thử tự động trên Android và iOS bao phủ toàn bộ 4 hành tr�
 
 ---
 
-## 8. Phiên bản Hybrid Cũ (Capacitor)
+## 8. Bản Hybrid cũ (Capacitor) — đã gỡ
 
-Dự án vẫn duy trì mã nguồn hybrid cũ trong `android/`, `ios/`, và `www/` cho mục đích tham chiếu và kiểm thử E2E Playwright qua `bash scripts/check.sh`.
+Các vỏ Capacitor (`android/`, `ios/` ở thư mục gốc, `capacitor.config.json`, gói `@capacitor/*`) đã được gỡ khỏi dự án ở v2.0.0. Thư mục `www/` chỉ còn là bản web tĩnh sinh ra khi chạy `scripts/check.sh` để kiểm thử E2E Offline.
+
+Quy trình phát hành: xem [`docs/release.md`](../docs/release.md).

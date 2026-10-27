@@ -9,7 +9,7 @@ Tài liệu này hướng dẫn chi tiết quy trình triển khai EasyMeals the
 ```
 +--------------------------------------------------------------------+
 |                         CLIENT (Thiết bị)                          |
-|  - Trình duyệt Web / PWA / Hybrid App (Capacitor Android & iOS)    |
+|  - Trình duyệt Web / PWA / App native (Android & iOS)              |
 |  - IndexedDB: pantry, plans, movements, settings, catalogue cache   |
 |  - Tính năng offline, sao lưu & phục hồi JSON                      |
 +-------------------+------------------------------------------------+
@@ -144,53 +144,20 @@ Trên Vercel Dashboard (mục *Security* -> *Attack Challenge Mode* hoặc *Fire
 
 ---
 
-## 4. Đóng Gói Ứng Dụng Di Động Offline (Capacitor)
+## 4. Đóng Gói Ứng Dụng Di Động Offline (Native)
 
-EasyMeals sử dụng kiến trúc Hybrid Native thông qua Capacitor, với thiết kế **100% Offline Bundled**:
-- **Không gọi Supabase**: Bản mobile không chứa URL hay API key nào của Supabase.
-- **Không cần backend**: Tính toán lập thực đơn và trừ kho FIFO chạy trực tiếp trên thiết bị qua module `engine.js` (số học Decimal chính xác).
-- **Danh mục đóng gói sẵn**: Toàn bộ nguyên liệu và công thức được lưu trong `data/catalogue.json` bên trong gói ứng dụng.
+Ứng dụng di động là native (Android Kotlin/Compose, iOS SwiftUI) với thiết kế **100% offline**:
+- **Không gọi Supabase, không cần backend**: lập thực đơn và trừ kho FIFO chạy trên thiết bị bằng engine native (số học Decimal chính xác); Android không có quyền Internet.
+- **Danh mục đóng gói sẵn**: `catalogue.json` được sao từ `data/catalogue.json` vào gói ứng dụng bằng `python scripts/sync_mobile_assets.py` (không tự sửa tay các bản sao này).
 
-### Bước 4.1: Xuất danh mục và đóng gói mã nguồn tĩnh vào www/
 ```bash
-# 1. Xuất gói danh mục chuẩn
 python scripts/export_catalogue.py
-
-# 2. Đóng gói HTML, CSS, JS tĩnh, nạp catalogue.json, thiết lập bundled mode và quét bảo mật
-python scripts/build_mobile_web.py
+python scripts/sync_mobile_assets.py
+cd mobile/android && ./gradlew assembleDebug      # APK debug
+cd ../ios && xcodegen generate                    # sinh EasyMeals.xcodeproj rồi build bằng Xcode
 ```
 
-Script sẽ tự động quét thư mục `www/` và bảo đảm:
-- 0 chuỗi `supabase.co`, `SUPABASE`, `eyJ`, `service_role`.
-- Không đăng ký service worker gọi mạng trong bản mobile.
-- Header CSP được khoá cứng ở mức an toàn: `connect-src 'self'`.
-
-### Bước 4.2: Build Ứng Dụng Android
-```bash
-# Đồng bộ assets vào Android project
-npx cap sync android
-
-# Build file APK Debug để kiểm tra
-cd android
-./gradlew assembleDebug
-# File xuất ra: android/app/build/outputs/apk/debug/app-debug.apk
-cd ..
-
-# Hoặc mở Android Studio để ký phát hành (App Bundle .aab):
-npx cap open android
-```
-
-### Bước 4.3: Build Ứng Dụng iOS
-```bash
-# Đồng bộ assets vào iOS project
-npx cap sync ios
-
-# Mở Xcode để build và ký phát hành lên TestFlight / App Store:
-npx cap open ios
-```
-
-
----
+Quy trình đóng gói và phát hành đầy đủ: [`docs/release.md`](release.md). Hướng dẫn thiết bị: [`mobile/README.md`](../mobile/README.md).
 
 ## 5. Quy Trình Vận Hành & Khắc Phục Sự Cố
 

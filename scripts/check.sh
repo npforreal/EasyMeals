@@ -47,6 +47,7 @@ if ! python -m ruff --version >/dev/null 2>&1; then
 fi
 
 run_step "0. design tokens dong bo (tokens.json & labels.json)" python scripts/generate_design_tokens.py --check
+run_step "0b. phien ban dong bo (web, api, android, ios)" python scripts/check_version.py
 run_step "1. ruff check (app, tests, scripts)" python -m ruff check app tests scripts
 run_step "2. ruff format --check (app, tests, scripts)" python -m ruff format --check app tests scripts
 run_step "3. pytest (unit, inventory, planner, api, security, catalogue schema)" python -m pytest tests/ -q

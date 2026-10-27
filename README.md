@@ -6,7 +6,7 @@
 >
 > **Hai đường dữ liệu chuyên biệt**:
 > - **Bản Web (Desktop & Mobile Browser / PWA)**: Đồng bộ danh mục từ Supabase (`/api/catalogue` với ETag 304). Dữ liệu cá nhân lưu trong IndexedDB của trình duyệt.
-> - **Bản Mobile (Capacitor Android / iOS)**: **Chạy 100% offline hoàn toàn**, không gọi Supabase, không gọi backend. Danh mục được đóng gói sẵn trong ứng dụng (`catalogue.json`), thuật toán lập thực đơn và trừ kho FIFO chạy trực tiếp trên thiết bị bằng JavaScript Engine (`engine.js`) với số học Decimal chính xác.
+> - **Bản Mobile (Native Android / iOS)**: **Chạy 100% offline hoàn toàn**, không gọi Supabase, không gọi backend. Danh mục được đóng gói sẵn trong ứng dụng (`catalogue.json`), thuật toán lập thực đơn và trừ kho FIFO chạy trực tiếp trên thiết bị bằng JavaScript Engine (`engine.js`) với số học Decimal chính xác.
 
 
 ---
@@ -84,7 +84,7 @@ Truy cập trang **Dữ liệu** (`/settings`):
 ### 5. Cài đặt ứng dụng (PWA & Mobile)
 - **Trên Android (Chrome)**: Mở trang web -> Bấm biểu tượng ba chấm `⋮` -> Chọn **Cài đặt ứng dụng** (Install App).
 - **Trên iOS / iPhone (Safari)**: Mở trang web -> Bấm biểu tượng **Chia sẻ** -> Chọn **Thêm vào MH chính** (Add to Home Screen).
-- **Ứng dụng Native (Capacitor)**: Dự án hỗ trợ đóng gói trực tiếp thành APK cho Android và ứng dụng iOS thông qua thư mục `android/` và `ios/`. Xem hướng dẫn đóng gói chi tiết tại [`mobile/README.md`](mobile/README.md).
+- **Ứng dụng Native**: Android (Kotlin/Jetpack Compose) tại `mobile/android/`, iOS (SwiftUI) tại `mobile/ios/`. Xem [`mobile/README.md`](mobile/README.md) và quy trình phát hành tại [`docs/release.md`](docs/release.md).
 
 ---
 
@@ -161,7 +161,7 @@ EasyMeals/
 ├── scripts/
 │   ├── check.sh             # Một lệnh chạy toàn bộ test: Ruff lint, Pytest, Node test, Playwright e2e
 │   ├── export_catalogue.py  # Xuất gói danh mục catalogue.json cho Mobile App
-│   ├── build_mobile_web.py  # Đóng gói trang web tĩnh vào www/ cho Capacitor (quét sạch bí mật)
+│   ├── build_mobile_web.py  # Đóng gói trang web tĩnh vào www/ cho kiểm thử E2E Offline (quét sạch bí mật)
 │   ├── verify_rls.py        # Kiểm chứng RLS Supabase chỉ đọc với khoá anon
 │   └── seed_catalogue.py    # Nạp dữ liệu danh mục ban đầu vào Supabase (idempotent)
 ├── supabase/

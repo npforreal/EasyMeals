@@ -123,48 +123,28 @@ Sau khi triển khai thành công, bạn sẽ nhận được đường dẫn d�
 
 ---
 
-## 📱 5. Đóng Gói Ứng Dụng Di Động Chạy Offline (Capacitor)
+## 📱 5. Đóng Gói Ứng Dụng Di Động Chạy Offline (Native)
 
-EasyMeals hỗ trợ build thành ứng dụng Native độc lập cho **Android** và **iOS**, không phụ thuộc vào kết nối mạng hay Supabase:
+EasyMeals có ứng dụng native độc lập cho **Android** (Kotlin/Compose) và **iOS** (SwiftUI), không cần mạng hay Supabase. Danh mục đi kèm trong ứng dụng.
 
-### Bước 5.1: Xuất Bản Danh Mục & Build Giao Diện Tĩnh
 ```bash
-# 1. Xuất file catalogue.json chuẩn từ kho dữ liệu
+# 1. Xuất danh mục chuẩn và đồng bộ vào hai ứng dụng
 python scripts/export_catalogue.py
+python scripts/sync_mobile_assets.py
 
-# 2. Đóng gói assets giao diện tĩnh và kiểm tra bảo mật thư mục www/
-python scripts/build_mobile_web.py
-```
+# 2. Android: build APK debug
+cd mobile/android && ./gradlew assembleDebug
+# → mobile/android/app/build/outputs/apk/debug/app-debug.apk
 
-### Bước 5.2: Build Ứng Dụng Android
-```bash
-# Đồng bộ assets vào thư mục native android
-npx cap sync android
-
-# Biên dịch file APK cài đặt (Debug)
-cd android
-./gradlew assembleDebug
-# File APK xuất ra tại: android/app/build/outputs/apk/debug/app-debug.apk
-cd ..
-
-# Hoặc mở Android Studio để cấu hình ký số phát hành CH Play:
-npx cap open android
-```
-
-### Bước 5.3: Build Ứng Dụng iOS
-```bash
-# Đồng bộ assets vào thư mục native iOS
-npx cap sync ios
-
-# Mở dự án trong Xcode để chạy Simulator hoặc build lên iPhone thật:
-npx cap open ios
+# 3. iOS: sinh project rồi mở bằng Xcode (cần `brew install xcodegen`)
+cd ../ios && xcodegen generate && open EasyMeals.xcodeproj
 ```
 
 ### 🔗 Tài liệu chi tiết di động
 
 EasyMeals hỗ trợ cả hai hình thức:
-- **Ứng dụng thuần Native mới (Khuyến nghị)**: Nằm tại `mobile/android/` (Kotlin + Jetpack Compose) và `mobile/ios/` (Swift + SwiftUI). Chạy hoàn toàn offline không cần quyền Internet. Kiểm thử tự động bằng `bash scripts/check_mobile.sh`.
-- **Ứng dụng Hybrid (Capacitor)**: Nằm tại `android/`, `ios/` phục vụ kiểm thử web offline.
+- **Ứng dụng Native**: Nằm tại `mobile/android/` (Kotlin + Jetpack Compose) và `mobile/ios/` (Swift + SwiftUI). Chạy hoàn toàn offline không cần quyền Internet. Kiểm thử tự động bằng `bash scripts/check_mobile.sh`.
+- Bản Hybrid (Capacitor) cũ đã được gỡ bỏ; `www/` chỉ còn dùng làm bản web tĩnh cho kiểm thử E2E Offline.
 
 Hướng dẫn chi tiết đóng gói, build và phát hành ứng dụng di động nằm tại [`mobile/README.md`](mobile/README.md).
 
