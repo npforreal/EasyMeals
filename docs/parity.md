@@ -22,7 +22,7 @@
 | 3 | Tủ lạnh | Cảnh báo hạn dùng theo lô (hết hạn/sắp hết hạn, chỉ lô còn lượng) | Có | Có | Có | `tests/e2e/expiry_warning.spec.js`; `tests/js/engine_logic.test.js`; fixture `tests/fixtures/engine_logic_cases.json`; `EngineLogicTests.swift` | — |
 | 4 | Thực đơn | Lập 1–7 ngày (mặc định 3), chip chọn ngày, nhớ lựa chọn | Có | Có | Có | `tests/e2e/planner_days.spec.js`; `PlanDaysSelectorTest.kt` (280–384 dp, chạy trên SM-A176B); `PlanDaysSelectorTest.kt` + `NarrowLayoutUITests.swift` | — |
 | 5 | Thực đơn | Tạo lại an toàn: hỏi Giữ/Thay, bữa đã ăn luôn giữ, chống bấm lặp | Có | Có | Có | `tests/e2e/plan_regenerate.spec.js`; `PlanConflictDialogTest.kt` (instrumented); `UserJourneysLogicTest.kt`; `UserJourneysTests.swift` | — |
-| 6 | Thực đơn | Sửa bữa: sinh lại một bữa, đổi/bỏ/thêm món thủ công, cảnh báo nguyên liệu cần tránh | Có | Có | Có | `tests/e2e/plan_edit_and_budget.spec.js`; `tests/e2e/avoided_ingredients.spec.js`; `RecipePickerDialogTest.kt` (5 test, **chưa chạy trên máy thật**); `EasyMealsUITests` 4/4 trên iPhone 17e (2026-10-27) | Android mới có UI chọn món từ 2026-10-27; xác nhận trên thiết bị còn mở (xem mục 5) |
+| 6 | Thực đơn | Sửa bữa: sinh lại một bữa, đổi/bỏ/thêm món thủ công, cảnh báo nguyên liệu cần tránh | Có | Có | Có | `tests/e2e/plan_edit_and_budget.spec.js`; `tests/e2e/avoided_ingredients.spec.js`; `RecipePickerDialogTest.kt` (5 test Compose, PASS trên SM-A176B 2026-10-27); `EasyMealsUITests` 4/4 trên iPhone 17e (2026-10-27) | — |
 | 7 | Thực đơn | Đồ dư dùng lại 2 ngày (cấu hình 1–3), không sinh phần dư ảo | Có | Có | Có | `tests/js/engine_logic.test.js`; fixture 4 engine; `EngineLogicTest.kt`; `EngineLogicTests.swift` | — |
 | 8 | Nấu/ăn | Đánh dấu đã ăn: FIFO theo hạn, quy đổi gạo→cơm, trừ một phần, idempotent | Có | Có | Có | `tests/e2e/core_journey.spec.js`; `tests/js/storage.test.js`; `EngineEquivalenceTest.kt`; `EngineTests.swift` | — |
 | 9 | Nấu/ăn | Hoàn tác khôi phục đúng lô đã trừ, không đè chỉnh sửa kho sau đó | Có | Có | Có | `tests/e2e/core_journey.spec.js`; `tests/js/storage.test.js`; `UserJourneysComposeTest.kt`; `UserJourneysTests.swift` | — |
@@ -68,8 +68,7 @@ node --test tests/js/migration.test.js
 
 ## 5. Phần chưa chứng minh được (tính đến 2026-10-27)
 
-- **Ảnh so sánh trên thiết bị thật**: `adb devices -l` trống sau khi `adb kill-server && adb start-server` (thử lúc bắt đầu Giai đoạn G). Không có ảnh chụp màn hình so sánh Web ↔ Android ↔ iOS; **không đánh dấu hoàn tất** phần ảnh của G1.
-  - Ảnh web có thể chụp lại bằng Playwright; ảnh Android cần máy thật/emulator; ảnh iOS cần Simulator đang chạy.
-- **Compose UI chọn món thủ công (D2b)**: 5 test mới đã biên dịch nhưng chưa chạy `connectedDebugAndroidTest` trên máy thật.
-- **VoiceOver/TalkBack thủ công**: chưa bật trình đọc màn hình để kiểm tra thứ tự đọc và phát âm tiếng Việt.
-- **Bàn phím ảo trên iOS/Android thật**: đã có test Compose/XCUITest trước đó nhưng chưa kiểm tra lại sau thay đổi nhãn accessibility.
+- **Ảnh so sánh trên thiết bị thật**: Chưa tự động hoá việc chụp và ghép bộ ảnh so sánh màn hình Web ↔ Android ↔ iOS tại cùng trạng thái dữ liệu (cần thiết bị thật hoặc simulator mở đồng thời).
+- **VoiceOver/TalkBack thủ công**: đã có kiểm thử accessibility tự động (Aria names, touch target ≥44px/48dp, focus trap), nhưng chưa bật trình đọc màn hình thực tế trên thiết bị để nghe thứ tự đọc và ngữ điệu phát âm tiếng Việt.
+- **Bàn phím ảo trên iOS/Android thật**: đã có test Compose/XCUITest tự động nhưng chưa kiểm tra tay hành vi cuộn khi bàn phím mở trên mọi màn hình.
+*(Ghi chú: Compose UI test trên Android đã chạy thành công 26/26 trên Samsung Galaxy SM-A176B, gồm cả 5 test chọn món thủ công D2b).*
