@@ -42,7 +42,7 @@ public struct ShoppingView: View {
         return "\(formatted) đ"
     }
 
-    var budget: ShoppingBudgetResult {
+    var budget: EasyMealsEngine.ShoppingBudgetResult {
         EasyMealsEngine.calculateShoppingBudget(storage.shoppingItems)
     }
 

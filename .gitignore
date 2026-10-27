@@ -55,3 +55,7 @@ handoff.md
 
 # Lưu trữ nhật ký cũ của agent
 archive/
+
+# iOS: project sinh từ mobile/ios/project.yml bằng xcodegen
+mobile/ios/EasyMeals.xcodeproj/
+mobile/ios/build/

@@ -9,10 +9,10 @@ public struct SettingsView: View {
     @State private var backupData: Data?
     @State private var showingFileImporter = false
     @State private var statusMessage: String?
-    @AppStorage("allow_leftovers") private var allowLeftovers: Bool = true
-    @AppStorage("leftover_days") private var leftoverDays: Int = PlanLimits.leftoverDefaultDays
+    @SwiftUI.AppStorage("allow_leftovers") private var allowLeftovers: Bool = true
+    @SwiftUI.AppStorage("leftover_days") private var leftoverDays: Int = PlanLimits.leftoverDefaultDays
     // F2 - Vòng 13: nhắc việc cục bộ (UserDefaults, không lưu lên server).
-    @AppStorage("reminders_enabled") private var remindersEnabled: Bool = false
+    @SwiftUI.AppStorage("reminders_enabled") private var remindersEnabled: Bool = false
     @State private var reminderStatus: String?
 
     // C1 - Vòng 13: cài đặt hộ gia đình cục bộ (lưu vào tệp trạng thái, có backup/restore).

@@ -91,7 +91,11 @@ public final class CatalogueLoader: Sendable {
     }
 
     public func loadBundledCatalogue() -> CatalogueBundle? {
+        #if SWIFT_PACKAGE
         let bundle = Bundle.module
+        #else
+        let bundle = Bundle.main // build bằng Xcode project (app target), tài nguyên nằm trong app bundle
+        #endif
         guard let url = bundle.url(forResource: "catalogue", withExtension: "json", subdirectory: "Resources")
                 ?? bundle.url(forResource: "catalogue", withExtension: "json") else {
             print("Không tìm thấy catalogue.json trong bundle Resources")

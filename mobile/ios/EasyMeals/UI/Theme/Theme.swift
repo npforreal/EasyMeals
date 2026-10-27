@@ -3,8 +3,8 @@ import SwiftUI
 public class ThemeManager: ObservableObject {
     public static let shared = ThemeManager()
 
-    @AppStorage("theme_mode") public var themeMode: String = "system"
-    @AppStorage("theme_palette") public var palette: String = "green"
+    @SwiftUI.AppStorage("theme_mode") public var themeMode: String = "system"
+    @SwiftUI.AppStorage("theme_palette") public var palette: String = "green"
 
     public var preferredColorScheme: ColorScheme? {
         switch themeMode.lowercased() {

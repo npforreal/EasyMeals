@@ -8,10 +8,10 @@ public struct RecipesView: View {
     // Bộ lọc tạm thời (không lưu): nil = "Tất cả"
     @State private var maxMinutesFilter: Int? = nil
     @State private var difficultyFilter: String? = nil
-    @AppStorage("easymeals.recipe.dietaryFilter") private var dietaryFilter = ""
-    @AppStorage("easymeals.recipe.avoidedIngredientIds") private var avoidedIngredientIDs = ""
-    @AppStorage("easymeals.recipe.preferredIngredientIds") private var preferredIngredientIDs = ""
-    @AppStorage("easymeals.recipe.maxSpice") private var maxSpiceFilter = -1
+    @SwiftUI.AppStorage("easymeals.recipe.dietaryFilter") private var dietaryFilter = ""
+    @SwiftUI.AppStorage("easymeals.recipe.avoidedIngredientIds") private var avoidedIngredientIDs = ""
+    @SwiftUI.AppStorage("easymeals.recipe.preferredIngredientIds") private var preferredIngredientIDs = ""
+    @SwiftUI.AppStorage("easymeals.recipe.maxSpice") private var maxSpiceFilter = -1
     @State private var showingAvoidIngredients = false
     @State private var editingPreferencesAsLikes = false
     @State private var ingredientSelectionMode = "avoid"
@@ -422,7 +422,7 @@ public struct CookingModeView: View {
     @State private var storage = AppStorage.shared
     @State private var servings: Int
     @State private var checkedIngredients: Set<String> = []
-    @AppStorage("easymeals.recipe.keepScreenOn") private var keepScreenOn = true
+    @SwiftUI.AppStorage("easymeals.recipe.keepScreenOn") private var keepScreenOn = true
 
     public init(recipe: Recipe) {
         self.recipe = recipe

@@ -10,10 +10,10 @@ public struct TodayView: View {
     // Hộp thoại giữ/thay khi tạo thực đơn trùng ngày bữa chưa ăn (A2 - Vòng 13).
     @State private var showingPlanConflict = false
     @State private var planConflictDays = 3
-    @AppStorage("selected_plan_days") private var selectedPlanDays: Int = PlanLimits.defaultDays
-    @AppStorage("allow_leftovers") private var allowLeftovers: Bool = true
-    @AppStorage("leftover_days") private var leftoverDays: Int = PlanLimits.leftoverDefaultDays
-    @AppStorage("easymeals.recipe.avoidedIngredientIds") private var avoidedIngredientIDs = ""
+    @SwiftUI.AppStorage("selected_plan_days") private var selectedPlanDays: Int = PlanLimits.defaultDays
+    @SwiftUI.AppStorage("allow_leftovers") private var allowLeftovers: Bool = true
+    @SwiftUI.AppStorage("leftover_days") private var leftoverDays: Int = PlanLimits.leftoverDefaultDays
+    @SwiftUI.AppStorage("easymeals.recipe.avoidedIngredientIds") private var avoidedIngredientIDs = ""
 
     private var avoidedIDs: Set<String> { Set(avoidedIngredientIDs.split(separator: ",").map(String.init)) }
     private var staleAvoidedIDs: Set<String> { avoidedIDs.subtracting(storage.ingredients.map(\.id)) }
