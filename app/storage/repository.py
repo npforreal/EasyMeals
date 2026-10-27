@@ -592,6 +592,26 @@ class FixtureCatalogueRepository(Repository):
                             servings=int(row.get("servings") or 4),
                             instructions=row.get("instructions", []),
                             ingredients=recipe_ings,
+                            prep_time_minutes=row.get("prep_time_minutes"),
+                            prep_time_source_url=row.get("prep_time_source_url"),
+                            prep_time_verified_at=date.fromisoformat(row["prep_time_verified_at"])
+                            if row.get("prep_time_verified_at")
+                            else None,
+                            cook_time_minutes=row.get("cook_time_minutes"),
+                            cook_time_source_url=row.get("cook_time_source_url"),
+                            cook_time_verified_at=date.fromisoformat(row["cook_time_verified_at"])
+                            if row.get("cook_time_verified_at")
+                            else None,
+                            difficulty=row.get("difficulty"),
+                            difficulty_source_url=row.get("difficulty_source_url"),
+                            difficulty_verified_at=date.fromisoformat(row["difficulty_verified_at"])
+                            if row.get("difficulty_verified_at")
+                            else None,
+                            storage_tips=row.get("storage_tips") or [],
+                            storage_source_url=row.get("storage_source_url"),
+                            storage_verified_at=date.fromisoformat(row["storage_verified_at"])
+                            if row.get("storage_verified_at")
+                            else None,
                         )
 
         # Cập nhật category chuẩn và default_unit cho tất cả nguyên liệu dựa trên công thức
@@ -678,6 +698,26 @@ class FixtureCatalogueRepository(Repository):
                 "spice_source_url": r.spice_source_url,
                 "spice_verified_at": r.spice_verified_at.isoformat()
                 if r.spice_verified_at
+                else None,
+                "prep_time_minutes": r.prep_time_minutes,
+                "prep_time_source_url": r.prep_time_source_url,
+                "prep_time_verified_at": r.prep_time_verified_at.isoformat()
+                if r.prep_time_verified_at
+                else None,
+                "cook_time_minutes": r.cook_time_minutes,
+                "cook_time_source_url": r.cook_time_source_url,
+                "cook_time_verified_at": r.cook_time_verified_at.isoformat()
+                if r.cook_time_verified_at
+                else None,
+                "difficulty": r.difficulty,
+                "difficulty_source_url": r.difficulty_source_url,
+                "difficulty_verified_at": r.difficulty_verified_at.isoformat()
+                if r.difficulty_verified_at
+                else None,
+                "storage_tips": r.storage_tips,
+                "storage_source_url": r.storage_source_url,
+                "storage_verified_at": r.storage_verified_at.isoformat()
+                if r.storage_verified_at
                 else None,
             }
             for r in self.recipes.values()
@@ -797,6 +837,10 @@ class SupabaseRepository(Repository):
             "id, name, category, servings, instructions, dietary_status, "
             "dietary_source_url, dietary_verified_at, "
             "spice_level, spice_source_url, spice_verified_at, "
+            "prep_time_minutes, prep_time_source_url, prep_time_verified_at, "
+            "cook_time_minutes, cook_time_source_url, cook_time_verified_at, "
+            "difficulty, difficulty_source_url, difficulty_verified_at, "
+            "storage_tips, storage_source_url, storage_verified_at, "
             "recipe_ingredients(ingredient_id, quantity, unit, ingredients(name))"
         )
         if category:
@@ -837,6 +881,26 @@ class SupabaseRepository(Repository):
                     spice_verified_at=date.fromisoformat(row["spice_verified_at"])
                     if row.get("spice_verified_at")
                     else None,
+                    prep_time_minutes=row.get("prep_time_minutes"),
+                    prep_time_source_url=row.get("prep_time_source_url"),
+                    prep_time_verified_at=date.fromisoformat(row["prep_time_verified_at"])
+                    if row.get("prep_time_verified_at")
+                    else None,
+                    cook_time_minutes=row.get("cook_time_minutes"),
+                    cook_time_source_url=row.get("cook_time_source_url"),
+                    cook_time_verified_at=date.fromisoformat(row["cook_time_verified_at"])
+                    if row.get("cook_time_verified_at")
+                    else None,
+                    difficulty=row.get("difficulty"),
+                    difficulty_source_url=row.get("difficulty_source_url"),
+                    difficulty_verified_at=date.fromisoformat(row["difficulty_verified_at"])
+                    if row.get("difficulty_verified_at")
+                    else None,
+                    storage_tips=row.get("storage_tips") or [],
+                    storage_source_url=row.get("storage_source_url"),
+                    storage_verified_at=date.fromisoformat(row["storage_verified_at"])
+                    if row.get("storage_verified_at")
+                    else None,
                 )
             )
         return recipes
@@ -847,6 +911,10 @@ class SupabaseRepository(Repository):
             .select(
                 "id, name, category, servings, instructions, dietary_status, "
                 "dietary_source_url, dietary_verified_at, spice_level, spice_source_url, "
+                "prep_time_minutes, prep_time_source_url, prep_time_verified_at, "
+                "cook_time_minutes, cook_time_source_url, cook_time_verified_at, "
+                "difficulty, difficulty_source_url, difficulty_verified_at, "
+                "storage_tips, storage_source_url, storage_verified_at, "
                 "recipe_ingredients(ingredient_id, quantity, unit, ingredients(name))"
             )
             .eq("id", str(recipe_id))
@@ -886,6 +954,26 @@ class SupabaseRepository(Repository):
             spice_source_url=row.get("spice_source_url"),
             spice_verified_at=date.fromisoformat(row["spice_verified_at"])
             if row.get("spice_verified_at")
+            else None,
+            prep_time_minutes=row.get("prep_time_minutes"),
+            prep_time_source_url=row.get("prep_time_source_url"),
+            prep_time_verified_at=date.fromisoformat(row["prep_time_verified_at"])
+            if row.get("prep_time_verified_at")
+            else None,
+            cook_time_minutes=row.get("cook_time_minutes"),
+            cook_time_source_url=row.get("cook_time_source_url"),
+            cook_time_verified_at=date.fromisoformat(row["cook_time_verified_at"])
+            if row.get("cook_time_verified_at")
+            else None,
+            difficulty=row.get("difficulty"),
+            difficulty_source_url=row.get("difficulty_source_url"),
+            difficulty_verified_at=date.fromisoformat(row["difficulty_verified_at"])
+            if row.get("difficulty_verified_at")
+            else None,
+            storage_tips=row.get("storage_tips") or [],
+            storage_source_url=row.get("storage_source_url"),
+            storage_verified_at=date.fromisoformat(row["storage_verified_at"])
+            if row.get("storage_verified_at")
             else None,
         )
 
@@ -935,6 +1023,26 @@ class SupabaseRepository(Repository):
                 "spice_source_url": r.spice_source_url,
                 "spice_verified_at": r.spice_verified_at.isoformat()
                 if r.spice_verified_at
+                else None,
+                "prep_time_minutes": r.prep_time_minutes,
+                "prep_time_source_url": r.prep_time_source_url,
+                "prep_time_verified_at": r.prep_time_verified_at.isoformat()
+                if r.prep_time_verified_at
+                else None,
+                "cook_time_minutes": r.cook_time_minutes,
+                "cook_time_source_url": r.cook_time_source_url,
+                "cook_time_verified_at": r.cook_time_verified_at.isoformat()
+                if r.cook_time_verified_at
+                else None,
+                "difficulty": r.difficulty,
+                "difficulty_source_url": r.difficulty_source_url,
+                "difficulty_verified_at": r.difficulty_verified_at.isoformat()
+                if r.difficulty_verified_at
+                else None,
+                "storage_tips": r.storage_tips,
+                "storage_source_url": r.storage_source_url,
+                "storage_verified_at": r.storage_verified_at.isoformat()
+                if r.storage_verified_at
                 else None,
             }
             for r in recipes

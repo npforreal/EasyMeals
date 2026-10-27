@@ -146,6 +146,18 @@ class Recipe:
     spice_level: int | None = None
     spice_source_url: str | None = None
     spice_verified_at: date | None = None
+    prep_time_minutes: int | None = None
+    prep_time_source_url: str | None = None
+    prep_time_verified_at: date | None = None
+    cook_time_minutes: int | None = None
+    cook_time_source_url: str | None = None
+    cook_time_verified_at: date | None = None
+    difficulty: str | None = None
+    difficulty_source_url: str | None = None
+    difficulty_verified_at: date | None = None
+    storage_tips: list[str] = field(default_factory=list)
+    storage_source_url: str | None = None
+    storage_verified_at: date | None = None
 
 
 @dataclass

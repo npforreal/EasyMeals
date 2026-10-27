@@ -54,6 +54,22 @@ def make_recipe(
     aliases: list[str] | None = None,
     area: str = "Vietnamese",
     source: str = "vietnamese_family_standard",
+    *,
+    # Thời gian chuẩn bị / nấu, độ khó và mẹo bảo quản (E2-data / E3-data).
+    # Các giá trị này để None khi chưa có nguồn xác minh riêng cho từng công thức.
+    # KHÔNG bịa số liệu: nếu không có nguồn xác minh, để null và đánh dấu thiếu bằng chứng.
+    prep_time_minutes: int | None = None,
+    prep_time_source_url: str | None = None,
+    prep_time_verified_at: str | None = None,
+    cook_time_minutes: int | None = None,
+    cook_time_source_url: str | None = None,
+    cook_time_verified_at: str | None = None,
+    difficulty: str | None = None,
+    difficulty_source_url: str | None = None,
+    difficulty_verified_at: str | None = None,
+    storage_tips: list[str] | None = None,
+    storage_source_url: str | None = None,
+    storage_verified_at: str | None = None,
 ) -> dict[str, Any]:
     return {
         "source_id": idx,
@@ -67,6 +83,20 @@ def make_recipe(
         "ingredients": ingredients,
         "language": "vi",
         "source": source,
+        # E2-data: thời gian chuẩn bị, thời gian nấu, độ khó (+ nguồn và ngày xác minh)
+        "prep_time_minutes": prep_time_minutes,
+        "prep_time_source_url": prep_time_source_url,
+        "prep_time_verified_at": prep_time_verified_at,
+        "cook_time_minutes": cook_time_minutes,
+        "cook_time_source_url": cook_time_source_url,
+        "cook_time_verified_at": cook_time_verified_at,
+        "difficulty": difficulty,
+        "difficulty_source_url": difficulty_source_url,
+        "difficulty_verified_at": difficulty_verified_at,
+        # E3-data: mẹo bảo quản (+ nguồn và ngày xác minh)
+        "storage_tips": storage_tips,
+        "storage_source_url": storage_source_url,
+        "storage_verified_at": storage_verified_at,
     }
 
 

@@ -37,6 +37,36 @@ def audit_metadata(path: Path = ROOT / "data" / "catalogue.json") -> dict[str, o
             and not (r.get("spice_source_url") and r.get("spice_verified_at"))
             for r in recipes
         ),
+        # E2-data: thời gian chuẩn bị, thời gian nấu, độ khó
+        "prep_time_present": sum(r.get("prep_time_minutes") is not None for r in recipes),
+        "prep_time_evidence_complete": sum(
+            r.get("prep_time_minutes") is not None
+            and r.get("prep_time_source_url")
+            and r.get("prep_time_verified_at")
+            for r in recipes
+        ),
+        "cook_time_present": sum(r.get("cook_time_minutes") is not None for r in recipes),
+        "cook_time_evidence_complete": sum(
+            r.get("cook_time_minutes") is not None
+            and r.get("cook_time_source_url")
+            and r.get("cook_time_verified_at")
+            for r in recipes
+        ),
+        "difficulty_present": sum(r.get("difficulty") is not None for r in recipes),
+        "difficulty_evidence_complete": sum(
+            r.get("difficulty") is not None
+            and r.get("difficulty_source_url")
+            and r.get("difficulty_verified_at")
+            for r in recipes
+        ),
+        # E3-data: mẹo bảo quản
+        "storage_tips_present": sum(bool(r.get("storage_tips")) for r in recipes),
+        "storage_tips_evidence_complete": sum(
+            bool(r.get("storage_tips"))
+            and r.get("storage_source_url")
+            and r.get("storage_verified_at")
+            for r in recipes
+        ),
     }
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -52,6 +53,18 @@ class RecipeResponse(BaseModel):
     spice_level: int | None = Field(default=None, ge=0, le=5)
     spice_source_url: str | None = None
     spice_verified_at: date | None = None
+    prep_time_minutes: int | None = Field(default=None, ge=0, le=1440)
+    prep_time_source_url: str | None = None
+    prep_time_verified_at: date | None = None
+    cook_time_minutes: int | None = Field(default=None, ge=0, le=1440)
+    cook_time_source_url: str | None = None
+    cook_time_verified_at: date | None = None
+    difficulty: Literal["easy", "medium", "hard"] | None = None
+    difficulty_source_url: str | None = None
+    difficulty_verified_at: date | None = None
+    storage_tips: list[str] = Field(default_factory=list, max_length=20)
+    storage_source_url: str | None = None
+    storage_verified_at: date | None = None
 
 
 class CatalogueBundleResponse(BaseModel):

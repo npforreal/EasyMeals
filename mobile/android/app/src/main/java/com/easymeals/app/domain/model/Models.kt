@@ -63,7 +63,21 @@ data class Recipe(
     @SerialName("dietary_verified_at") val dietaryVerifiedAt: String? = null,
     @SerialName("spice_level") val spiceLevel: Int? = null,
     @SerialName("spice_source_url") val spiceSourceUrl: String? = null,
-    @SerialName("spice_verified_at") val spiceVerifiedAt: String? = null
+    @SerialName("spice_verified_at") val spiceVerifiedAt: String? = null,
+    // E2-data: thời gian chuẩn bị, thời gian nấu, độ khó (nguồn và ngày xác minh đi kèm)
+    @SerialName("prep_time_minutes") val prepTimeMinutes: Int? = null,
+    @SerialName("prep_time_source_url") val prepTimeSourceUrl: String? = null,
+    @SerialName("prep_time_verified_at") val prepTimeVerifiedAt: String? = null,
+    @SerialName("cook_time_minutes") val cookTimeMinutes: Int? = null,
+    @SerialName("cook_time_source_url") val cookTimeSourceUrl: String? = null,
+    @SerialName("cook_time_verified_at") val cookTimeVerifiedAt: String? = null,
+    @SerialName("difficulty") val difficulty: String? = null,
+    @SerialName("difficulty_source_url") val difficultySourceUrl: String? = null,
+    @SerialName("difficulty_verified_at") val difficultyVerifiedAt: String? = null,
+    // E3-data: mẹo bảo quản (nguồn và ngày xác minh đi kèm)
+    @SerialName("storage_tips") val storageTips: List<String> = emptyList(),
+    @SerialName("storage_source_url") val storageSourceUrl: String? = null,
+    @SerialName("storage_verified_at") val storageVerifiedAt: String? = null
 )
 
 @Serializable

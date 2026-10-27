@@ -153,7 +153,23 @@ public struct Recipe: Identifiable, Codable, Equatable, Sendable {
     public let spiceSourceURL: String?
     public let spiceVerifiedAt: String?
 
-    public init(id: String, name: String, category: String, servings: Int = 4, instructions: [String] = [], ingredients: [RecipeIngredient] = [], dietaryStatus: String = "unknown", dietarySourceURL: String? = nil, dietaryVerifiedAt: String? = nil, spiceLevel: Int? = nil, spiceSourceURL: String? = nil, spiceVerifiedAt: String? = nil) {
+    // E2-data: thời gian chuẩn bị, thời gian nấu, độ khó (nguồn và ngày xác minh đi kèm)
+    public let prepTimeMinutes: Int?
+    public let prepTimeSourceURL: String?
+    public let prepTimeVerifiedAt: String?
+    public let cookTimeMinutes: Int?
+    public let cookTimeSourceURL: String?
+    public let cookTimeVerifiedAt: String?
+    public let difficulty: String?
+    public let difficultySourceURL: String?
+    public let difficultyVerifiedAt: String?
+
+    // E3-data: mẹo bảo quản (nguồn và ngày xác minh đi kèm)
+    public let storageTips: [String]
+    public let storageSourceURL: String?
+    public let storageVerifiedAt: String?
+
+    public init(id: String, name: String, category: String, servings: Int = 4, instructions: [String] = [], ingredients: [RecipeIngredient] = [], dietaryStatus: String = "unknown", dietarySourceURL: String? = nil, dietaryVerifiedAt: String? = nil, spiceLevel: Int? = nil, spiceSourceURL: String? = nil, spiceVerifiedAt: String? = nil, prepTimeMinutes: Int? = nil, prepTimeSourceURL: String? = nil, prepTimeVerifiedAt: String? = nil, cookTimeMinutes: Int? = nil, cookTimeSourceURL: String? = nil, cookTimeVerifiedAt: String? = nil, difficulty: String? = nil, difficultySourceURL: String? = nil, difficultyVerifiedAt: String? = nil, storageTips: [String] = [], storageSourceURL: String? = nil, storageVerifiedAt: String? = nil) {
         self.id = id
         self.name = name
         self.category = category
@@ -166,6 +182,18 @@ public struct Recipe: Identifiable, Codable, Equatable, Sendable {
         self.spiceLevel = spiceLevel
         self.spiceSourceURL = spiceSourceURL
         self.spiceVerifiedAt = spiceVerifiedAt
+        self.prepTimeMinutes = prepTimeMinutes
+        self.prepTimeSourceURL = prepTimeSourceURL
+        self.prepTimeVerifiedAt = prepTimeVerifiedAt
+        self.cookTimeMinutes = cookTimeMinutes
+        self.cookTimeSourceURL = cookTimeSourceURL
+        self.cookTimeVerifiedAt = cookTimeVerifiedAt
+        self.difficulty = difficulty
+        self.difficultySourceURL = difficultySourceURL
+        self.difficultyVerifiedAt = difficultyVerifiedAt
+        self.storageTips = storageTips
+        self.storageSourceURL = storageSourceURL
+        self.storageVerifiedAt = storageVerifiedAt
     }
 
     enum CodingKeys: String, CodingKey {
@@ -176,6 +204,18 @@ public struct Recipe: Identifiable, Codable, Equatable, Sendable {
         case spiceLevel = "spice_level"
         case spiceSourceURL = "spice_source_url"
         case spiceVerifiedAt = "spice_verified_at"
+        case prepTimeMinutes = "prep_time_minutes"
+        case prepTimeSourceURL = "prep_time_source_url"
+        case prepTimeVerifiedAt = "prep_time_verified_at"
+        case cookTimeMinutes = "cook_time_minutes"
+        case cookTimeSourceURL = "cook_time_source_url"
+        case cookTimeVerifiedAt = "cook_time_verified_at"
+        case difficulty = "difficulty"
+        case difficultySourceURL = "difficulty_source_url"
+        case difficultyVerifiedAt = "difficulty_verified_at"
+        case storageTips = "storage_tips"
+        case storageSourceURL = "storage_source_url"
+        case storageVerifiedAt = "storage_verified_at"
     }
 
     public init(from decoder: Decoder) throws {
@@ -192,6 +232,18 @@ public struct Recipe: Identifiable, Codable, Equatable, Sendable {
         self.spiceLevel = try container.decodeIfPresent(Int.self, forKey: .spiceLevel)
         self.spiceSourceURL = try container.decodeIfPresent(String.self, forKey: .spiceSourceURL)
         self.spiceVerifiedAt = try container.decodeIfPresent(String.self, forKey: .spiceVerifiedAt)
+        self.prepTimeMinutes = try container.decodeIfPresent(Int.self, forKey: .prepTimeMinutes)
+        self.prepTimeSourceURL = try container.decodeIfPresent(String.self, forKey: .prepTimeSourceURL)
+        self.prepTimeVerifiedAt = try container.decodeIfPresent(String.self, forKey: .prepTimeVerifiedAt)
+        self.cookTimeMinutes = try container.decodeIfPresent(Int.self, forKey: .cookTimeMinutes)
+        self.cookTimeSourceURL = try container.decodeIfPresent(String.self, forKey: .cookTimeSourceURL)
+        self.cookTimeVerifiedAt = try container.decodeIfPresent(String.self, forKey: .cookTimeVerifiedAt)
+        self.difficulty = try container.decodeIfPresent(String.self, forKey: .difficulty)
+        self.difficultySourceURL = try container.decodeIfPresent(String.self, forKey: .difficultySourceURL)
+        self.difficultyVerifiedAt = try container.decodeIfPresent(String.self, forKey: .difficultyVerifiedAt)
+        self.storageTips = try container.decodeIfPresent([String].self, forKey: .storageTips) ?? []
+        self.storageSourceURL = try container.decodeIfPresent(String.self, forKey: .storageSourceURL)
+        self.storageVerifiedAt = try container.decodeIfPresent(String.self, forKey: .storageVerifiedAt)
     }
 }
 
