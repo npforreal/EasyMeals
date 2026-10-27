@@ -1,5 +1,11 @@
 import SwiftUI
 
+private struct PickerRequest: Identifiable {
+    let id = UUID()
+    let mealPlanId: String
+    let mode: RecipePickerSheet.Mode
+}
+
 public struct TodayView: View {
     @State private var storage = AppStorage.shared
     @State private var selectedRecipe: Recipe?
@@ -10,6 +16,8 @@ public struct TodayView: View {
     // Hộp thoại giữ/thay khi tạo thực đơn trùng ngày bữa chưa ăn (A2 - Vòng 13).
     @State private var showingPlanConflict = false
     @State private var planConflictDays = 3
+    // D2b: chọn món thủ công cho bữa chưa ăn (thêm/đổi/bỏ món).
+    @State private var pickerRequest: PickerRequest?
     @SwiftUI.AppStorage("selected_plan_days") private var selectedPlanDays: Int = PlanLimits.defaultDays
     @SwiftUI.AppStorage("allow_leftovers") private var allowLeftovers: Bool = true
     @SwiftUI.AppStorage("leftover_days") private var leftoverDays: Int = PlanLimits.leftoverDefaultDays
@@ -77,6 +85,9 @@ public struct TodayView: View {
                             }
                         }
                 }
+            }
+            .sheet(item: $pickerRequest) { req in
+                RecipePickerSheet(mealPlanId: req.mealPlanId, mode: req.mode, onDone: {})
             }
             .confirmationDialog("Không đủ nguyên liệu", isPresented: $showingDeficitConfirmation, titleVisibility: .visible) {
                 Button("Thêm vào danh sách đi chợ") {
@@ -332,7 +343,35 @@ public struct TodayView: View {
                             .foregroundColor(AppColors.primary)
                         }
                         .buttonStyle(.borderless)
+                        if plan.eatenAt == nil {
+                            Button("Đổi") {
+                                pickerRequest = PickerRequest(mealPlanId: plan.id, mode: .swap(oldDishId: dish.id, category: dish.category))
+                            }
+                            .font(.caption)
+                            .buttonStyle(.borderless)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .accessibilityLabel("Đổi món \(dish.recipeName)")
+                            .accessibilityIdentifier("swap-dish-\(dish.id)")
+                            Button("Bỏ") {
+                                try? storage.removeDish(mealPlanId: plan.id, dishId: dish.id)
+                            }
+                            .font(.caption)
+                            .buttonStyle(.borderless)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .accessibilityLabel("Bỏ món \(dish.recipeName)")
+                        }
                     }
+                }
+                if plan.eatenAt == nil {
+                    Button {
+                        pickerRequest = PickerRequest(mealPlanId: plan.id, mode: .add)
+                    } label: {
+                        Label("Thêm món", systemImage: "plus.circle")
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.borderless)
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("add-dish-\(plan.id)")
                 }
             }
 
