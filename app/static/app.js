@@ -64,6 +64,10 @@ import {
 } from "./js/engine.js";
 import { filterRecipesByPreferences, filterRecipesForBrowse } from "./js/recipe-preferences.js";
 import {
+  filterByMetadata, hiddenUnknownMessage, timeDifficultyLine, estimateSourceLabel,
+  storageTips, storageSourceLabel, missingMetadataNote,
+} from "./js/recipe-metadata.js";
+import {
   formatDateVN,
   formatRelativeDate,
   formatExpiryStatus,
@@ -635,10 +639,50 @@ export async function openRecipeModal(recipeId, initialServings = null) {
       });
       body.appendChild(ingList);
 
-      const metadataNote = document.createElement("p");
-      metadataNote.className = "text-muted";
-      metadataNote.textContent = "Danh mục chưa có thời gian chuẩn bị/nấu, độ khó hoặc mẹo bảo quản được xác minh cho công thức này.";
-      body.appendChild(metadataNote);
+      const metaLine = timeDifficultyLine(recipe);
+      if (metaLine) {
+        const metaP = document.createElement("p");
+        metaP.id = "recipe-time-line";
+        const metaStrong = document.createElement("strong");
+        metaStrong.textContent = metaLine;
+        const metaSrc = document.createElement("span");
+        metaSrc.className = "text-muted";
+        metaSrc.textContent = ` (${estimateSourceLabel(recipe)})`;
+        metaP.appendChild(metaStrong);
+        metaP.appendChild(metaSrc);
+        body.appendChild(metaP);
+      }
+      const tips = storageTips(recipe);
+      if (tips.length) {
+        const tipsTitle = document.createElement("h3");
+        tipsTitle.style.fontSize = "1rem";
+        tipsTitle.style.marginBottom = "0.5rem";
+        tipsTitle.textContent = "Mẹo bảo quản";
+        const tipsList = document.createElement("ul");
+        tipsList.id = "recipe-storage-tips";
+        tips.forEach((tip) => {
+          const tipLi = document.createElement("li");
+          tipLi.textContent = tip;
+          tipsList.appendChild(tipLi);
+        });
+        body.appendChild(tipsTitle);
+        body.appendChild(tipsList);
+        const tipsSrc = storageSourceLabel(recipe);
+        if (tipsSrc) {
+          const tipsSrcP = document.createElement("p");
+          tipsSrcP.className = "text-muted";
+          tipsSrcP.textContent = tipsSrc;
+          body.appendChild(tipsSrcP);
+        }
+      }
+      const missingNote = missingMetadataNote(recipe);
+      if (missingNote) {
+        const metadataNote = document.createElement("p");
+        metadataNote.className = "text-muted";
+        metadataNote.id = "recipe-metadata-missing";
+        metadataNote.textContent = missingNote;
+        body.appendChild(metadataNote);
+      }
 
       const stepTitle = document.createElement("h3");
       stepTitle.style.fontSize = "1rem";
@@ -2123,6 +2167,10 @@ async function initRecipesPage() {
   const excludeFilter = document.getElementById("recipe-exclude-ingredients");
   const searchStatus = document.getElementById("recipe-search-status");
   let activeCat = "";
+  // Ephemeral UI state: never persisted.
+  let metaFilter = { timeLimit: 0, difficulty: "" };
+  const metaStatus = document.getElementById("recipe-metadata-status");
+  const metaChips = document.querySelectorAll(".meta-chip");
   const preferenceKey = "recipe_preferences_v1";
   let preferences = (await getLocalSetting(preferenceKey)) || {};
   if (dietFilter) dietFilter.value = preferences.diet || "";
@@ -2195,6 +2243,13 @@ async function initRecipesPage() {
       recipes = filterRecipesForBrowse(filterRecipesByPreferences(recipes, preferences, activeCat), {
         query: searchInput?.value || "", includeIngredientIds: includedIds, excludeIngredientIds: excludedIds,
       });
+      const metaResult = filterByMetadata(recipes, metaFilter);
+      recipes = metaResult.recipes;
+      if (metaStatus) {
+        const msg = hiddenUnknownMessage(metaResult.hiddenUnknown, metaFilter);
+        metaStatus.textContent = msg;
+        metaStatus.hidden = !msg;
+      }
       if (searchStatus) searchStatus.textContent = `${recipes.length} công thức phù hợp`;
 
       if (!recipes.length) {
@@ -2273,6 +2328,24 @@ async function initRecipesPage() {
       btn.classList.add("active", "btn-primary");
       btn.classList.remove("btn-outline");
       activeCat = btn.getAttribute("data-cat") || "";
+      loadAndRender();
+    });
+  });
+
+  metaChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const kind = chip.getAttribute("data-meta");
+      const value = chip.getAttribute("data-value") || "";
+      if (kind === "time") metaFilter = { ...metaFilter, timeLimit: Number(value) || 0 };
+      else metaFilter = { ...metaFilter, difficulty: value };
+      metaChips.forEach((other) => {
+        if (other.getAttribute("data-meta") !== kind) return;
+        const on = other === chip;
+        other.classList.toggle("active", on);
+        other.classList.toggle("btn-primary", on);
+        other.classList.toggle("btn-outline", !on);
+        other.setAttribute("aria-pressed", String(on));
+      });
       loadAndRender();
     });
   });

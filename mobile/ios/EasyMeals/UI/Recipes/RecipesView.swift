@@ -5,6 +5,9 @@ public struct RecipesView: View {
     @State private var searchText = ""
     @State private var selectedCategory = "all"
     @State private var canCookOnly = false
+    // Bộ lọc tạm thời (không lưu): nil = "Tất cả"
+    @State private var maxMinutesFilter: Int? = nil
+    @State private var difficultyFilter: String? = nil
     @AppStorage("easymeals.recipe.dietaryFilter") private var dietaryFilter = ""
     @AppStorage("easymeals.recipe.avoidedIngredientIds") private var avoidedIngredientIDs = ""
     @AppStorage("easymeals.recipe.preferredIngredientIds") private var preferredIngredientIDs = ""
@@ -45,6 +48,8 @@ public struct RecipesView: View {
                       r.spiceSourceURL != nil,
                       r.spiceVerifiedAt != nil else { return false }
             }
+            if !RecipeMetadata.matchesTime(r, maxMinutes: maxMinutesFilter) { return false }
+            if !RecipeMetadata.matchesDifficulty(r, difficulty: difficultyFilter) { return false }
             if r.ingredients.contains(where: { avoidedIDs.contains($0.ingredientId) }) { return false }
             return true
         }.sorted { first, second in
@@ -127,6 +132,8 @@ public struct RecipesView: View {
                     }
                     .padding()
                 }
+
+                metadataFilters
 
                 List {
                     Section { Text("\(filteredRecipes.count) công thức phù hợp").font(.footnote).foregroundColor(AppColors.textSecondary) }
@@ -216,6 +223,51 @@ public struct RecipesView: View {
                 }
             }
         }
+    }
+
+    private var metadataFilters: some View {
+        let unknown = RecipeMetadata.unknownCount(storage.recipes, timeActive: maxMinutesFilter != nil, difficultyActive: difficultyFilter != nil)
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("Thời gian").font(.caption.bold()).foregroundColor(AppColors.textSecondary)
+            FlowLayout(spacing: 8) {
+                optionChip(title: "Tất cả", selected: maxMinutesFilter == nil) { maxMinutesFilter = nil }
+                optionChip(title: "≤15 phút", selected: maxMinutesFilter == 15) { maxMinutesFilter = 15 }
+                optionChip(title: "≤30 phút", selected: maxMinutesFilter == 30) { maxMinutesFilter = 30 }
+                optionChip(title: "≤60 phút", selected: maxMinutesFilter == 60) { maxMinutesFilter = 60 }
+            }
+            Text("Độ khó").font(.caption.bold()).foregroundColor(AppColors.textSecondary)
+            FlowLayout(spacing: 8) {
+                optionChip(title: "Tất cả", selected: difficultyFilter == nil) { difficultyFilter = nil }
+                optionChip(title: "Dễ", selected: difficultyFilter == "de") { difficultyFilter = "de" }
+                optionChip(title: "Trung bình", selected: difficultyFilter == "trung_binh") { difficultyFilter = "trung_binh" }
+                optionChip(title: "Khó", selected: difficultyFilter == "kho") { difficultyFilter = "kho" }
+            }
+            if maxMinutesFilter != nil && unknown.time > 0 {
+                Text(RecipeMetadata.hiddenNote(count: unknown.time, label: "thời gian"))
+                    .font(.footnote).foregroundColor(AppColors.textSecondary)
+            }
+            if difficultyFilter != nil && unknown.difficulty > 0 {
+                Text(RecipeMetadata.hiddenNote(count: unknown.difficulty, label: "độ khó"))
+                    .font(.footnote).foregroundColor(AppColors.textSecondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal)
+        .padding(.bottom, 8)
+    }
+
+    private func optionChip(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption.bold())
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(selected ? AppColors.primary : AppColors.secondarySurface)
+                .foregroundColor(selected ? .white : AppColors.textPrimary)
+                .cornerRadius(12)
+        }
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private func filterChip(title: String, key: String) -> some View {
@@ -325,9 +377,7 @@ public struct RecipeDetailView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Các bước nấu")
                         .font(.title3.bold())
-                    Text("Thời gian, độ khó và mẹo bảo quản chưa có dữ liệu được xác minh.")
-                        .font(.footnote)
-                        .foregroundColor(AppColors.textSecondary)
+                    RecipeMetadataInfoView(recipe: recipe)
 
                     ForEach(Array(recipe.instructions.enumerated()), id: \.offset) { idx, step in
                         HStack(alignment: .top, spacing: 12) {
@@ -413,9 +463,7 @@ public struct CookingModeView: View {
                     }
                 }
                 .frame(maxHeight: 160)
-                Text("Thời gian, độ khó và mẹo bảo quản chưa có dữ liệu được xác minh.")
-                    .font(.footnote)
-                    .foregroundColor(AppColors.textSecondary)
+                RecipeMetadataInfoView(recipe: recipe)
                     .padding(.horizontal)
 
                 Spacer()
@@ -494,5 +542,67 @@ public struct CookingModeView: View {
                 UIApplication.shared.isIdleTimerDisabled = enabled
             }
         }
+    }
+}
+
+/// Thông tin ước lượng (thời gian, độ khó) và mẹo bảo quản; chỉ hiển thị trường có dữ liệu.
+struct RecipeMetadataInfoView: View {
+    let recipe: Recipe
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let line = RecipeMetadata.summaryLine(recipe) {
+                Text(line).font(.subheadline.bold())
+                if let note = RecipeMetadata.estimateSourceNote(recipe) {
+                    Text("(\(note))").font(.footnote).foregroundColor(AppColors.textSecondary)
+                }
+            }
+            if !recipe.storageTips.isEmpty {
+                Text("Mẹo bảo quản").font(.subheadline.bold())
+                ForEach(Array(recipe.storageTips.enumerated()), id: \.offset) { _, tip in
+                    Text("• \(tip)").font(.footnote)
+                }
+                if let src = RecipeMetadata.storageSourceNote(recipe) {
+                    Text(src).font(.footnote).foregroundColor(AppColors.textSecondary)
+                }
+            }
+            if let missing = RecipeMetadata.missingFieldsNote(recipe) {
+                Text(missing).font(.footnote).foregroundColor(AppColors.textSecondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Bố cục tự xuống dòng cho các chip khi màn hình hẹp hoặc cỡ chữ lớn.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        arrange(width: proposal.width ?? .infinity, subviews: subviews).size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = arrange(width: bounds.width, subviews: subviews)
+        for (i, origin) in result.origins.enumerated() {
+            subviews[i].place(at: CGPoint(x: bounds.minX + origin.x, y: bounds.minY + origin.y), proposal: .unspecified)
+        }
+    }
+
+    private func arrange(width: CGFloat, subviews: Subviews) -> (size: CGSize, origins: [CGPoint]) {
+        var origins: [CGPoint] = []
+        var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0, maxX: CGFloat = 0
+        for sub in subviews {
+            let size = sub.sizeThatFits(.unspecified)
+            if x > 0 && x + size.width > width {
+                x = 0; y += rowHeight + spacing; rowHeight = 0
+            }
+            origins.append(CGPoint(x: x, y: y))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+            maxX = max(maxX, x - spacing)
+        }
+        return (CGSize(width: maxX, height: y + rowHeight), origins)
     }
 }

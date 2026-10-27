@@ -62,6 +62,21 @@
         Món Canh
       </button>
     </div>
+    <div class="meta-filter-group" role="group" aria-label="Lọc theo thời gian" style="display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; margin-top: var(--space-3);">
+      <span class="text-muted">Thời gian</span>
+      <button class="btn btn-primary btn-sm meta-chip active" data-meta="time" data-value="0" aria-pressed="true" type="button">Tất cả</button>
+      <button class="btn btn-outline btn-sm meta-chip" data-meta="time" data-value="15" aria-pressed="false" type="button">≤15 phút</button>
+      <button class="btn btn-outline btn-sm meta-chip" data-meta="time" data-value="30" aria-pressed="false" type="button">≤30 phút</button>
+      <button class="btn btn-outline btn-sm meta-chip" data-meta="time" data-value="60" aria-pressed="false" type="button">≤60 phút</button>
+    </div>
+    <div class="meta-filter-group" role="group" aria-label="Lọc theo độ khó" style="display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; margin-top: var(--space-3);">
+      <span class="text-muted">Độ khó</span>
+      <button class="btn btn-primary btn-sm meta-chip active" data-meta="difficulty" data-value="" aria-pressed="true" type="button">Tất cả</button>
+      <button class="btn btn-outline btn-sm meta-chip" data-meta="difficulty" data-value="de" aria-pressed="false" type="button">Dễ</button>
+      <button class="btn btn-outline btn-sm meta-chip" data-meta="difficulty" data-value="trung_binh" aria-pressed="false" type="button">Trung bình</button>
+      <button class="btn btn-outline btn-sm meta-chip" data-meta="difficulty" data-value="kho" aria-pressed="false" type="button">Khó</button>
+    </div>
+    <p id="recipe-metadata-status" class="text-muted" role="status" hidden></p>
   </div>
 
   <div id="recipes-grid" class="grid">

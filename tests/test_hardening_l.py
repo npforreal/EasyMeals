@@ -67,7 +67,7 @@ def test_l4_android_manifest_minimal_permissions():
 
 def test_l5_service_worker_cache_scope_limited():
     sw = (ROOT / "app/static/sw.js").read_text(encoding="utf-8")
-    assert 'CACHE_NAME = "easymeals-v2"' in sw
+    assert 'CACHE_NAME = "easymeals-v3"' in sw
     # Chỉ lưu cache đường dẫn trong danh sách app shell hoặc /api/catalogue.
     assert "isCacheable" in sw
     assert '"/api/catalogue"' in sw

@@ -34,6 +34,10 @@ import com.easymeals.app.data.db.AppRepository
 import com.easymeals.app.domain.engine.ExactDecimal
 import com.easymeals.app.domain.model.Recipe
 import com.easymeals.app.ui.theme.GeneratedTokens
+import com.easymeals.app.util.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +49,8 @@ fun RecipesScreen(repository: AppRepository) {
     val pantryLots by repository.pantryLots.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Tất cả") }
+    var timeFilter by rememberSaveable { mutableStateOf(TimeFilter.ALL) }
+    var difficultyFilter by rememberSaveable { mutableStateOf(DifficultyFilter.ALL) }
     var dietaryFilter by remember { mutableStateOf(recipePreferences.getString("dietary_filter", "") ?: "") }
     var showAvoidDialog by remember { mutableStateOf(false) }
     var showPreferredDialog by remember { mutableStateOf(false) }
@@ -75,7 +81,7 @@ fun RecipesScreen(repository: AppRepository) {
         listOf("Tất cả") + cats
     }
 
-    val filteredRecipes = remember(recipes, searchQuery, selectedCategory, dietaryFilter, avoidedIngredientIds, preferredIngredientIds, maxSpice, includeIngredientIds, excludeIngredientIds) {
+    val filteredRecipes = remember(recipes, searchQuery, selectedCategory, dietaryFilter, avoidedIngredientIds, preferredIngredientIds, maxSpice, includeIngredientIds, excludeIngredientIds, timeFilter, difficultyFilter) {
         recipes.filter { recipe ->
             val catLabel = com.easymeals.app.ui.theme.GeneratedTokens.Labels.dish_categories[recipe.category] ?: recipe.category
             val matchCat = selectedCategory == "Tất cả" || recipe.category == selectedCategory
@@ -96,7 +102,8 @@ fun RecipesScreen(repository: AppRepository) {
                     recipe.spiceLevel != null && recipe.spiceLevel <= maxSpice!! &&
                             !recipe.spiceSourceUrl.isNullOrBlank() && !recipe.spiceVerifiedAt.isNullOrBlank()
                     )
-            matchCat && matchQuery && matchDiet && matchAvoid && matchSpice && matchIngredients
+            matchCat && matchQuery && matchDiet && matchAvoid && matchSpice && matchIngredients &&
+                matchesTime(timeFilter, recipe) && matchesDifficulty(difficultyFilter, recipe)
         }.sortedByDescending { recipe -> recipe.ingredients.count { it.ingredientId in preferredIngredientIds } }
     }
 
@@ -317,6 +324,38 @@ fun RecipesScreen(repository: AppRepository) {
                         )
                     )
                 }
+            }
+
+            // Time / difficulty filters (ephemeral UI state)
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                Text("Thời gian", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TimeFilter.values().forEach { f ->
+                        FilterChip(
+                            selected = timeFilter == f,
+                            onClick = { timeFilter = f },
+                            label = { Text(f.label) },
+                            modifier = Modifier.semantics { contentDescription = "Lọc theo thời gian: ${f.label}" }
+                        )
+                    }
+                }
+                Text("Độ khó", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DifficultyFilter.values().forEach { f ->
+                        FilterChip(
+                            selected = difficultyFilter == f,
+                            onClick = { difficultyFilter = f },
+                            label = { Text(f.label) },
+                            modifier = Modifier.semantics { contentDescription = "Lọc theo độ khó: ${f.label}" }
+                        )
+                    }
+                }
+            }
+            hiddenUnknownNote(recipes, timeFilter, difficultyFilter)?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
             }
 
             // Results count
@@ -540,7 +579,7 @@ fun RecipeDetailScreen(
             // Ingredients Section
             item {
                 Text("Nguyên liệu", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text("Thời gian, độ khó và mẹo bảo quản chưa có dữ liệu được xác minh.", style = MaterialTheme.typography.bodySmall)
+                RecipeMetadataInfo(recipe)
             }
 
             items(recipe.ingredients) { ing ->
@@ -759,7 +798,7 @@ fun CookingModeScreen(
                     }
                 }
             }
-            Text("Thời gian, độ khó và mẹo bảo quản chưa có dữ liệu được xác minh.", style = MaterialTheme.typography.bodySmall)
+            RecipeMetadataInfo(recipe)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -841,5 +880,23 @@ fun CookingModeScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun RecipeMetadataInfo(recipe: Recipe) {
+    val summary = metadataSummary(recipe)
+    if (summary != null) {
+        Text("$summary (${metadataSourceNote(recipe)})", style = MaterialTheme.typography.bodySmall)
+    }
+    if (recipe.storageTips.isNotEmpty()) {
+        Text("Mẹo bảo quản", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+        recipe.storageTips.forEach { Text("• $it", style = MaterialTheme.typography.bodySmall) }
+        storageSourceNote(recipe.storageSourceUrl)?.let {
+            Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+    missingFieldsNote(recipe)?.let {
+        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

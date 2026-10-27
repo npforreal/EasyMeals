@@ -22,6 +22,7 @@ from typing import Any
 from uuid import UUID
 
 from app.domain.models import DishCategory, Ingredient, QuantityUnit, Recipe, RecipeIngredient
+from app.storage.recipe_metadata import apply_overlay, apply_storage_rules
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -722,6 +723,10 @@ class FixtureCatalogueRepository(Repository):
             }
             for r in self.recipes.values()
         ]
+        # E2/E3-data: mẹo bảo quản có nguồn + overlay thời gian/độ khó (như export_catalogue)
+        ing_cat = {i["id"]: i.get("category", "") for i in ingredients_data}
+        apply_storage_rules(recipes_data, ing_cat)
+        apply_overlay(recipes_data)
         bundle = {
             "catalogue_version": CATALOGUE_VERSION,
             "categories": STANDARD_CATEGORIES,

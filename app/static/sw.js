@@ -2,7 +2,7 @@
  * EasyMeals Service Worker (Offline Cache & PWA Support).
  */
 
-const CACHE_NAME = "easymeals-v2";
+const CACHE_NAME = "easymeals-v3";
 const MAX_RUNTIME_ENTRIES = 80;
 const ASSETS_TO_CACHE = [
   "/",

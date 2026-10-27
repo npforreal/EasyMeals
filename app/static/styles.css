@@ -548,7 +548,8 @@ input[type="number"] { text-align: right; font-variant-numeric: tabular-nums; }
 .badge-leftover { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--honey); }
 .badge-eaten { background: var(--primary-soft); color: var(--primary-strong); }
 
-.filter-btn {
+.filter-btn,
+.meta-chip {
   min-height: 44px;
   padding: 0 16px;
   border-radius: 8px;
@@ -558,7 +559,8 @@ input[type="number"] { text-align: right; font-variant-numeric: tabular-nums; }
   font-weight: 500;
   cursor: pointer;
 }
-.filter-btn.active {
+.filter-btn.active,
+.meta-chip.active {
   background: var(--primary-soft);
   border-color: var(--primary);
   color: var(--primary-strong);
