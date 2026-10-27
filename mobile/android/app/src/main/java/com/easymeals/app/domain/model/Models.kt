@@ -100,7 +100,9 @@ data class PantryLot(
     val unit: String,
     @SerialName("purchased_at") @SerializedName("purchased_at") val purchasedAt: String? = null,
     @SerialName("expires_at") @SerializedName("expires_at") val expiresAt: String? = null,
-    val location: String? = "fridge"
+    val location: String? = "fridge",
+    // F1 - Vòng 13: giá đã nhập ở danh sách đi chợ (tuỳ chọn) dùng cho thống kê chi tiêu.
+    val price: String? = null
 )
 
 @Serializable
@@ -111,7 +113,11 @@ data class StockMovement(
     val reason: String,
     @SerialName("meal_plan_id") @SerializedName("meal_plan_id") val mealPlanId: String? = null,
     @SerialName("idempotency_key") @SerializedName("idempotency_key") val idempotencyKey: String? = null,
-    @SerialName("created_at") @SerializedName("created_at") val createdAt: String = java.time.Instant.now().toString()
+    @SerialName("created_at") @SerializedName("created_at") val createdAt: String = java.time.Instant.now().toString(),
+    // F1 - Vòng 13: khoá ngoại tuỳ chọn (null với dữ liệu cũ). Không lưu bản sao tên.
+    @SerialName("ingredient_id") @SerializedName("ingredient_id") val ingredientId: String? = null,
+    @SerialName("recipe_id") @SerializedName("recipe_id") val recipeId: String? = null,
+    @SerialName("leftover_source_meal_id") @SerializedName("leftover_source_meal_id") val leftoverSourceMealId: String? = null
 )
 
 @Serializable

@@ -11,13 +11,13 @@ EasyMeals cung cấp 2 ứng dụng thuần native 100% không phụ thuộc fra
 1. **Android (`mobile/android/`)**:
    - **Ngôn ngữ & Framework**: Kotlin 2.0.21, Jetpack Compose, Material 3, Android Gradle Plugin 8.7.2.
    - **Yêu cầu môi trường**: JDK 21 (OpenJDK 21 khuyến nghị trên macOS), Android SDK (minSdk 26, targetSdk 35).
-   - **Bảo mật tuyệt đối**: **KHÔNG CÓ QUYỀN INTERNET** (`android.permission.INTERNET` bị loại bỏ hoàn toàn trong `AndroidManifest.xml`), `allowBackup="false"`, `usesCleartextTraffic="false"`.
+   - **Bảo mật tuyệt đối**: **KHÔNG CÓ QUYỀN INTERNET** (`android.permission.INTERNET` bị loại bỏ hoàn toàn trong `AndroidManifest.xml`), `allowBackup="false"`, `usesCleartextTraffic="false"`. Manifest chỉ khai báo `VIBRATE` và `POST_NOTIFICATIONS`; quyền thông báo chỉ được xin khi người dùng bật "Nhắc việc" trong Cài đặt (receiver `exported="false"`, không push server).
    - **Số học chính xác**: `ExactDecimal` bọc `java.math.BigDecimal` với chuẩn hoá số không dư (`stripTrailingZeros()`), đảm bảo khớp 100% với Python `Decimal` và JavaScript `Decimal`.
 
 2. **iOS (`mobile/ios/`)**:
    - **Ngôn ngữ & Framework**: Swift 5.9 / 6.0, SwiftUI, Foundation Decimal, Swift Package Manager.
    - **Yêu cầu môi trường**: macOS 14+, Xcode 15+ (iOS 17+ deployment target).
-   - **Bảo mật tuyệt đối**: **KHÔNG CÓ ATS EXCEPTION** (`NSAppTransportSecurity` / `NSAllowsArbitraryLoads`), không theo dõi, chạy hoàn toàn offline trên sandbox của máy.
+   - **Bảo mật tuyệt đối**: **KHÔNG CÓ ATS EXCEPTION** (`NSAppTransportSecurity` / `NSAllowsArbitraryLoads`), không theo dõi, chạy hoàn toàn offline trên sandbox của máy. Chỉ xin quyền thông báo hệ thống khi người dùng bật "Nhắc việc"; thông báo được tạo cục bộ, không có push server.
    - **Số học chính xác**: `ExactDecimal` bọc `Foundation.Decimal` với quy tắc làm tròn `bankers` / `plainString`, đảm bảo kết quả trùng khớp chính xác bộ dữ liệu mẫu `engine_test_cases.json`.
 
 ---

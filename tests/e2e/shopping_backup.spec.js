@@ -48,7 +48,7 @@ test.describe("A3 - Danh sách đi chợ trong kho versioned & backup", () => {
     expect(manual?.ingredient_name).toBe("Nước mắm pha");
     expect(planItems.length).toBeGreaterThan(0);
 
-    // 4. Xuất backup v2 -> chờ tải về file, kiểm tra dữ liệu shopping.
+    // 4. Xuất backup v3 (F3 - Vòng 13) -> chờ tải về file, kiểm tra dữ liệu shopping.
     await page.goto("/settings");
     await page.on("dialog", (dialog) => dialog.accept());
     const downloadPromise = page.waitForEvent("download");
@@ -57,7 +57,7 @@ test.describe("A3 - Danh sách đi chợ trong kho versioned & backup", () => {
     expect(download.suggestedFilename()).toContain("easymeals-backup-");
     const backupPath = await download.path();
     const backup = JSON.parse(fs.readFileSync(backupPath, "utf-8"));
-    expect(backup.schema_version).toBe(2);
+    expect(backup.schema_version).toBe(3);
     const backupManual = backup.data.shopping.find((i) => i.source === "manual");
     const backupPlan = backup.data.shopping.find((i) => i.source === "plan");
     expect(backupManual?.ingredient_id).toBe("z-a3-manual");

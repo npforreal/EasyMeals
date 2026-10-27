@@ -130,7 +130,7 @@ public struct AddPantrySheet: View {
                 .disabled(selectedIngredient == nil || quantityText.isEmpty)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
-                .background(AppColors.background)
+                .background(AppColors.surface)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

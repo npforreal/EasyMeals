@@ -104,3 +104,84 @@ class BackupMigrationTest {
         assertEquals("2", current.recipePreferences!!.maxSpice)
     }
 }
+
+/** F3 - Vòng 13: đọc file sao lưu của bản Web để chuyển thiết bị Web <-> Android. */
+class WebBackupCompatibilityTest {
+
+    private val webBackup = """
+        {
+          "schema_version": 3,
+          "app": "EasyMeals",
+          "app_version": "2.0.0",
+          "exported_at": "2026-10-26T08:00:00Z",
+          "metadata": {"total_lots": 1},
+          "data": {
+            "pantry": [
+              {
+                "id": "lot-web-1",
+                "ingredient_id": "ing-1",
+                "ingredient_name": "Thịt heo",
+                "purchased_quantity": "500",
+                "remaining_quantity": "300",
+                "unit": "g",
+                "purchased_at": "2026-10-25T08:00:00Z",
+                "expires_at": "2026-10-28",
+                "price": "55000"
+              }
+            ],
+            "plans": [
+              {
+                "id": "plan-web-1",
+                "planned_for": "2026-10-26",
+                "meal_period": "dinner",
+                "eaten_at": "2026-10-26T12:00:00Z",
+                "dishes": [
+                  {"id": "d1", "recipe_id": "r-1", "recipe_name": "Thịt kho", "category": "man", "is_leftover": false}
+                ]
+              }
+            ],
+            "movements": [
+              {
+                "id": "mov-web-1",
+                "pantry_lot_id": "lot-web-1",
+                "quantity_delta": "-200",
+                "reason": "meal_consumption",
+                "meal_plan_id": "plan-web-1",
+                "created_at": "2026-10-26T12:00:00Z"
+              }
+            ],
+            "settings": [
+              {"key": "recipe_preferences_v1", "value": {"avoidedIngredientIds": ["ing-a"], "preferredIngredientIds": [], "dietaryFilter": "vegan", "maxSpice": "2"}}
+            ],
+            "shopping": []
+          }
+        }
+    """.trimIndent()
+
+    @Test
+    fun decodesWebBackupIntoMobilePayload() {
+        val payload = BackupManager.sanitize(BackupManager.decode(webBackup))
+        assertEquals(3, payload.schemaVersion)
+        assertEquals(1, payload.pantryLots.size)
+        assertEquals("55000", payload.pantryLots[0].price)
+        assertEquals(1, payload.mealPlans.size)
+        assertEquals(1, payload.stockMovements.size)
+        assertEquals(setOf("ing-a"), payload.recipePreferences!!.avoidedIngredientIds)
+        assertEquals("vegan", payload.recipePreferences!!.dietaryFilter)
+    }
+
+    @Test
+    fun rejectsBackupFromNewerSchemaWithActionableMessage() {
+        val future = webBackup.replace("\"schema_version\": 3", "\"schema_version\": 99")
+        val error = runCatching { BackupManager.decode(future) }.exceptionOrNull()
+        assertTrue(error is IllegalArgumentException)
+        assertTrue(error!!.message!!.contains("Hãy cập nhật EasyMeals"))
+    }
+
+    @Test
+    fun reportsBrokenJsonClearly() {
+        val error = runCatching { BackupManager.decode("{not json") }.exceptionOrNull()
+        assertTrue(error is IllegalArgumentException)
+        assertTrue(error!!.message!!.contains("Không đọc được JSON"))
+    }
+}

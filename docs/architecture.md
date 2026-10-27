@@ -298,13 +298,13 @@ Backend FastAPI hoạt động như một cỗ máy tính toán thuần tuý (pu
 ## 3. Cấu trúc IndexedDB & Quản lý Trạng thái Cục bộ
 
 Tên cơ sở dữ liệu: `easymeals_local_db`
-Phiên bản khởi tạo: `version = 1`
+Phiên bản hiện tại: `version = 3` (nâng cấp tự động từ v1/v2, không xoá dữ liệu cũ).
 
 ### Object Stores
 1. `pantry` (Kho nguyên liệu):
    - Key: `id` (UUID chuỗi).
    - Indexes: `by_ingredient_id`, `by_purchased_at`.
-   - Fields: `id`, `ingredient_id`, `ingredient_name`, `initial_quantity` (string), `remaining_quantity` (string), `unit`, `purchased_at`, `created_at`.
+   - Fields: `id`, `ingredient_id`, `ingredient_name`, `purchased_quantity` (string), `remaining_quantity` (string), `unit`, `purchased_at`, `expires_at`, `price` (tuỳ chọn, F1), `created_at`.
 2. `plans` (Kế hoạch thực đơn):
    - Key: `id` (UUID chuỗi).
    - Indexes: `by_start_date`, `by_date`.
@@ -312,46 +312,60 @@ Phiên bản khởi tạo: `version = 1`
 3. `movements` (Lịch sử biến động kho):
    - Key: `id` (UUID chuỗi).
    - Indexes: `by_lot_id`, `by_meal_id`, `by_created_at`.
-   - Fields: `id`, `lot_id`, `ingredient_id`, `meal_id`, `quantity_delta` (string), `unit`, `reason`, `created_at`.
+   - Fields: `id`, `pantry_lot_id`, `quantity_delta` (string), `reason`, `meal_plan_id`, `idempotency_key`, `created_at`; từ F1 thêm khoá ngoại tuỳ chọn `ingredient_id`, `recipe_id`, `leftover_source_meal_id` (null với dữ liệu cũ, điền ngược từ lô/bữa khi migrate). Không lưu bản sao tên nguyên liệu/món.
 4. `catalogue` (Bản sao danh mục dùng chung):
    - Key: `key` (chuỗi: `"meta"`, `"ingredients"`, `"recipes"`).
 5. `settings` (Cài đặt ứng dụng):
    - Key: `key` (ví dụ: `"last_backup_at"`, `"theme"`, `"catalogue_version"`).
+6. `shopping` (Danh sách đi chợ, từ schema v2):
+   - Key: `id`; Indexes: `by_source`, `by_ingredient_id`.
+   - Fields: `id`, `ingredient_id`, `ingredient_name`, `needed_quantity`, `unit`, `bought`, `price` (tuỳ chọn), `bought_quantity` (tuỳ chọn), `source` (`plan`/`manual`).
 
 ### Chiến lược Nâng cấp Phiên bản Schema IndexedDB
 - Mọi hàm nâng cấp schema đều được cài đặt trong sự kiện `onupgradeneeded` tuần tự theo số phiên bản (`oldVersion < 2`, `oldVersion < 3`,...).
+- Nâng cấp v2 → v3 (F1) chạy trong transaction `versionchange`: điền `ingredient_id` từ lô kho và `recipe_id` khi bữa chỉ có một món nấu; giữ nguyên mọi bản ghi, lô đã bị xoá thì để trống. Test `tests/js/history.test.js` chứng minh không mất movement và mở lại không chạy lặp.
 - Dữ liệu luôn giữ tính tương thích xuôi và tương thích ngược.
 
 ---
 
 ## 4. Định dạng Tệp Sao lưu & Phục hồi (Backup & Restore Format)
 
-Định dạng file xuất ra là tệp JSON với cấu trúc chuẩn:
+Định dạng file xuất ra là tệp JSON với cấu trúc chuẩn (F3 - Vòng 13, `schema_version` hiện tại là **3**):
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 3,
   "app": "EasyMeals",
-  "exported_at": "2026-10-23T20:30:00Z",
+  "app_version": "2.0.0",
+  "exported_at": "2026-10-27T20:30:00Z",
   "metadata": {
     "total_lots": 12,
     "total_plans": 2,
-    "total_movements": 8
+    "total_movements": 8,
+    "total_shopping_items": 4
   },
   "data": {
     "pantry": [ ... ],
     "plans": [ ... ],
     "movements": [ ... ],
+    "shopping": [ ... ],
     "settings": { ... }
   }
 }
 ```
 
+### Tương thích Định dạng giữa các nền tảng (F3)
+- **Web** dùng dạng lồng `data.*` như trên; **Android/iOS** lưu tệp phẳng (các mảng ở cấp gốc) và xuất kèm `schema_version`, `app`, `app_version`, `exported_at`.
+- **Nhập** chấp nhận **cả hai dạng**: có `data` thì đọc trong `data`, không có thì đọc ở gốc. Nhờ vậy tệp xuất từ Web nhập được vào Android/iOS và ngược lại (chuyển thiết bị khác nền tảng).
+- Trường lạ bị bỏ qua; trường thiếu nhận giá trị mặc định/null (không suy diễn dữ liệu). `price` là trường tuỳ chọn ở cả `pantry` và `shopping`; thiếu giá thì phần chi tiêu trong lịch sử báo "chưa có giá", không coi là 0.
+- `app_version` chỉ để hiển thị/chẩn đoán, **không** dùng để quyết định nhập.
+
 ### Quy tắc Nhập Tệp (Strict Import Rules):
-1. **Kiểm tra Schema Chặt Chẽ**: Kiểm tra cấu trúc `schema_version == 1`, kiểu dữ liệu của từng mảng, giới hạn kích thước file ($\le 10$ MB), giới hạn số bản ghi ($\le 5000$ lots, $\le 500$ plans).
+1. **Kiểm tra Schema Chặt Chẽ**: Chấp nhận `schema_version` 1, 2 và 3 (nâng cấp khi nhập); **từ chối** `schema_version` lớn hơn phiên bản ứng dụng đang chạy kèm thông báo có thể xử lý ("tệp được tạo bởi phiên bản mới hơn — hãy cập nhật ứng dụng") thay vì lỗi chung. Kiểm tra kiểu dữ liệu của từng mảng, giới hạn kích thước file ($\le 10$ MB), giới hạn số bản ghi ($\le 5000$ lots, $\le 500$ plans).
 2. **Từ chối dữ liệu độc hại / XSS**: Tất cả chuỗi văn bản khi nạp vào DOM đều được hiển thị qua `textContent` hoặc DOM API an toàn, không bao giờ dùng `innerHTML` trực tiếp từ dữ liệu nhập.
 3. **Xác nhận Người dùng (Modal 2 lựa chọn)**:
-   - **Ghi đè hoàn toàn (Replace)**: Xoá toàn bộ dữ liệu hiện tại trong IndexedDB và nạp dữ liệu từ file.
+   - **Ghi đè hoàn toàn (Replace)**: Xoá toàn bộ dữ liệu hiện tại và nạp dữ liệu từ file.
    - **Hợp nhất (Merge)**: Bổ sung các bản ghi chưa có (dựa trên UUID), bảo toàn các dữ liệu hiện có trên máy.
+4. **Tóm tắt sau khi nhập**: hiển thị số bản ghi đã thêm/bỏ qua theo từng nhóm (tủ lạnh, thực đơn, biến động kho, đi chợ) và phiên bản tệp, để người dùng biết bản sao lưu có được nạp đúng hay không.
 
 ---
 
@@ -416,3 +430,38 @@ Nhằm đảm bảo trải nghiệm thống nhất giữa Web (FastAPI/Jinja2), 
 | **Điều hướng & Back Stack** | History API & Modal overlays | `BackHandler` Compose: Chi tiết $\to$ Danh sách, Tab khác $\to$ Hôm nay, Hôm nay $\to$ Thoát app | `NavigationStack` & Sheet binding bản địa | Chuẩn UX hệ thống Android và iOS |
 | **Xem Công thức & Nấu** | Modal overlay trang trí Fraunces & Cooking full-screen banner | Dialog / Sheet toàn màn hình Compose với Stepper | Modal Sheet SwiftUI với Stepper và thẻ bước làm | Theo đúng Human Interface Guidelines (Apple) và Material Design 3 (Google) |
 | **Tránh Bàn phím** | Trình duyệt tự cuộn viewport | `imePadding()` & cuộn mở rộng hết chiều cao BottomSheet | `.keyboardDismissMode` & Safe Area tránh bàn phím tự động | Xử lý triệt để lỗi bàn phím che nút Lưu trên điện thoại màn hình nhỏ |
+| **Lịch sử & tổng quan (F1)** | Tính trong IndexedDB khi mở tab Cài đặt (`history.js`), hiển thị trong thẻ Cài đặt | Tính từ tệp trạng thái cục bộ (`HistorySummary.kt`), hiển thị trong tab Cài đặt | Tính từ tệp trạng thái cục bộ (`HistorySummary.swift`), hiển thị trong tab Cài đặt | Cùng một quy tắc tổng hợp, không thêm API lịch sử và không gửi dữ liệu lên máy chủ |
+| **Nhắc việc (F2)** | Không bắt buộc — không có thông báo nền khi đóng tab; ghi rõ khác biệt chủ ý | `AlarmManager` (không exact-alarm) + `BroadcastReceiver` nội bộ, chỉ `POST_NOTIFICATIONS` | `UNUserNotificationCenter` cục bộ, tính sẵn 7 ngày khi mở Cài đặt | Web thiếu cơ chế thông báo nền đáng tin cậy; mobile dùng bộ lập lịch của hệ điều hành |
+
+---
+
+## 7. Lịch sử, Nhắc việc và Quyết định Đồng bộ Đa thiết bị (Vòng 13 — F1/F2/F4)
+
+### 7.1 Lịch sử (F1)
+- **Nguồn dữ liệu duy nhất**: các bản ghi `movements` đã có sẵn từ luồng "Đã ăn"/hoàn tác. Schema v3 chỉ bổ sung khoá ngoại tuỳ chọn để tra cứu tên, không sao chép tên và không thêm trường suy diễn.
+- **Tổng hợp phía client** (`app/static/js/history.js`, `HistorySummary.kt`, `HistorySummary.swift`): số bữa đã nấu, số biến động kho, số lần dùng đồ dư, số lô đã hết hạn còn trong tủ, chi tiêu từ giá đã nhập.
+- **Không cộng gộp số lượng khác đơn vị**: lịch sử báo **số lượt/số bản ghi**, không cộng `g` với `ml`. Muốn xem lượng cụ thể thì mở chi tiết biến động.
+- **Không suy diễn**: lãng phí không được tự suy ra từ thiếu hụt; chỉ liệt kê lô đã quá hạn mà vẫn còn hàng, kèm ghi chú rõ. Chi tiêu thiếu giá hiển thị "chưa có giá" thay vì 0.
+- **Không có API lịch sử**: máy chủ không nhận, không lưu và không trả dữ liệu lịch sử cá nhân.
+
+### 7.2 Nhắc việc (F2)
+- Nội dung chỉ lấy từ dữ liệu trên máy: lô sắp hết hạn/quá hạn còn hàng và bữa ăn **hôm nay** chưa đánh dấu đã ăn.
+- Không có dữ liệu rã đông riêng, nên không bịa thời gian rã đông; phần "chuẩn bị" chỉ là lời nhắc chung cho bữa trong ngày.
+- Giờ nhắc cố định **09:00 theo múi giờ thiết bị**; tính bằng `ZonedDateTime` (Android) và `Calendar` (iOS) nên tự đúng khi đổi múi giờ/DST.
+- Quyền: chỉ `POST_NOTIFICATIONS` (Android, xin khi người dùng bật công tắc) và quyền thông báo iOS. **Không thêm `INTERNET`** hay bất kỳ quyền mạng nào; receiver Android `exported="false"`.
+- Web không triển khai nhắc việc nền (khác biệt chủ ý); Cài đặt Web ghi rõ điều này.
+
+### 7.3 Quyết định đồng bộ đa thiết bị (F4)
+**Quyết định hiện tại: KHÔNG triển khai cloud sync.** Chuyển thiết bị được giải quyết bằng xuất/nhập tệp JSON cục bộ (mục 4). Lý do:
+- Giữ nguyên mô hình **zero-server-data**: máy chủ không có tài khoản, không `user_id`, không lưu dữ liệu cá nhân.
+- Chi phí vận hành và bề mặt tấn công (xác thực, phân quyền, mã hoá, xoá dữ liệu theo yêu cầu) tăng đáng kể so với nhu cầu thực tế hiện tại.
+- Xung đột dữ liệu đa thiết bị (thực đơn, lô kho, biến động) cần mô hình CRDT/merge phức tạp; làm ẩu sẽ phá tính đúng đắn của FIFO và idempotency.
+
+**Thiết kế opt-in nếu sau này sản phẩm yêu cầu** (chưa triển khai, chỉ ghi để tham chiếu):
+1. **Dữ liệu**: chỉ đồng bộ trạng thái cá nhân (tủ lạnh, thực đơn, biến động, danh sách đi chợ, cài đặt); danh mục vẫn chỉ đọc từ Supabase.
+2. **Mã hoá**: mã hoá đầu-cuối tại client (AES-GCM, khoá dẫn xuất từ passphrase của người dùng bằng Argon2id); máy chủ chỉ nhận blob đã mã hoá, không có khoá.
+3. **Xác thực**: tài khoản ẩn danh (passphrase + thiết bị), không email; mất passphrase thì mất dữ liệu — phải nói rõ trước khi bật.
+4. **Xung đột**: bản ghi bất biến (movements, pantry lots) hợp nhất theo `id` + `idempotency_key`; trạng thái sửa được (plans, settings) dùng "last-writer-wins" có hiển thị thời điểm và cho phép chọn bản.
+5. **Khôi phục**: snapshot đã mã hoá theo phiên bản schema, giữ N bản gần nhất; luôn giữ đường xuất file cục bộ làm phương án cuối.
+6. **Chi phí**: cần đánh giá dung lượng blob, băng thông và giới hạn của Supabase/Vercel trước khi cam kết.
+7. **Điều kiện tiên quyết**: có quyết định sản phẩm rõ ràng bằng văn bản, cập nhật mục 2 (loại bỏ xác thực) và mục 5 (mô hình đe dọa) của tài liệu này trước khi viết mã.

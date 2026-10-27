@@ -4,6 +4,9 @@
     <!-- Tuyệt đối không khai báo android.permission.INTERNET -->
     <!-- Ứng dụng hoạt động 100% offline trên thiết bị -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- F2: chỉ dùng cho nhắc việc cục bộ; xin quyền khi người dùng bật nhắc việc.
+         Không có quyền mạng nào được thêm. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="false"
@@ -25,6 +28,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- F2: chỉ nhận alarm nội bộ, không export cho ứng dụng khác. -->
+        <receiver
+            android:name=".data.notifications.ReminderReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

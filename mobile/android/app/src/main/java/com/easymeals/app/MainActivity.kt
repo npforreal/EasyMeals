@@ -35,6 +35,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         repository = AppRepository(applicationContext)
 
+        // F2: tạo kênh thông báo và khôi phục lịch nhắc sau khi máy khởi động lại/mở app.
+        com.easymeals.app.data.notifications.ReminderScheduler.applySetting(this)
+
         setContent {
             val themeMode by repository.themeMode.collectAsState()
             val palette by repository.palette.collectAsState()

@@ -96,10 +96,31 @@
       </div>
     </div>
 
+    <!-- F1 - Vòng 13: Lịch sử & thống kê (tính tại máy, không gửi lên server) -->
+    <div class="card" id="history-settings-card">
+      <h2 style="margin-bottom: var(--space-1); font-size: var(--text-lg);">Lịch sử & thống kê</h2>
+      <p class="subtitle" style="margin-bottom: var(--space-3);">Tổng hợp 30 ngày gần nhất từ dữ liệu trên máy này. Không có dữ liệu nào được gửi đi.</p>
+      <div id="history-container">
+        <div class="skeleton" style="padding: var(--space-4) 0;">
+          <div class="skeleton-text" style="width: 60%;"></div>
+          <div class="skeleton-text" style="width: 30%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- F2 - Vòng 13: nhắc việc chỉ có trên ứng dụng di động (thông báo cục bộ) -->
+    <div class="card" id="reminders-settings-card">
+      <h2 style="margin-bottom: var(--space-2); font-size: var(--text-lg);">Nhắc việc</h2>
+      <p class="subtitle" style="margin: 0;">Nhắc hạn dùng, rã đông và lịch nấu là thông báo cục bộ, hiện có trên ứng dụng Android và iOS. Bản web không gửi thông báo để tránh phải xin quyền và giữ nguyên nguyên tắc không lưu dữ liệu trên server.</p>
+    </div>
+
     <!-- Sao lưu & Phục hồi (Export / Import JSON) -->
     <div class="card">
       <h2 style="margin-bottom: var(--space-2); font-size: var(--text-lg);">Sao lưu & Phục hồi dữ liệu</h2>
-      <p class="subtitle" style="margin-bottom: var(--space-3);">Xuất file JSON để chuyển sang máy khác hoặc phục hồi khi cần.</p>
+      <p class="subtitle" style="margin-bottom: var(--space-3);">Xuất file JSON để chuyển sang máy khác (kể cả Android/iOS) hoặc phục hồi khi cần.</p>
+      <p style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-3);">
+        Định dạng hiện tại: schema 3 · ứng dụng 2.0.0 · đọc được file schema 1–3 và file sao lưu của ứng dụng di động.
+      </p>
 
       <div style="display: flex; flex-wrap: wrap; gap: var(--space-2);">
         <button type="button" id="btn-export-json" class="btn btn-primary">

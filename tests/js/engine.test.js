@@ -215,3 +215,36 @@ describe("Engine Equivalence Tests (Python vs JavaScript on Shared Fixture)", ()
     );
   });
 });
+
+describe("F1 — biến động kho mang khoá ngoại tuỳ chọn", () => {
+  test("movement ghi ingredient_id của lô và recipe_id của món; hoàn tác giữ nguyên", () => {
+    const pantry = [
+      {
+        id: "lot-f1",
+        ingredient_id: "ing-f1",
+        ingredient_name: "Thịt heo",
+        remaining_quantity: "500",
+        purchased_quantity: "500",
+        unit: "g",
+        purchased_at: "2026-10-01T00:00:00Z",
+      },
+    ];
+    const recipe = {
+      id: "recipe-f1",
+      name: "Thịt kho",
+      servings: 4,
+      ingredients: [{ ingredient_id: "ing-f1", ingredient_name: "Thịt heo", quantity: "250", unit: "g" }],
+    };
+
+    const { updatedLots, movements } = deductRecipeStockFifo(pantry, recipe, "meal-f1", "eat_f1");
+    assert.equal(movements.length, 1);
+    assert.equal(movements[0].ingredient_id, "ing-f1");
+    assert.equal(movements[0].recipe_id, "recipe-f1");
+
+    const { reversalMovements } = reverseStockMovements(updatedLots, movements, "meal-f1");
+    assert.equal(reversalMovements.length, 1);
+    assert.equal(reversalMovements[0].ingredient_id, "ing-f1");
+    assert.equal(reversalMovements[0].recipe_id, "recipe-f1");
+    assert.equal(reversalMovements[0].reason, "correction");
+  });
+});

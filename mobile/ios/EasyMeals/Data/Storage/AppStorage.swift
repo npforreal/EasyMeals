@@ -74,7 +74,8 @@ public final class AppStorage: @unchecked Sendable {
         quantity: String,
         unit: String,
         expiresAt: String? = nil,
-        purchasedAt: String? = ISO8601DateFormatter().string(from: Date()).prefix(10).description
+        purchasedAt: String? = ISO8601DateFormatter().string(from: Date()).prefix(10).description,
+        price: String? = nil
     ) {
         let lot = PantryLot(
             ingredientId: ingredientId,
@@ -83,7 +84,8 @@ public final class AppStorage: @unchecked Sendable {
             purchasedQuantity: quantity,
             unit: unit,
             purchasedAt: purchasedAt,
-            expiresAt: expiresAt
+            expiresAt: expiresAt,
+            price: price?.isEmpty == false ? price : nil
         )
         pantryLots.insert(lot, at: 0)
         persistState()
@@ -536,7 +538,9 @@ public final class AppStorage: @unchecked Sendable {
                 ingredientName: item.ingredientName,
                 quantity: qty,
                 unit: item.unit,
-                expiresAt: expiresAt
+                expiresAt: expiresAt,
+                // F1: giữ giá đã nhập để tổng hợp chi tiêu trong lịch sử.
+                price: item.price
             )
         }
         // Giao dịch cập nhật danh sách: chỉ xoá các mục vẫn còn trong danh sách.
@@ -640,16 +644,28 @@ public final class AppStorage: @unchecked Sendable {
             self.shoppingItems = payload.shoppingItems
             restoreRecipePreferences(payload.recipePreferences)
         } else {
-            // Chế độ gộp: nối thêm lô tủ và món đi chợ
+            // Chế độ gộp: nối thêm lô tủ, thực đơn, biến động kho và mục đi chợ (không trùng id).
             let existingLotIds = Set(pantryLots.map { $0.id })
             for lot in payload.pantryLots where !existingLotIds.contains(lot.id) {
                 pantryLots.append(lot)
             }
+            let existingPlanIds = Set(mealPlans.map { $0.id })
+            mealPlans.append(contentsOf: payload.mealPlans.filter { !existingPlanIds.contains($0.id) })
+            let existingMovementIds = Set(stockMovements.map { $0.id })
+            stockMovements.append(contentsOf: payload.stockMovements.filter { !existingMovementIds.contains($0.id) })
             let existingShopIds = Set(shoppingItems.map { $0.id })
             for item in payload.shoppingItems where !existingShopIds.contains(item.id) {
                 shoppingItems.append(item)
             }
         }
+
+        // F1: bản sao lưu cũ chưa có khoá ngoại -> điền ngược, không mất bản ghi nào.
+        let migrated = HistoryAggregator.backfillMovementIds(
+            movements: stockMovements,
+            lots: pantryLots,
+            plans: mealPlans
+        )
+        self.stockMovements = migrated.movements
         persistState()
     }
 
@@ -685,6 +701,8 @@ public final class AppStorage: @unchecked Sendable {
 
     // MARK: - Local Persistence
     private struct PersistedState: Codable {
+        // F1: 3 = movements có khoá ngoại tuỳ chọn + giá trên lô. File cũ (thiếu khoá) = nil.
+        let schemaVersion: Int?
         let pantryLots: [PantryLot]
         let mealPlans: [MealPlan]
         let stockMovements: [StockMovement]
@@ -693,8 +711,21 @@ public final class AppStorage: @unchecked Sendable {
         let householdSettings: HouseholdSettings?
     }
 
+    /// F1: tổng hợp lịch sử & thống kê tại máy (không gọi API, không gửi dữ liệu đi).
+    public func historySummary(now: String? = nil, windowDays: Int = 30) -> HistorySummary {
+        HistoryAggregator.build(
+            plans: mealPlans,
+            movements: stockMovements,
+            pantryLots: pantryLots,
+            recipes: recipes,
+            now: now ?? String(ISO8601DateFormatter().string(from: Date()).prefix(10)),
+            windowDays: windowDays
+        )
+    }
+
     private func persistState() {
         let state = PersistedState(
+            schemaVersion: 3,
             pantryLots: pantryLots,
             mealPlans: mealPlans,
             stockMovements: stockMovements,
@@ -721,6 +752,18 @@ public final class AppStorage: @unchecked Sendable {
             self.mealPeriods = hs.mealPeriods
             self.skipDates = hs.skipDates
             self.planDays = hs.planDays
+        }
+
+        // F1: nâng cấp dữ liệu cũ tại chỗ — điền khoá ngoại cho movements,
+        // không xoá bản ghi nào, lô đã mất thì để nil.
+        let migrated = HistoryAggregator.backfillMovementIds(
+            movements: stockMovements,
+            lots: pantryLots,
+            plans: mealPlans
+        )
+        self.stockMovements = migrated.movements
+        if (state.schemaVersion ?? 0) < 3 || migrated.changed {
+            persistState()
         }
     }
 }

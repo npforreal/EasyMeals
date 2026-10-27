@@ -344,7 +344,10 @@ object EasyMealsEngine {
                         quantityDelta = "-$deductedLotUnit",
                         reason = "meal_consumption",
                         mealPlanId = mealPlanId,
-                        idempotencyKey = "${idempotencyKey}_${lot.id}_${movements.size}"
+                        idempotencyKey = "${idempotencyKey}_${lot.id}_${movements.size}",
+                        // F1: khoá ngoại tuỳ chọn, tra tên lúc hiển thị.
+                        ingredientId = lot.ingredientId,
+                        recipeId = recipe.id
                     )
                 )
             }
@@ -393,7 +396,9 @@ object EasyMealsEngine {
                                 quantityDelta = "-$takeLotUnit",
                                 reason = "meal_consumption",
                                 mealPlanId = mealPlanId,
-                                idempotencyKey = "${idempotencyKey}_${lot.id}_${movements.size}"
+                                idempotencyKey = "${idempotencyKey}_${lot.id}_${movements.size}",
+                                ingredientId = lot.ingredientId,
+                                recipeId = recipe.id
                             )
                         )
                     }
@@ -474,7 +479,9 @@ object EasyMealsEngine {
                     quantityDelta = deltaAbs.toString(),
                     reason = "correction",
                     mealPlanId = mealPlanId,
-                    idempotencyKey = "reversal_${mov.id}"
+                    idempotencyKey = "reversal_${mov.id}",
+                    ingredientId = mov.ingredientId ?: lot.ingredientId,
+                    recipeId = mov.recipeId
                 )
             )
         }

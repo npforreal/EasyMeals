@@ -17,9 +17,11 @@ import {
   putItem,
 } from "./db.js";
 import { mergeCompatibleShoppingItems } from "./engine.js";
+import { backfillMovementIds, buildHistorySummary } from "./history.js";
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 export const LEGACY_SCHEMA_VERSION = 1;
+export const APP_VERSION = "2.0.0";
 export const VALID_UNITS = ["g", "kg", "ml", "l", "piece"];
 export const VALID_CATEGORIES = ["man", "rau", "canh"];
 
@@ -88,6 +90,45 @@ export async function updatePantryLot(lot) {
   if (!lot.id) throw new Error("Thiếu lot ID.");
   await putItem("pantry", lot);
   return lot;
+}
+
+/**
+ * Các trường API lập thực đơn / trừ kho chấp nhận (backend `extra: "forbid"`).
+ * `price` là dữ liệu cục bộ (F1) — không gửi lên máy chủ và không bị mất khi
+ * máy chủ trả về danh sách lô mới.
+ */
+const API_PANTRY_LOT_FIELDS = [
+  "id",
+  "ingredient_id",
+  "ingredient_name",
+  "purchased_quantity",
+  "remaining_quantity",
+  "unit",
+  "purchased_at",
+  "expires_at",
+  "created_at",
+  "updated_at",
+];
+
+/** Lọc lô kho còn đúng các trường API trước khi gửi lên máy chủ. */
+export function toApiPantryLots(lots) {
+  if (!Array.isArray(lots)) return [];
+  return lots.map((lot) => {
+    const out = {};
+    for (const key of API_PANTRY_LOT_FIELDS) {
+      if (lot[key] !== undefined) out[key] = lot[key];
+    }
+    return out;
+  });
+}
+
+/** Gắn lại giá cục bộ (nếu có) vào danh sách lô do máy chủ trả về. */
+export function mergeLocalPrices(apiLots, localLots) {
+  if (!Array.isArray(apiLots)) return [];
+  const priceById = new Map((localLots || []).map((lot) => [lot.id, lot.price]));
+  return apiLots.map((lot) =>
+    priceById.has(lot.id) ? { ...lot, price: priceById.get(lot.id) } : lot
+  );
 }
 
 export async function deletePantryLot(lotId) {
@@ -249,6 +290,26 @@ export async function executeUndoEatMealAtomic(mealPlanId, restoredLots, reversa
 export async function getStockMovements() {
   const movements = await getAllItems("movements");
   return movements.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
+/**
+ * F1: tổng hợp lịch sử & thống kê từ dữ liệu cục bộ (không gọi mạng).
+ */
+export async function getHistorySummary({ now = new Date(), windowDays } = {}) {
+  const [plans, movements, pantryLots, cached] = await Promise.all([
+    getMealPlans(),
+    getStockMovements(),
+    getPantryLots(),
+    getCachedCatalogue(),
+  ]);
+  return buildHistorySummary({
+    plans,
+    movements,
+    pantryLots,
+    recipes: cached?.recipes || [],
+    now,
+    windowDays,
+  });
 }
 
 // ==========================================
@@ -599,6 +660,8 @@ export async function executeBoughtToPantryAtomic(boughtItems, overrides = {}, c
             unit: item.unit,
             purchased_at: purchasedAt,
             expires_at: ov.expires_at || defaultExpiryDate(category, purchasedAt),
+            // F1: giữ giá đã nhập ở danh sách đi chợ để tổng hợp chi tiêu trong lịch sử.
+            price: item.price != null && String(item.price) !== "" ? String(item.price) : null,
             created_at: purchasedAt,
           });
           shopStore.delete(item.id);
@@ -626,11 +689,13 @@ export async function exportBackupJSON() {
   const backupObject = {
     schema_version: SCHEMA_VERSION,
     app: "EasyMeals",
+    app_version: APP_VERSION,
     exported_at: new Date().toISOString(),
     metadata: {
       total_lots: pantry.length,
       total_plans: plans.length,
       total_movements: movements.length,
+      total_settings: settings.length,
       total_shopping_items: shopping.length,
     },
     data: {
@@ -675,6 +740,36 @@ function isValidISODate(dStr) {
 }
 
 /**
+ * F3 - Vòng 13: nhận cả file sao lưu của ứng dụng di động (định dạng phẳng:
+ * `pantry_lots`, `meal_plans`, ...) để chuyển dữ liệu Web <-> Android/iOS.
+ * Trả về bản sao ở định dạng chuẩn của Web; file đã đúng định dạng thì giữ nguyên.
+ */
+export function normalizeBackupPayload(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+  if (raw.data && typeof raw.data === "object") return raw;
+  const looksLikeMobile =
+    Array.isArray(raw.pantry_lots) ||
+    Array.isArray(raw.meal_plans) ||
+    Array.isArray(raw.stock_movements);
+  if (!looksLikeMobile) return raw;
+
+  return {
+    ...raw,
+    app: raw.app || "EasyMeals",
+    app_version: raw.app_version || raw.appVersion || null,
+    schema_version: raw.schema_version ?? (raw.recipe_preferences ? 2 : 1),
+    data: {
+      pantry: Array.isArray(raw.pantry_lots) ? raw.pantry_lots : [],
+      plans: Array.isArray(raw.meal_plans) ? raw.meal_plans : [],
+      movements: Array.isArray(raw.stock_movements) ? raw.stock_movements : [],
+      // Tuỳ chọn của bản di động nằm ở SharedPreferences/UserDefaults, không có trong file.
+      settings: Array.isArray(raw.settings) ? raw.settings : [],
+      shopping: Array.isArray(raw.shopping_items) ? raw.shopping_items : [],
+    },
+  };
+}
+
+/**
  * Strict schema validation for imported backup JSON.
  */
 export function validateBackupJSON(raw) {
@@ -685,23 +780,30 @@ export function validateBackupJSON(raw) {
   // Scan against dangerous prototype pollution keys
   scanDangerousKeys(raw);
 
-  if (raw.app !== "EasyMeals") {
+  const backup = normalizeBackupPayload(raw);
+
+  if (backup.app !== "EasyMeals") {
     throw new Error("File này không phải là bản sao lưu của EasyMeals.");
   }
 
-  // schema_version 1 (bản sao lưu cũ, chỉ pantry/plans/movements/settings)
-  // hoặc 2 (thêm data.shopping). Bản sao lưu cũ được migration tương thích khi import.
-  if (raw.schema_version !== SCHEMA_VERSION && raw.schema_version !== LEGACY_SCHEMA_VERSION) {
+  // schema_version 1 (pantry/plans/movements/settings), 2 (thêm shopping) hoặc
+  // 3 (movements có khoá ngoại tuỳ chọn + giá trong lô). Bản cũ được migration khi import.
+  const version = backup.schema_version;
+  if (!Number.isInteger(version) || version < LEGACY_SCHEMA_VERSION || version > SCHEMA_VERSION) {
     throw new Error(
-      `Phiên bản file sao lưu (${raw.schema_version}) không tương thích với ứng dụng (1-${SCHEMA_VERSION}).`
+      `Phiên bản file sao lưu (${version}) không tương thích với ứng dụng (1-${SCHEMA_VERSION}). ${
+        Number.isInteger(version) && version > SCHEMA_VERSION
+          ? "Hãy cập nhật ứng dụng lên bản mới hơn rồi thử lại."
+          : ""
+      }`.trim()
     );
   }
 
-  if (!raw.data || typeof raw.data !== "object") {
+  if (!backup.data || typeof backup.data !== "object") {
     throw new Error("Thiếu cấu trúc dữ liệu 'data' trong file sao lưu.");
   }
 
-  const { pantry, plans, movements, settings = [] } = raw.data;
+  const { pantry, plans, movements, settings = [] } = backup.data;
 
   if (!Array.isArray(pantry) || !Array.isArray(plans) || !Array.isArray(movements) || !Array.isArray(settings)) {
     throw new Error("Dữ liệu pantry, plans, movements hoặc settings phải là danh sách mảng.");
@@ -774,6 +876,14 @@ export function validateBackupJSON(raw) {
         }
       }
     }
+
+    // F1: giá đã nhập (tuỳ chọn) dùng cho thống kê chi tiêu.
+    if (lot.price !== undefined && lot.price !== null && lot.price !== "") {
+      const price = Number(lot.price);
+      if (!Number.isFinite(price) || price < 0 || price > 1000000000) {
+        throw new Error(`Giá của '${lot.ingredient_name || lot.id}' phải là số >= 0 và <= 1,000,000,000.`);
+      }
+    }
   }
 
   // Validate items in movements (must reference existing lots in backup)
@@ -793,6 +903,14 @@ export function validateBackupJSON(raw) {
     }
     if (mov.created_at && !isValidISODate(mov.created_at)) {
       throw new Error(`Thời điểm ghi nhận biến động '${mov.created_at}' không đúng định dạng ISO.`);
+    }
+    for (const key of ["ingredient_id", "recipe_id", "leftover_source_meal_id"]) {
+      const value = mov[key];
+      if (value !== undefined && value !== null) {
+        if (typeof value !== "string" || value.length === 0 || value.length > 128) {
+          throw new Error(`Khoá ngoại '${key}' của biến động '${mov.id}' phải là chuỗi từ 1 đến 128 ký tự.`);
+        }
+      }
     }
   }
 
@@ -838,8 +956,8 @@ export function validateBackupJSON(raw) {
   }
 
   // Validate shopping list (schema v2; bản v1 không có -> được migration khi import)
-  const shopping = raw.data.shopping;
-  if (raw.schema_version >= 2) {
+  const shopping = backup.data.shopping;
+  if (version >= 2) {
     if (shopping !== undefined && !Array.isArray(shopping)) {
       throw new Error("data.shopping phải là danh sách mảng.");
     }
@@ -884,9 +1002,13 @@ export function validateBackupJSON(raw) {
 }
 
 export async function importBackupJSON(backupData, mode = "replace") {
-  validateBackupJSON(backupData);
+  const normalized = normalizeBackupPayload(backupData);
+  validateBackupJSON(normalized);
 
-  const { pantry, plans, movements, settings = [], shopping = [] } = backupData.data;
+  const { pantry, settings = [], shopping = [] } = normalized.data;
+  const plans = normalized.data.plans;
+  // F1: bản sao lưu cũ (v1/v2) chưa có khoá ngoại -> điền ngược trước khi ghi.
+  const movements = backfillMovementIds(normalized.data.movements, pantry, plans).movements;
 
   if (mode === "replace") {
     await clearAllPersonalData();

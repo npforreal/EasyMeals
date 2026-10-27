@@ -1,10 +1,15 @@
 package com.easymeals.app.ui.screens
 
+import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,8 +26,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.easymeals.app.data.backup.BackupManager
 import com.easymeals.app.data.db.AppRepository
+import com.easymeals.app.data.notifications.ReminderScheduler
 import com.easymeals.app.ui.theme.GeneratedTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,7 +83,7 @@ fun SettingsScreen(repository: AppRepository) {
                         Text("100% Ngoại tuyến & Riêng tư", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            "EasyMeals không yêu cầu quyền Internet. Dữ liệu của bạn được lưu hoàn toàn trên thiết bị.",
+                            "EasyMeals không yêu cầu quyền Internet. Dữ liệu của bạn được lưu hoàn toàn trên thiết bị. Ứng dụng chỉ xin quyền thông báo khi bạn bật nhắc việc.",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -240,6 +247,86 @@ fun SettingsScreen(repository: AppRepository) {
                 }
             }
 
+            // Section: Nhắc việc (F2 - Vòng 13)
+            val currentReminders by repository.remindersEnabled.collectAsState()
+            var reminderNotice by remember { mutableStateOf<String?>(null) }
+
+            val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { granted ->
+                if (granted) {
+                    repository.setRemindersEnabled(true)
+                    ReminderScheduler.applySetting(context)
+                    reminderNotice = "Đã bật nhắc việc lúc 9:00 sáng theo giờ máy."
+                } else {
+                    repository.setRemindersEnabled(false)
+                    reminderNotice =
+                        "Chưa được cấp quyền thông báo. Mở Cài đặt hệ thống › Ứng dụng › EasyMeals › Thông báo để bật."
+                }
+            }
+
+            Text(
+                "NHẮC VIỆC",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Nhắc hạn dùng & bữa ăn hôm nay",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Switch(
+                            checked = currentReminders,
+                            onCheckedChange = { enabled ->
+                                reminderNotice = null
+                                if (!enabled) {
+                                    repository.setRemindersEnabled(false)
+                                    ReminderScheduler.applySetting(context)
+                                } else {
+                                    val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                        ContextCompat.checkSelfPermission(
+                                            context,
+                                            Manifest.permission.POST_NOTIFICATIONS
+                                        ) != PackageManager.PERMISSION_GRANTED
+                                    if (needsPermission) {
+                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    } else {
+                                        repository.setRemindersEnabled(true)
+                                        ReminderScheduler.applySetting(context)
+                                        reminderNotice = "Đã bật nhắc việc lúc 9:00 sáng theo giờ máy."
+                                    }
+                                }
+                            }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Nhắc lúc 9:00 sáng theo múi giờ của máy về lô sắp hết hạn và bữa ăn trong ngày. " +
+                            "Thông báo được tạo ngay trên máy, không gửi dữ liệu đi. Hệ thống có thể gửi trễ vài phút.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (reminderNotice != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            reminderNotice!!,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
             // Section: Hộ gia đình (C1 - Vòng 13)
             val currentHouseholdSize by repository.householdSize.collectAsState()
             val currentDefaultServings by repository.defaultServings.collectAsState()
@@ -324,6 +411,119 @@ fun SettingsScreen(repository: AppRepository) {
                         label = { Text("Ngày nghỉ nấu") },
                         placeholder = { Text("2026-11-01, 2026-11-02") },
                         modifier = Modifier.fillMaxWidth().height(48.dp)
+                    )
+                }
+            }
+
+            // Section: Lịch sử & thống kê (F1 - Vòng 13)
+            val historyPlans by repository.mealPlans.collectAsState()
+            val historyLots by repository.pantryLots.collectAsState()
+            val historyMovements by repository.stockMovements.collectAsState()
+            val history = remember(historyPlans, historyLots, historyMovements) {
+                repository.historySummary()
+            }
+
+            Text(
+                "LỊCH SỬ & THỐNG KÊ (30 NGÀY)",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        HistoryStat("Bữa đã nấu", history.cooked.inWindow.toString(), Modifier.weight(1f))
+                        HistoryStat("Tổng bữa", history.cooked.total.toString(), Modifier.weight(1f))
+                        HistoryStat("Đồ dư dùng lại", history.leftovers.reusedDishesInWindow.toString(), Modifier.weight(1f))
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        "Chi tiêu đã nhập: " +
+                            if (history.spending.lotsWithPrice > 0) {
+                                "${formatVnd(history.spending.inWindow)} (30 ngày)"
+                            } else {
+                                "chưa có dữ liệu giá"
+                            },
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    if (history.spending.lotsMissingPrice > 0) {
+                        Text(
+                            "Chỉ tính ${history.spending.lotsWithPrice} lô có nhập giá; ${history.spending.lotsMissingPrice} lô chưa có giá.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Biến động kho: ${history.stock.inWindow} lần trong 30 ngày (${history.stock.consumedCount} trừ, ${history.stock.restoredCount} cộng); tổng ${history.stock.totalMovements} bản ghi.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    if (history.cooked.meals.isEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Chưa có bữa ăn nào được đánh dấu “Đã ăn”.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("Bữa ăn gần đây", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        history.cooked.meals.take(5).forEach { meal ->
+                            val period = when (meal.mealPeriod) {
+                                "breakfast" -> "Sáng"
+                                "lunch" -> "Trưa"
+                                "dinner" -> "Tối"
+                                else -> meal.mealPeriod
+                            }
+                            val leftover = if (meal.leftoverReuseCount > 0) " (+${meal.leftoverReuseCount} đồ dư)" else ""
+                            Text(
+                                "• ${formatDay(meal.plannedFor)} · $period: ${meal.dishNames.joinToString(", ").ifEmpty { "Không rõ món" }}$leftover",
+                                fontSize = 12.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+
+                    if (history.cooked.topRecipes.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Nấu nhiều nhất: " + history.cooked.topRecipes.joinToString(" · ") { "${it.name} ×${it.count}" },
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    if (history.waste.expiredLotCount > 0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "${history.waste.expiredLotCount} lô đã quá hạn mà vẫn còn trong tủ: " +
+                                history.waste.expiredLots.take(5).joinToString(", ") {
+                                    "${it.ingredientName.ifEmpty { it.ingredientId }} (${it.remainingQuantity} ${it.unit})"
+                                },
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Ứng dụng chưa ghi nhận lãng phí; mục quá hạn chỉ là đồ còn trong tủ, không phải số liệu lãng phí đã xác nhận.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -494,7 +694,7 @@ fun SettingsScreen(repository: AppRepository) {
                             showImportDialog = false
                             Toast.makeText(context, "Khôi phục dữ liệu thành công!", Toast.LENGTH_SHORT).show()
                         } catch (e: Exception) {
-                            importError = "Dữ liệu JSON không hợp lệ: ${e.message}"
+                            importError = "Không nhập được bản sao lưu: ${e.message ?: "lỗi không xác định"}"
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -554,4 +754,29 @@ fun SettingsRow(
             )
         }
     }
+}
+
+@Composable
+private fun HistoryStat(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            value,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+private fun formatVnd(value: Long): String {
+    val grouped = value.toString().reversed().chunked(3).joinToString(".").reversed()
+    return "$grouped đ"
+}
+
+/** "2026-10-27" -> "27/10/2026"; giá trị lạ được giữ nguyên. */
+private fun formatDay(value: String): String {
+    if (value.length < 10) return value
+    val parts = value.substring(0, 10).split("-")
+    return if (parts.size == 3) "${parts[2]}/${parts[1]}/${parts[0]}" else value
 }

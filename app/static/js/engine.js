@@ -396,6 +396,9 @@ function _executeStockDeduction(
       movements.push({
         id: generateEngineUUID(),
         pantry_lot_id: lot.id,
+        // F1: khoá ngoại tuỳ chọn — tra tên lúc hiển thị, không sao chép tên vào lịch sử.
+        ingredient_id: lot.ingredient_id || null,
+        recipe_id: recipe?.id ?? null,
         quantity_delta: `-${deductedLotUnit.toString()}`,
         reason: "meal_consumption",
         meal_plan_id: mealPlanId,
@@ -443,6 +446,9 @@ function _executeStockDeduction(
           movements.push({
             id: generateEngineUUID(),
             pantry_lot_id: lot.id,
+            // F1: nguyên liệu thực bị trừ (có thể là nguyên liệu gốc qua bảng quy đổi).
+            ingredient_id: lot.ingredient_id || null,
+            recipe_id: recipe?.id ?? null,
             quantity_delta: `-${takeLotUnit.toString()}`,
             reason: "meal_consumption",
             meal_plan_id: mealPlanId,
@@ -546,6 +552,8 @@ export function reverseStockMovements(pantryLots, movements, mealPlanId) {
     reversalMovements.push({
       id: generateEngineUUID(),
       pantry_lot_id: lot.id,
+      ingredient_id: mov.ingredient_id || lot.ingredient_id || null,
+      recipe_id: mov.recipe_id || null,
       quantity_delta: deltaAbs.toString(),
       reason: "correction",
       meal_plan_id: mealPlanId,

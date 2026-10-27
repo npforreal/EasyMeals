@@ -257,6 +257,8 @@ public struct PantryLot: Identifiable, Codable, Equatable, Sendable {
     public let purchasedAt: String?
     public let expiresAt: String?
     public let location: String?
+    /// F1 - Vòng 13: giá đã nhập ở danh sách đi chợ (tuỳ chọn) cho thống kê chi tiêu.
+    public let price: String?
 
     public init(
         id: String = UUID().uuidString,
@@ -267,7 +269,8 @@ public struct PantryLot: Identifiable, Codable, Equatable, Sendable {
         unit: String,
         purchasedAt: String? = nil,
         expiresAt: String? = nil,
-        location: String? = "fridge"
+        location: String? = "fridge",
+        price: String? = nil
     ) {
         self.id = id
         self.ingredientId = ingredientId
@@ -278,6 +281,7 @@ public struct PantryLot: Identifiable, Codable, Equatable, Sendable {
         self.purchasedAt = purchasedAt
         self.expiresAt = expiresAt
         self.location = location
+        self.price = price
     }
 
     enum CodingKeys: String, CodingKey {
@@ -290,6 +294,7 @@ public struct PantryLot: Identifiable, Codable, Equatable, Sendable {
         case purchasedAt = "purchased_at"
         case expiresAt = "expires_at"
         case location
+        case price
     }
 }
 
@@ -301,6 +306,10 @@ public struct StockMovement: Identifiable, Codable, Equatable, Sendable {
     public let mealPlanId: String?
     public let idempotencyKey: String?
     public let createdAt: String
+    /// F1 - Vòng 13: khoá ngoại tuỳ chọn (nil với dữ liệu cũ). Không lưu bản sao tên.
+    public let ingredientId: String?
+    public let recipeId: String?
+    public let leftoverSourceMealId: String?
 
     public init(
         id: String = UUID().uuidString,
@@ -309,7 +318,10 @@ public struct StockMovement: Identifiable, Codable, Equatable, Sendable {
         reason: String,
         mealPlanId: String? = nil,
         idempotencyKey: String? = nil,
-        createdAt: String = ISO8601DateFormatter().string(from: Date())
+        createdAt: String = ISO8601DateFormatter().string(from: Date()),
+        ingredientId: String? = nil,
+        recipeId: String? = nil,
+        leftoverSourceMealId: String? = nil
     ) {
         self.id = id
         self.pantryLotId = pantryLotId
@@ -318,6 +330,9 @@ public struct StockMovement: Identifiable, Codable, Equatable, Sendable {
         self.mealPlanId = mealPlanId
         self.idempotencyKey = idempotencyKey
         self.createdAt = createdAt
+        self.ingredientId = ingredientId
+        self.recipeId = recipeId
+        self.leftoverSourceMealId = leftoverSourceMealId
     }
 
     enum CodingKeys: String, CodingKey {
@@ -328,6 +343,9 @@ public struct StockMovement: Identifiable, Codable, Equatable, Sendable {
         case mealPlanId = "meal_plan_id"
         case idempotencyKey = "idempotency_key"
         case createdAt = "created_at"
+        case ingredientId = "ingredient_id"
+        case recipeId = "recipe_id"
+        case leftoverSourceMealId = "leftover_source_meal_id"
     }
 }
 

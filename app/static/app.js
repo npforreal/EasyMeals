@@ -18,6 +18,8 @@ import {
   getLocalSetting,
   setLocalSetting,
   addPantryLot,
+  toApiPantryLots,
+  mergeLocalPrices,
   updatePantryLot,
   deletePantryLot,
   getMealPlans,
@@ -26,6 +28,8 @@ import {
   executeEatMealAtomic,
   executeUndoEatMealAtomic,
   getStockMovements,
+  getHistorySummary,
+  normalizeBackupPayload,
   getCachedCatalogue,
   syncCatalogue,
   exportBackupJSON,
@@ -1609,7 +1613,7 @@ async function initPlannerPage() {
             try {
               const currentLots = await getPantryLots();
               const payload = {
-                pantry: currentLots,
+                pantry: toApiPantryLots(currentLots),
                 meal_plan_id: meal.id,
                 dishes: (meal.dishes || []).map((d) => ({
                   recipe_id: d.recipe_id,
@@ -1646,7 +1650,11 @@ async function initPlannerPage() {
               }
 
               const eatResult = await res.json();
-              await executeEatMealAtomic(meal.id, eatResult.pantry, eatResult.movements);
+              await executeEatMealAtomic(
+                meal.id,
+                mergeLocalPrices(eatResult.pantry, currentLots),
+                eatResult.movements
+              );
               showToast("Đã ghi nhận bữa ăn và trừ kho thành công!", "success");
               loadAndRenderPlans();
             } catch (err) {
@@ -1796,7 +1804,7 @@ async function initPlannerPage() {
               const mealMovements = movements.filter((m) => m.meal_plan_id === meal.id);
 
               const payload = {
-                pantry: currentLots,
+                pantry: toApiPantryLots(currentLots),
                 meal_plan_id: meal.id,
                 movements: mealMovements,
               };
@@ -1813,7 +1821,11 @@ async function initPlannerPage() {
               }
 
               const undoResult = await res.json();
-              await executeUndoEatMealAtomic(meal.id, undoResult.pantry, undoResult.reversal_movements);
+              await executeUndoEatMealAtomic(
+                meal.id,
+                mergeLocalPrices(undoResult.pantry, currentLots),
+                undoResult.reversal_movements
+              );
               showToast("Đã hoàn tác và phục hồi nguyên liệu!", "success");
               loadAndRenderPlans();
             } catch (err) {
@@ -2095,7 +2107,7 @@ async function initPlannerPage() {
       try {
         const lots = await getPantryLots();
         const payload = {
-          pantry: lots,
+          pantry: toApiPantryLots(lots),
           start_date: s,
           days,
           options: {
@@ -2786,6 +2798,123 @@ async function initSettingsPage() {
   }
   refreshBackupBadge();
 
+  // F1 - Lịch sử & thống kê (tính tại máy từ IndexedDB)
+  async function renderHistory() {
+    const container = document.getElementById("history-container");
+    if (!container) return;
+
+    let summary;
+    try {
+      summary = await getHistorySummary();
+    } catch (err) {
+      container.textContent = `Không đọc được lịch sử: ${err.message}`;
+      return;
+    }
+
+    container.replaceChildren();
+
+    const money = (value) => `${Number(value || 0).toLocaleString("vi-VN")} đ`;
+    const stats = [
+      ["Bữa đã nấu (30 ngày)", String(summary.cooked.in_window)],
+      ["Tổng bữa đã nấu", String(summary.cooked.total)],
+      ["Đồ dư dùng lại (30 ngày)", String(summary.leftovers.reused_dishes_in_window)],
+      [
+        "Chi tiêu đã nhập (30 ngày)",
+        summary.spending.lots_with_price ? money(summary.spending.in_window) : "Chưa có dữ liệu",
+      ],
+    ];
+
+    const grid = document.createElement("div");
+    grid.className = "stats-grid";
+    grid.style.marginBottom = "var(--space-4)";
+    for (const [label, value] of stats) {
+      const card = document.createElement("div");
+      card.className = "stat-card";
+      const labelEl = document.createElement("span");
+      labelEl.className = "stat-label";
+      labelEl.textContent = label;
+      const valueEl = document.createElement("span");
+      valueEl.className = "stat-value";
+      valueEl.textContent = value;
+      card.append(labelEl, valueEl);
+      grid.appendChild(card);
+    }
+    container.appendChild(grid);
+
+    const mealsTitle = document.createElement("h3");
+    mealsTitle.style.cssText = "font-size: var(--text-sm); margin: 0 0 var(--space-2);";
+    mealsTitle.textContent = "Bữa ăn gần đây";
+    container.appendChild(mealsTitle);
+
+    if (!summary.cooked.meals.length) {
+      const empty = document.createElement("p");
+      empty.className = "subtitle";
+      empty.style.margin = "0";
+      empty.textContent = "Chưa có bữa ăn nào được đánh dấu “Đã ăn”.";
+      container.appendChild(empty);
+    } else {
+      const list = document.createElement("ul");
+      list.style.cssText = "list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-1);";
+      for (const meal of summary.cooked.meals.slice(0, 5)) {
+        const item = document.createElement("li");
+        item.style.cssText =
+          "display: flex; justify-content: space-between; gap: var(--space-2); padding: var(--space-1) 0; border-bottom: 1px solid var(--line); font-size: var(--text-sm);";
+        const left = document.createElement("span");
+        const period =
+          meal.meal_period === "breakfast" ? "Sáng" : meal.meal_period === "lunch" ? "Trưa" : meal.meal_period === "dinner" ? "Tối" : meal.meal_period;
+        left.textContent = `${formatDateVN(meal.planned_for)} · ${period}: ${meal.dish_names.join(", ") || "Không rõ món"}${
+          meal.leftover_reuse_count ? ` (+${meal.leftover_reuse_count} đồ dư)` : ""
+        }`;
+        const right = document.createElement("span");
+        right.style.color = "var(--text-muted)";
+        right.style.fontSize = "var(--text-xs)";
+        right.textContent = new Date(meal.eaten_at).toLocaleDateString("vi-VN");
+        item.append(left, right);
+        list.appendChild(item);
+      }
+      container.appendChild(list);
+    }
+
+    if (summary.cooked.top_recipes.length) {
+      const top = document.createElement("p");
+      top.style.cssText = "font-size: var(--text-xs); color: var(--text-muted); margin: var(--space-3) 0 0;";
+      top.textContent = `Nấu nhiều nhất (30 ngày): ${summary.cooked.top_recipes
+        .map((r) => `${r.name} ×${r.count}`)
+        .join(" · ")}`;
+      container.appendChild(top);
+    }
+
+    const stock = document.createElement("p");
+    stock.style.cssText = "font-size: var(--text-xs); color: var(--text-muted); margin: var(--space-2) 0 0;";
+    stock.textContent = `Biến động kho (30 ngày): ${summary.stock.in_window} lần (${summary.stock.consumed_count} lần trừ, ${summary.stock.restored_count} lần cộng). Tổng cộng: ${summary.stock.total_movements} bản ghi.`;
+    container.appendChild(stock);
+
+    if (summary.spending.lots_missing_price > 0) {
+      const spendNote = document.createElement("p");
+      spendNote.style.cssText = "font-size: var(--text-xs); color: var(--text-muted); margin: var(--space-1) 0 0;";
+      spendNote.textContent = `Chi tiêu chỉ tính ${summary.spending.lots_with_price} lô có nhập giá; ${summary.spending.lots_missing_price} lô chưa có giá nên không được tính.`;
+      container.appendChild(spendNote);
+    }
+
+    if (summary.waste.expired_lot_count > 0) {
+      const warn = document.createElement("p");
+      warn.style.cssText = "font-size: var(--text-xs); color: var(--danger); margin: var(--space-2) 0 0;";
+      warn.textContent = `${summary.waste.expired_lot_count} lô đã quá hạn mà vẫn còn trong tủ: ${summary.waste.expired_lots
+        .slice(0, 5)
+        .map((lot) => `${lot.ingredient_name || lot.ingredient_id} (${lot.remaining_quantity} ${lot.unit})`)
+        .join(", ")}.`;
+      container.appendChild(warn);
+    }
+
+    const wasteNote = document.createElement("p");
+    wasteNote.style.cssText = "font-size: var(--text-xs); color: var(--text-muted); margin: var(--space-2) 0 0;";
+    wasteNote.textContent =
+      "Ứng dụng chưa có chức năng ghi nhận lãng phí; mục trên chỉ là đồ đã quá hạn còn trong tủ, không phải số liệu lãng phí đã xác nhận.";
+    container.appendChild(wasteNote);
+  }
+
+  renderHistory();
+
   // Theme mode & Palette selection (F1)
   function updateThemeUI() {
     let savedTheme = "system";
@@ -2909,7 +3038,8 @@ async function initSettingsPage() {
       const reader = new FileReader();
       reader.onload = async (event) => {
         try {
-          const raw = JSON.parse(event.target.result);
+          // F3: nhận cả file sao lưu của ứng dụng di động (định dạng phẳng).
+          const raw = normalizeBackupPayload(JSON.parse(event.target.result));
           validateBackupJSON(raw);
 
           // Show Import Modal
@@ -2920,7 +3050,15 @@ async function initSettingsPage() {
           const cancelBtn = document.getElementById("btn-cancel-import");
 
           if (!modal) return;
-          summary.textContent = `File hợp lệ! Chứa: ${raw.data.pantry.length} thực phẩm, ${raw.data.plans.length} bữa ăn đã lên lịch. Ngày xuất: ${new Date(raw.exported_at).toLocaleString("vi-VN")}.`;
+          const lotCount = raw.data.pantry.length;
+          const planCount = raw.data.plans.length;
+          const movementCount = raw.data.movements.length;
+          const shoppingCount = (raw.data.shopping || []).length;
+          const exportedAt = raw.exported_at ? new Date(raw.exported_at).toLocaleString("vi-VN") : "không rõ";
+          summary.textContent =
+            `File hợp lệ (schema ${raw.schema_version}, ứng dụng ${raw.app_version || "cũ"}). ` +
+            `Chứa: ${lotCount} thực phẩm, ${planCount} bữa ăn, ${movementCount} biến động kho, ${shoppingCount} mục đi chợ. Ngày xuất: ${exportedAt}. ` +
+            "Dữ liệu cũ hơn sẽ được nâng cấp tự động; không mất lô, bữa ăn hay biến động kho.";
           modal.style.display = "flex";
 
           const closeModal = () => {
@@ -2936,6 +3074,7 @@ async function initSettingsPage() {
               showToast("Đã ghi đè toàn bộ dữ liệu từ file thành công!", "success");
               closeModal();
               refreshBackupBadge();
+              renderHistory();
             }
           };
 
@@ -2944,6 +3083,7 @@ async function initSettingsPage() {
             showToast("Đã hợp nhất dữ liệu thành công!", "success");
             closeModal();
             refreshBackupBadge();
+            renderHistory();
           };
         } catch (err) {
           showToast(`File không hợp lệ: ${err.message}`, "danger");
@@ -2978,6 +3118,7 @@ async function initSettingsPage() {
         showToast("Đã xoá sạch toàn bộ dữ liệu cá nhân trên máy!", "info");
         clearModal.style.display = "none";
         refreshBackupBadge();
+        renderHistory();
       });
     }
   }

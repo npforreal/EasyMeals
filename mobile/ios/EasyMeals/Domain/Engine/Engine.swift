@@ -329,7 +329,10 @@ public enum EasyMealsEngine {
                     quantityDelta: "-\(deductedLotUnit.description)",
                     reason: "meal_consumption",
                     mealPlanId: mealPlanId,
-                    idempotencyKey: "\(idempotencyKey)_\(lot.id)_\(movements.count)"
+                    idempotencyKey: "\(idempotencyKey)_\(lot.id)_\(movements.count)",
+                    // F1: khoá ngoại tuỳ chọn — tra tên lúc hiển thị.
+                    ingredientId: lot.ingredientId,
+                    recipeId: recipe.id
                 )
                 movements.append(mov)
             }
@@ -378,7 +381,9 @@ public enum EasyMealsEngine {
                             quantityDelta: "-\(takeLotUnit.description)",
                             reason: "meal_consumption",
                             mealPlanId: mealPlanId,
-                            idempotencyKey: "\(idempotencyKey)_\(lot.id)_\(movements.count)"
+                            idempotencyKey: "\(idempotencyKey)_\(lot.id)_\(movements.count)",
+                            ingredientId: lot.ingredientId,
+                            recipeId: recipe.id
                         )
                         movements.append(mov)
                     }
@@ -480,7 +485,9 @@ public enum EasyMealsEngine {
                 quantityDelta: deltaAbs.description,
                 reason: "correction",
                 mealPlanId: mealPlanId,
-                idempotencyKey: "reversal_\(mov.id)"
+                idempotencyKey: "reversal_\(mov.id)",
+                ingredientId: mov.ingredientId ?? lot.ingredientId,
+                recipeId: mov.recipeId
             )
             reversalMovements.append(revMov)
         }

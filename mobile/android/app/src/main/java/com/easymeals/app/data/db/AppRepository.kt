@@ -51,6 +51,7 @@ class AppRepository(private val context: Context) {
     val shoppingItems: StateFlow<List<ShoppingItem>> = _shoppingItems.asStateFlow()
 
     private val _stockMovements = MutableStateFlow<List<StockMovement>>(emptyList())
+    val stockMovements: StateFlow<List<StockMovement>> = _stockMovements.asStateFlow()
 
     private val _undoMessage = MutableStateFlow<String?>(null)
     val undoMessage: StateFlow<String?> = _undoMessage.asStateFlow()
@@ -75,6 +76,15 @@ class AppRepository(private val context: Context) {
             .coerceIn(GeneratedTokens.PlanLimits.LEFTOVER_MIN_DAYS, GeneratedTokens.PlanLimits.LEFTOVER_MAX_DAYS)
     )
     val leftoverDays: StateFlow<Int> = _leftoverDays.asStateFlow()
+
+    // F2 - Vòng 13: nhắc việc cục bộ (thông báo trên máy, không gửi dữ liệu đi).
+    private val _remindersEnabled = MutableStateFlow(prefs.getBoolean("reminders_enabled", false))
+    val remindersEnabled: StateFlow<Boolean> = _remindersEnabled.asStateFlow()
+
+    fun setRemindersEnabled(enabled: Boolean) {
+        _remindersEnabled.value = enabled
+        prefs.edit().putBoolean("reminders_enabled", enabled).apply()
+    }
 
     fun setAllowLeftovers(enabled: Boolean) {
         _allowLeftovers.value = enabled
@@ -187,7 +197,8 @@ class AppRepository(private val context: Context) {
         ingredientName: String,
         quantity: String,
         unit: String,
-        expiresAt: String? = null
+        expiresAt: String? = null,
+        price: String? = null
     ) {
         val lot = PantryLot(
             ingredientId = ingredientId,
@@ -196,7 +207,8 @@ class AppRepository(private val context: Context) {
             purchasedQuantity = quantity,
             unit = unit,
             purchasedAt = LocalDate.now().toString(),
-            expiresAt = expiresAt
+            expiresAt = expiresAt,
+            price = price?.takeIf { it.isNotBlank() }
         )
         val current = _pantryLots.value.toMutableList()
         current.add(0, lot)
@@ -614,7 +626,9 @@ class AppRepository(private val context: Context) {
                 ingredientName = item.ingredientName,
                 quantity = qty,
                 unit = item.unit,
-                expiresAt = expiresAt
+                expiresAt = expiresAt,
+                // F1: giữ giá đã nhập để tổng hợp chi tiêu trong lịch sử.
+                price = item.price
             )
             added++
         }
@@ -686,8 +700,8 @@ class AppRepository(private val context: Context) {
 
     fun exportBackupJson(): String {
         val payload = BackupPayload(
-            schemaVersion = 2,
-            appVersion = "2.0.0",
+            schemaVersion = BackupManager.SCHEMA_VERSION,
+            appVersion = BackupManager.APP_VERSION,
             exportedAt = java.time.Instant.now().toString(),
             pantryLots = _pantryLots.value,
             mealPlans = _mealPlans.value,
@@ -713,11 +727,22 @@ class AppRepository(private val context: Context) {
             newLots.addAll(payload.pantryLots.filter { !existingLotIds.contains(it.id) })
             _pantryLots.value = newLots
 
+            // F3: gộp cả thực đơn và biến động kho (không chỉ tủ + đi chợ).
+            val existingPlanIds = _mealPlans.value.map { it.id }.toSet()
+            _mealPlans.value = _mealPlans.value + payload.mealPlans.filter { !existingPlanIds.contains(it.id) }
+            val existingMovementIds = _stockMovements.value.map { it.id }.toSet()
+            _stockMovements.value = _stockMovements.value + payload.stockMovements.filter { !existingMovementIds.contains(it.id) }
+
             val existingShopIds = _shoppingItems.value.map { it.id }.toSet()
             val newShop = _shoppingItems.value.toMutableList()
             newShop.addAll(payload.shoppingItems.filter { !existingShopIds.contains(it.id) })
             _shoppingItems.value = newShop
         }
+
+        // F1: bản sao lưu cũ chưa có khoá ngoại -> điền ngược, không mất bản ghi nào.
+        val (migrated, _) = com.easymeals.app.domain.history.HistoryAggregator
+            .backfillMovementIds(_stockMovements.value, _pantryLots.value, _mealPlans.value)
+        _stockMovements.value = migrated
         persistState()
     }
 
@@ -753,15 +778,30 @@ class AppRepository(private val context: Context) {
     }
 
     private data class StateBlob(
-        val pantryLots: List<PantryLot>,
-        val mealPlans: List<MealPlan>,
-        val stockMovements: List<StockMovement>,
-        val shoppingItems: List<ShoppingItem>
+        // F1: 3 = movements có khoá ngoại tuỳ chọn + giá trên lô. Blob cũ (thiếu khoá) = 0.
+        val schemaVersion: Int = 0,
+        val pantryLots: List<PantryLot>? = emptyList(),
+        val mealPlans: List<MealPlan>? = emptyList(),
+        val stockMovements: List<StockMovement>? = emptyList(),
+        val shoppingItems: List<ShoppingItem>? = emptyList()
     )
+
+    /**
+     * F1: tổng hợp lịch sử & thống kê tại máy (không gọi API, không gửi dữ liệu đi).
+     */
+    fun historySummary(now: LocalDate = LocalDate.now()): com.easymeals.app.domain.history.HistorySummary =
+        com.easymeals.app.domain.history.HistoryAggregator.build(
+            plans = _mealPlans.value,
+            movements = _stockMovements.value,
+            pantryLots = _pantryLots.value,
+            recipes = _recipes.value,
+            now = now
+        )
 
     private fun persistState() {
         try {
             val blob = StateBlob(
+                schemaVersion = 3,
                 pantryLots = _pantryLots.value,
                 mealPlans = _mealPlans.value,
                 stockMovements = _stockMovements.value,
@@ -778,10 +818,19 @@ class AppRepository(private val context: Context) {
             if (storageFile.exists()) {
                 val blob = gson.fromJson(storageFile.readText(), StateBlob::class.java)
                 if (blob != null) {
-                    _pantryLots.value = blob.pantryLots
-                    _mealPlans.value = blob.mealPlans
-                    _stockMovements.value = blob.stockMovements
-                    _shoppingItems.value = blob.shoppingItems
+                    _pantryLots.value = blob.pantryLots ?: emptyList()
+                    _mealPlans.value = blob.mealPlans ?: emptyList()
+                    _stockMovements.value = blob.stockMovements ?: emptyList()
+                    _shoppingItems.value = blob.shoppingItems ?: emptyList()
+
+                    // F1: nâng cấp dữ liệu cũ tại chỗ — điền khoá ngoại cho movements,
+                    // không xoá bản ghi nào, lô đã mất thì để null.
+                    val (migrated, changed) = com.easymeals.app.domain.history.HistoryAggregator
+                        .backfillMovementIds(_stockMovements.value, _pantryLots.value, _mealPlans.value)
+                    _stockMovements.value = migrated
+                    if ((blob.schemaVersion ?: 0) < 3 || changed) {
+                        persistState()
+                    }
                 }
             }
         } catch (e: Exception) {

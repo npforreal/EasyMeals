@@ -20,6 +20,7 @@ import {
   getStockMovements,
   exportBackupJSON,
   validateBackupJSON,
+  normalizeBackupPayload,
   importBackupJSON,
   setCatalogueSource,
   syncCatalogue,
@@ -35,6 +36,8 @@ import {
   executeBoughtToPantryAtomic,
   defaultExpiryDays,
   defaultExpiryDate,
+  toApiPantryLots,
+  mergeLocalPrices,
   SCHEMA_VERSION,
 } from "../../app/static/js/storage.js";
 import { getAllItems } from "../../app/static/js/db.js";
@@ -189,7 +192,8 @@ describe("EasyMeals IndexedDB Storage Tests", () => {
 
     const backup = await exportBackupJSON();
     assert.equal(backup.app, "EasyMeals");
-    assert.equal(backup.schema_version, 2);
+    assert.equal(backup.schema_version, SCHEMA_VERSION);
+    assert.equal(backup.app_version, "2.0.0");
     assert.equal(typeof SCHEMA_VERSION, "number");
     assert.ok(Array.isArray(backup.data.shopping), "Backup phải chứa data.shopping");
     assert.equal(backup.data.pantry.length, 1);
@@ -512,7 +516,7 @@ describe("EasyMeals IndexedDB Storage Tests", () => {
     );
 
     const backup = await exportBackupJSON();
-    assert.equal(backup.schema_version, 2);
+    assert.equal(backup.schema_version, SCHEMA_VERSION);
     assert.equal(backup.data.shopping.length, 2);
     assert.equal(backup.data.shopping.find((i) => i.source === "manual").ingredient_id, "ing-manual-1");
 
@@ -666,5 +670,171 @@ describe("EasyMeals IndexedDB Storage Tests", () => {
       catalogue
     );
     assert.equal((await getPantryLots()).length, before, "Không nhân đôi lot khi bấm lặp");
+  });
+});
+
+describe("F3 — chuyển thiết bị: đọc file sao lưu của ứng dụng di động", () => {
+  beforeEach(async () => {
+    await clearAllPersonalData();
+  });
+
+  afterEach(() => {
+    closeDB();
+  });
+
+  function mobileBackup() {
+    return {
+      schema_version: 2,
+      app_version: "2.0.0",
+      exported_at: "2026-10-20T09:00:00Z",
+      pantry_lots: [
+        {
+          id: "lot-mobile-1",
+          ingredient_id: "ing-1",
+          ingredient_name: "Thịt heo",
+          remaining_quantity: "300",
+          purchased_quantity: "500",
+          unit: "g",
+          purchased_at: "2026-10-19T09:00:00Z",
+          expires_at: "2026-10-22",
+        },
+      ],
+      meal_plans: [
+        {
+          id: "plan-mobile-1",
+          planned_for: "2026-10-21",
+          meal_period: "dinner",
+          eaten_at: "2026-10-21T12:00:00Z",
+          dishes: [{ id: "d1", recipe_id: "r-1", recipe_name: "Thịt kho", category: "man", is_leftover: false }],
+        },
+      ],
+      stock_movements: [
+        {
+          id: "mov-mobile-1",
+          pantry_lot_id: "lot-mobile-1",
+          quantity_delta: "-200",
+          reason: "meal_consumption",
+          meal_plan_id: "plan-mobile-1",
+          created_at: "2026-10-21T12:00:00Z",
+        },
+      ],
+      shopping_items: [],
+      recipe_preferences: {
+        avoided_ingredient_ids: [],
+        preferred_ingredient_ids: [],
+        dietary_filter: "",
+        max_spice: "",
+      },
+    };
+  }
+
+  test("chuẩn hoá định dạng phẳng và import được, movements được điền khoá ngoại", async () => {
+    const raw = normalizeBackupPayload(mobileBackup());
+    assert.equal(raw.app, "EasyMeals");
+    assert.equal(raw.data.pantry.length, 1);
+
+    const result = await importBackupJSON(mobileBackup());
+    assert.equal(result.imported_lots, 1);
+    assert.equal(result.imported_plans, 1);
+    assert.equal(result.imported_movements, 1);
+
+    const movements = await getStockMovements();
+    assert.equal(movements[0].ingredient_id, "ing-1");
+    assert.equal(movements[0].recipe_id, "r-1");
+    const lots = await getPantryLots();
+    assert.equal(lots[0].ingredient_name, "Thịt heo");
+  });
+
+  test("file có schema mới hơn ứng dụng bị từ chối kèm hướng xử lý", () => {
+    const backup = mobileBackup();
+    backup.schema_version = 99;
+    assert.throws(
+      () => validateBackupJSON(backup),
+      /Hãy cập nhật ứng dụng lên bản mới hơn/
+    );
+  });
+
+  test("giá đã nhập ở danh sách đi chợ được giữ trên lô khi cho vào tủ", async () => {
+    const item = await addShoppingItem({
+      ingredient_id: "ing-1",
+      ingredient_name: "Thịt heo",
+      needed_quantity: "400",
+      unit: "g",
+      price: "55000",
+    });
+    await executeBoughtToPantryAtomic([item], {}, null);
+    const lots = await getPantryLots();
+    assert.equal(lots[0].price, "55000");
+  });
+
+  test("backup v3 giữ price và đọc lại được", async () => {
+    const item = await addShoppingItem({
+      ingredient_id: "ing-1",
+      ingredient_name: "Thịt heo",
+      needed_quantity: "400",
+      unit: "g",
+      price: "55000",
+    });
+    await executeBoughtToPantryAtomic([item], {}, null);
+    const backup = await exportBackupJSON();
+    assert.equal(backup.data.pantry[0].price, "55000");
+    await clearAllPersonalData();
+    await importBackupJSON(backup);
+    assert.equal((await getPantryLots())[0].price, "55000");
+  });
+});
+
+describe("F1: giá là dữ liệu cục bộ, không gửi lên API lập thực đơn", () => {
+  test("toApiPantryLots bỏ price nhưng giữ đủ trường backend chấp nhận", () => {
+    const lot = {
+      id: "lot-1",
+      ingredient_id: "ing-1",
+      ingredient_name: "Thịt heo",
+      purchased_quantity: "400",
+      remaining_quantity: "300",
+      unit: "g",
+      purchased_at: "2026-10-27T10:00:00.000Z",
+      expires_at: "2026-10-30",
+      created_at: "2026-10-27T10:00:00.000Z",
+      price: "55000",
+    };
+    const [payload] = toApiPantryLots([lot]);
+    assert.equal(payload.price, undefined, "không gửi giá lên máy chủ");
+    assert.equal(payload.remaining_quantity, "300");
+    assert.equal(payload.unit, "g");
+    assert.deepEqual(Object.keys(payload).sort(), [
+      "created_at",
+      "expires_at",
+      "id",
+      "ingredient_id",
+      "ingredient_name",
+      "purchased_at",
+      "purchased_quantity",
+      "remaining_quantity",
+      "unit",
+    ]);
+  });
+
+  test("toApiPantryLots chịu được đầu vào rỗng/không hợp lệ", () => {
+    assert.deepEqual(toApiPantryLots([]), []);
+    assert.deepEqual(toApiPantryLots(null), []);
+  });
+
+  test("mergeLocalPrices gắn lại giá theo id sau khi máy chủ trả về", () => {
+    const local = [
+      { id: "lot-1", price: "55000" },
+      { id: "lot-2", price: null },
+      { id: "lot-3" },
+    ];
+    const fromApi = [
+      { id: "lot-1", remaining_quantity: "100" },
+      { id: "lot-2", remaining_quantity: "200" },
+      { id: "lot-4", remaining_quantity: "300" },
+    ];
+    const merged = mergeLocalPrices(fromApi, local);
+    assert.equal(merged[0].price, "55000");
+    assert.equal(merged[0].remaining_quantity, "100");
+    assert.equal(merged[1].price, null);
+    assert.equal(merged[2].price, undefined, "lô mới không tự bịa giá");
   });
 });

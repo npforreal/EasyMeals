@@ -5,8 +5,10 @@
  * Works in modern browsers, WebView (Capacitor), and Node.js testing environments.
  */
 
+import { backfillMovementIds } from "./history.js";
+
 const DB_NAME = "easymeals_local_db";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let dbInstance = null;
 
@@ -21,6 +23,65 @@ export function getIDBFactory() {
     return window.indexedDB;
   }
   throw new Error("Trình duyệt hoặc môi trường không hỗ trợ IndexedDB.");
+}
+
+/**
+ * F1: điền khoá ngoại cho biến động kho trong giao dịch nâng cấp v2 -> v3.
+ * Chạy trong `versionchange` transaction nên phải hoàn tất trước khi nó commit.
+ */
+function migrateMovementsToV3(tx) {
+  if (!tx || !tx.objectStoreNames) return;
+  const names = tx.objectStoreNames;
+  if (!names.contains("movements")) return;
+
+  const readAll = (store, out, done) => {
+    const req = store.openCursor();
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (!cursor) {
+        done();
+        return;
+      }
+      out.push(cursor.value);
+      cursor.continue();
+    };
+    req.onerror = () => done();
+  };
+
+  const lots = [];
+  const plans = [];
+
+  const migrateMovements = () => {
+    const movStore = tx.objectStore("movements");
+    const req = movStore.openCursor();
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (!cursor) return;
+      const patch = backfillMovementIds([cursor.value], lots, plans).movements[0];
+      if (
+        patch &&
+        (patch.ingredient_id !== cursor.value.ingredient_id ||
+          patch.recipe_id !== cursor.value.recipe_id)
+      ) {
+        cursor.update(patch);
+      }
+      cursor.continue();
+    };
+  };
+
+  const readPlans = () => {
+    if (!names.contains("plans")) {
+      migrateMovements();
+      return;
+    }
+    readAll(tx.objectStore("plans"), plans, migrateMovements);
+  };
+
+  if (!names.contains("pantry")) {
+    readPlans();
+    return;
+  }
+  readAll(tx.objectStore("pantry"), lots, readPlans);
 }
 
 /**
@@ -80,6 +141,13 @@ export function openDB() {
           shoppingStore.createIndex("by_source", "source", { unique: false });
           shoppingStore.createIndex("by_ingredient_id", "ingredient_id", { unique: false });
         }
+      }
+
+      // F1 - Vòng 13: movements v3 chỉ thêm khoá ngoại tuỳ chọn. Dữ liệu cũ được điền
+      // ngược `ingredient_id` từ lô kho và `recipe_id` khi bữa chỉ có một món nấu.
+      // Không xoá/ghi đè bản ghi nào; lô đã bị xoá thì để trống (null).
+      if (oldVersion >= 1 && oldVersion < 3) {
+        migrateMovementsToV3(event.target.transaction);
       }
     };
 

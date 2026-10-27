@@ -2,7 +2,7 @@
  * EasyMeals Service Worker (Offline Cache & PWA Support).
  */
 
-const CACHE_NAME = "easymeals-v3";
+const CACHE_NAME = "easymeals-v4";
 const MAX_RUNTIME_ENTRIES = 80;
 const ASSETS_TO_CACHE = [
   "/",
@@ -21,6 +21,7 @@ const ASSETS_TO_CACHE = [
   "/static/fonts/fraunces/fraunces-vietnamese.woff2",
   "/static/js/db.js",
   "/static/js/storage.js",
+  "/static/js/history.js",
 ];
 
 // Install: Cache core application shell
