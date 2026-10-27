@@ -166,7 +166,19 @@ alter table public.recipes
   add constraint recipes_spice_evidence_check check (
     (spice_level is null and spice_source_url is null and spice_verified_at is null)
     or (spice_level is not null and spice_source_url is not null and spice_verified_at is not null)
-  );
+  ),
+  add column prep_time_minutes integer,
+  add column prep_time_source_url text,
+  add column prep_time_verified_at date,
+  add column cook_time_minutes integer,
+  add column cook_time_source_url text,
+  add column cook_time_verified_at date,
+  add column difficulty text check (difficulty is null or difficulty in ('easy', 'medium', 'hard')),
+  add column difficulty_source_url text,
+  add column difficulty_verified_at date,
+  add column storage_tips text[] not null default '{}'::text[],
+  add column storage_source_url text,
+  add column storage_verified_at date;
 
 grant select on public.ingredients, public.recipes to anon, authenticated;
 revoke insert, update, delete on public.ingredients, public.recipes from anon, authenticated, public;

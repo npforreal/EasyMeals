@@ -102,6 +102,36 @@ export function showToast(message, type = "info") {
   }, 3500);
 }
 
+export async function parseApiError(res, fallbackMessage = "Yêu cầu thất bại.") {
+  try {
+    const data = await res.clone().json();
+    if (data?.detail) {
+      if (typeof data.detail === "string") return data.detail;
+      if (Array.isArray(data.detail)) {
+        return data.detail.map((d) => d.msg || JSON.stringify(d)).join(", ");
+      }
+      return JSON.stringify(data.detail);
+    }
+    if (data?.message) return data.message;
+  } catch (_) {}
+
+  try {
+    const text = await res.text();
+    if (text) {
+      const trimmed = text.trim();
+      if (trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html")) {
+        return `Máy chủ gặp sự cố (HTTP ${res.status}).`;
+      }
+      if (trimmed === "Internal Server Error") {
+        return `Máy chủ gặp sự cố nội bộ (HTTP ${res.status} Internal Server Error). Vui lòng thử lại sau hoặc kiểm tra kết nối Supabase.`;
+      }
+      return `Máy chủ phản hồi (HTTP ${res.status}): ${trimmed.slice(0, 150)}`;
+    }
+  } catch (_) {}
+
+  return `Máy chủ gặp sự cố (HTTP ${res.status}): ${fallbackMessage}`;
+}
+
 export function formatQty(num) {
   const n = parseFloat(num);
   if (isNaN(n)) return "0";
@@ -569,7 +599,10 @@ export async function openRecipeModal(recipeId, initialServings = null) {
 
     if (!recipe) {
       const res = await fetch(`/api/recipes/${encodeURIComponent(recipeId)}`);
-      if (!res.ok) throw new Error("Không thể tải công thức từ máy chủ.");
+      if (!res.ok) {
+        const errMsg = await parseApiError(res, "Không thể tải công thức từ máy chủ.");
+        throw new Error(errMsg);
+      }
       recipe = await res.json();
     }
 
@@ -1726,8 +1759,11 @@ async function initPlannerPage() {
               });
 
               if (!res.ok) {
-                const errData = await res.json();
-                if (res.status === 422 && errData.detail && errData.detail.deficits) {
+                let errData = null;
+                try {
+                  errData = await res.clone().json();
+                } catch (_) {}
+                if (res.status === 422 && errData && errData.detail && errData.detail.deficits) {
                   const defList = Object.values(errData.detail.deficits);
                   showDeficitDialog(
                     defList,
@@ -1741,7 +1777,8 @@ async function initPlannerPage() {
                   eatBtn.textContent = "Đánh dấu Đã ăn (Trừ kho)";
                   return;
                 }
-                throw new Error(errData.detail?.message || errData.detail || "Không thể trừ kho.");
+                const errMsg = await parseApiError(res, "Không thể trừ kho.");
+                throw new Error(errMsg);
               }
 
               const eatResult = await res.json();
@@ -1911,8 +1948,8 @@ async function initPlannerPage() {
               });
 
               if (!res.ok) {
-                const errData = await res.json();
-                throw new Error(errData.detail || "Không thể hoàn tác.");
+                const errMsg = await parseApiError(res, "Không thể hoàn tác.");
+                throw new Error(errMsg);
               }
 
               const undoResult = await res.json();
@@ -2222,8 +2259,8 @@ async function initPlannerPage() {
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || "Không thể tạo thực đơn.");
+          const errMsg = await parseApiError(res, "Không thể tạo thực đơn.");
+          throw new Error(errMsg);
         }
 
         const data = await res.json();

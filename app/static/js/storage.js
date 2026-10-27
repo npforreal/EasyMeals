@@ -387,7 +387,21 @@ export async function syncCatalogue(baseUrl = "", bundledData = null) {
   }
 
   if (!response.ok) {
-    throw new Error(`Lỗi đồng bộ danh mục từ server: HTTP ${response.status}`);
+    let detail = "";
+    try {
+      const err = await response.clone().json();
+      detail = err.detail || err.message || "";
+    } catch (_) {
+      try {
+        const txt = await response.text();
+        if (txt && !txt.startsWith("<")) detail = txt.slice(0, 100);
+      } catch (_) {}
+    }
+    throw new Error(
+      detail
+        ? `Lỗi đồng bộ danh mục từ server (HTTP ${response.status}): ${detail}`
+        : `Lỗi đồng bộ danh mục từ server: HTTP ${response.status}`
+    );
   }
 
   const newBundle = await response.json();

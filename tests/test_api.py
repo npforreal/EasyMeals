@@ -467,3 +467,29 @@ def test_generate_plan_rejects_invalid_avoided_ingredient_ids(client, avoided_id
         },
     )
     assert response.status_code == 422
+
+
+def test_service_worker_served(client):
+    response = client.get("/sw.js")
+    assert response.status_code == 200
+    assert "javascript" in response.headers["content-type"]
+
+
+def test_unhandled_exception_returns_json_500():
+    # Giả lập ngoại lệ bất ngờ trên endpoint nội bộ để kiểm tra unhandled_exception_handler
+    from fastapi import APIRouter
+
+    test_router = APIRouter()
+
+    @test_router.get("/test-crash")
+    def crash():
+        raise RuntimeError("Cố ý gây lỗi 500 để test handler")
+
+    app.include_router(test_router)
+    crash_client = TestClient(app, raise_server_exceptions=False)
+    resp = crash_client.get("/test-crash")
+    assert resp.status_code == 500
+    assert resp.headers["content-type"].startswith("application/json")
+    data = resp.json()
+    assert "detail" in data
+    assert "500" in data["detail"]

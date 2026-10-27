@@ -766,6 +766,7 @@ class SupabaseRepository(Repository):
             "allergen_verification_status, allergen_source_url, allergen_verified_at, "
             "ingredient_aliases(alias)"
         )
+        clean_search = None
         if search:
             # PostgREST filter injection protection: remove control characters
             clean_search = _sanitize_postgrest_search(search)
@@ -773,7 +774,16 @@ class SupabaseRepository(Repository):
                 norm_q = normalize_text(clean_search)
                 query = query.ilike("normalized_name", f"%{norm_q}%")
 
-        data = self._fetch_all(query.order("name").order("id"))
+        try:
+            data = self._fetch_all(query.order("name").order("id"))
+        except Exception:
+            # Fallback nếu cơ sở dữ liệu Supabase chưa cập nhật cột allergens / metadata
+            fallback_query = self.client.table("ingredients").select(
+                "id, name, normalized_name, category, default_unit, ingredient_aliases(alias)"
+            )
+            if search and clean_search:
+                fallback_query = fallback_query.ilike("normalized_name", f"%{norm_q}%")
+            data = self._fetch_all(fallback_query.order("name").order("id"))
         results: list[Ingredient] = []
         for row in data:
             aliases = [a["alias"] for a in row.get("ingredient_aliases", [])]
@@ -802,17 +812,28 @@ class SupabaseRepository(Repository):
         return results
 
     def get_ingredient_by_id(self, ingredient_id: UUID) -> Ingredient | None:
-        response = (
-            self.client.table("ingredients")
-            .select(
-                "id, name, normalized_name, category, default_unit, allergens, "
-                "allergen_verification_status, allergen_source_url, allergen_verified_at, "
-                "ingredient_aliases(alias)"
+        try:
+            response = (
+                self.client.table("ingredients")
+                .select(
+                    "id, name, normalized_name, category, default_unit, allergens, "
+                    "allergen_verification_status, allergen_source_url, allergen_verified_at, "
+                    "ingredient_aliases(alias)"
+                )
+                .eq("id", str(ingredient_id))
+                .limit(1)
+                .execute()
             )
-            .eq("id", str(ingredient_id))
-            .limit(1)
-            .execute()
-        )
+        except Exception:
+            response = (
+                self.client.table("ingredients")
+                .select(
+                    "id, name, normalized_name, category, default_unit, ingredient_aliases(alias)"
+                )
+                .eq("id", str(ingredient_id))
+                .limit(1)
+                .execute()
+            )
         if not response.data:
             return None
         row = response.data[0]
@@ -850,7 +871,17 @@ class SupabaseRepository(Repository):
         )
         if category:
             query = query.eq("category", category.value)
-        data = self._fetch_all(query.order("name").order("id"))
+        try:
+            data = self._fetch_all(query.order("name").order("id"))
+        except Exception:
+            # Fallback nếu cơ sở dữ liệu Supabase chưa cập nhật cột metadata món ăn
+            fallback_query = self.client.table("recipes").select(
+                "id, name, category, servings, instructions, "
+                "recipe_ingredients(ingredient_id, quantity, unit, ingredients(name))"
+            )
+            if category:
+                fallback_query = fallback_query.eq("category", category.value)
+            data = self._fetch_all(fallback_query.order("name").order("id"))
 
         recipes: list[Recipe] = []
         for row in data:
@@ -911,21 +942,33 @@ class SupabaseRepository(Repository):
         return recipes
 
     def get_recipe_by_id(self, recipe_id: UUID) -> Recipe | None:
-        response = (
-            self.client.table("recipes")
-            .select(
-                "id, name, category, servings, instructions, dietary_status, "
-                "dietary_source_url, dietary_verified_at, spice_level, spice_source_url, "
-                "prep_time_minutes, prep_time_source_url, prep_time_verified_at, "
-                "cook_time_minutes, cook_time_source_url, cook_time_verified_at, "
-                "difficulty, difficulty_source_url, difficulty_verified_at, "
-                "storage_tips, storage_source_url, storage_verified_at, "
-                "recipe_ingredients(ingredient_id, quantity, unit, ingredients(name))"
+        try:
+            response = (
+                self.client.table("recipes")
+                .select(
+                    "id, name, category, servings, instructions, dietary_status, "
+                    "dietary_source_url, dietary_verified_at, spice_level, spice_source_url, "
+                    "prep_time_minutes, prep_time_source_url, prep_time_verified_at, "
+                    "cook_time_minutes, cook_time_source_url, cook_time_verified_at, "
+                    "difficulty, difficulty_source_url, difficulty_verified_at, "
+                    "storage_tips, storage_source_url, storage_verified_at, "
+                    "recipe_ingredients(ingredient_id, quantity, unit, ingredients(name))"
+                )
+                .eq("id", str(recipe_id))
+                .limit(1)
+                .execute()
             )
-            .eq("id", str(recipe_id))
-            .limit(1)
-            .execute()
-        )
+        except Exception:
+            response = (
+                self.client.table("recipes")
+                .select(
+                    "id, name, category, servings, instructions, "
+                    "recipe_ingredients(ingredient_id, quantity, unit, ingredients(name))"
+                )
+                .eq("id", str(recipe_id))
+                .limit(1)
+                .execute()
+            )
         if not response.data:
             return None
         row = response.data[0]

@@ -18,6 +18,8 @@ from app.api.planner_routes import router as planner_router
 from app.api.recipe_routes import router as recipes_router
 from app.theme import BACKGROUND_COLOR, THEME_COLOR
 
+BASE_DIR = Path(__file__).resolve().parent
+
 # 1. Environment & Production Verification
 is_production = (
     bool(os.getenv("VERCEL_ENV"))
@@ -44,6 +46,21 @@ app = FastAPI(
     openapi_url=None if is_production else "/openapi.json",
 )
 
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Always return clean structured JSON on unhandled server errors instead of plain text 500."""
+    return JSONResponse(
+        {
+            "detail": (
+                "Máy chủ gặp sự cố nội bộ khi xử lý yêu cầu (HTTP 500). "
+                "Vui lòng kiểm tra lại cấu hình hoặc kết nối cơ sở dữ liệu."
+            )
+        },
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
+
+
 # 2. CORS for Capacitor mobile apps (WebView)
 app.add_middleware(
     CORSMiddleware,
@@ -59,10 +76,16 @@ app.add_middleware(
 )
 
 # 3. Mount static files & templates
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-if Path("www").exists():
-    app.mount("/mobile", StaticFiles(directory="www", html=True), name="mobile_static")
-templates = Jinja2Templates(directory="app/templates")
+static_dir = BASE_DIR / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+www_dir = BASE_DIR.parent / "www"
+if www_dir.exists():
+    app.mount("/mobile", StaticFiles(directory=str(www_dir), html=True), name="mobile_static")
+
+templates_dir = BASE_DIR / "templates"
+templates = Jinja2Templates(directory=str(templates_dir))
 templates.env.globals["theme_color"] = THEME_COLOR
 
 # 4. Register API routers
@@ -173,8 +196,9 @@ def manifest() -> JSONResponse:
 
 @app.get("/sw.js", include_in_schema=False)
 def service_worker() -> FileResponse:
+    sw_file = BASE_DIR / "static" / "sw.js"
     return FileResponse(
-        "app/static/sw.js",
+        str(sw_file),
         media_type="application/javascript",
         headers={"Service-Worker-Allowed": "/", "Cache-Control": "no-cache"},
     )
